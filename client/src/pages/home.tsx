@@ -424,27 +424,33 @@ function PRCard({ pr, isEditing, onEdit, onSave, onDelete, onCancel }: {
   onCancel: () => void;
 }) {
   const [editData, setEditData] = useState(pr);
+  const [isFlipped, setIsFlipped] = useState(false);
 
   const handleSave = () => {
     onSave(editData);
   };
 
+  const handleFlip = () => {
+    if (!isEditing) {
+      setIsFlipped(!isFlipped);
+    }
+  };
+
   if (isEditing) {
     return (
-      <Card className="border-primary">
-        <CardHeader className="pb-2">
+      <Card className="border-primary aspect-square flex flex-col shadow-lg dark:shadow-white/20 shadow-black/10">
+        <CardContent className="flex-1 p-4 space-y-3">
           <Input
             value={editData.exercise}
             onChange={(e) => setEditData(prev => ({ ...prev, exercise: e.target.value }))}
             className="text-sm font-medium"
             placeholder="Exercise name"
           />
-        </CardHeader>
-        <CardContent className="space-y-2">
+          
           <select
             value={editData.category}
             onChange={(e) => setEditData(prev => ({ ...prev, category: e.target.value }))}
-            className="w-full px-2 py-1 text-xs border border-border rounded bg-background"
+            className="w-full px-2 py-2 text-sm border border-border rounded bg-background"
           >
             <option value="Push">Push</option>
             <option value="Pull">Pull</option>
@@ -456,7 +462,7 @@ function PRCard({ pr, isEditing, onEdit, onSave, onDelete, onCancel }: {
             <Input
               value={editData.time || ""}
               onChange={(e) => setEditData(prev => ({ ...prev, time: e.target.value }))}
-              placeholder="22:30"
+              placeholder="Time (e.g., 22:30)"
               className="text-sm"
             />
           ) : (
@@ -464,7 +470,7 @@ function PRCard({ pr, isEditing, onEdit, onSave, onDelete, onCancel }: {
               <Input
                 value={editData.weight || ""}
                 onChange={(e) => setEditData(prev => ({ ...prev, weight: e.target.value }))}
-                placeholder="Weight"
+                placeholder="Weight (lbs)"
                 className="text-sm"
               />
               <Input
@@ -476,11 +482,22 @@ function PRCard({ pr, isEditing, onEdit, onSave, onDelete, onCancel }: {
             </div>
           )}
           
-          <div className="flex gap-1">
+          <div className="flex gap-2 mt-auto">
             <Button size="sm" onClick={handleSave} className="flex-1">
-              <Save className="w-3 h-3" />
+              <Save className="w-3 h-3 mr-1" />
+              Save
             </Button>
             <Button size="sm" variant="outline" onClick={onCancel} className="flex-1">
+              <X className="w-3 h-3 mr-1" />
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={onDelete}
+              className="px-3"
+              data-testid={`button-delete-pr-${pr.id}`}
+            >
               <X className="w-3 h-3" />
             </Button>
           </div>
@@ -490,51 +507,80 @@ function PRCard({ pr, isEditing, onEdit, onSave, onDelete, onCancel }: {
   }
 
   return (
-    <Card className="hover:shadow-md transition-shadow group aspect-square flex flex-col">
-      <CardHeader className="pb-2 flex-shrink-0">
-        <CardTitle className="text-sm font-medium text-foreground truncate flex items-center justify-between">
-          <span className="truncate">{pr.exercise}</span>
-          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={onEdit}
-              className="h-6 w-6 p-0"
-              data-testid={`button-edit-pr-${pr.id}`}
-            >
-              <Edit3 className="w-3 h-3" />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={onDelete}
-              className="h-6 w-6 p-0 text-red-500 hover:text-red-600"
-              data-testid={`button-delete-pr-${pr.id}`}
-            >
-              <X className="w-3 h-3" />
-            </Button>
-          </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col justify-center space-y-3">
-        <Badge className={pr.color} variant="outline" size="sm">
-          {pr.exercise}
-        </Badge>
-        
-        {pr.category === "Cardio" ? (
-          <div className="text-center space-y-1">
-            <div className="text-xl font-bold text-foreground">
-              {pr.time}
-            </div>
-            <div className="text-xs text-muted-foreground">Best Time</div>
+    <Card 
+      className="hover:shadow-md transition-all duration-300 group aspect-square flex flex-col cursor-pointer shadow-lg dark:shadow-white/20 shadow-black/10"
+      onClick={handleFlip}
+    >
+      <CardContent className="flex-1 flex flex-col justify-center items-center p-4 relative">
+        {/* Edit button - only visible on hover */}
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
+          className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+          data-testid={`button-edit-pr-${pr.id}`}
+        >
+          <Edit3 className="w-3 h-3" />
+        </Button>
+
+        {!isFlipped ? (
+          // Front side - Simple view with exercise name
+          <div className="text-center space-y-3">
+            <Badge className={`${pr.color} text-base px-4 py-2`} variant="outline">
+              {pr.exercise}
+            </Badge>
+            
+            {pr.category === "Cardio" ? (
+              <div className="text-center space-y-1">
+                <div className="text-2xl font-bold text-foreground">
+                  {pr.time}
+                </div>
+                <div className="text-sm text-muted-foreground">Best Time</div>
+              </div>
+            ) : (
+              <div className="text-center space-y-1">
+                <div className="text-2xl font-bold text-foreground">
+                  {pr.weight} lbs
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Max {pr.reps} reps
+                </div>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="text-center space-y-1">
-            <div className="text-xl font-bold text-foreground">
-              {pr.weight} lbs
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Max {pr.reps} reps
+          // Back side - Structured data view
+          <div className="w-full space-y-3 text-center">
+            <Badge className={`${pr.color} text-sm mb-2`} variant="outline">
+              {pr.category}
+            </Badge>
+            
+            <div className="space-y-2">
+              <div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wide">Exercise</div>
+                <div className="text-sm font-semibold">{pr.exercise}</div>
+              </div>
+              
+              {pr.category === "Cardio" ? (
+                <div>
+                  <div className="text-xs text-muted-foreground uppercase tracking-wide">Best Time</div>
+                  <div className="text-lg font-bold text-foreground">{pr.time}</div>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <div className="text-xs text-muted-foreground uppercase tracking-wide">Weight</div>
+                    <div className="text-lg font-bold text-foreground">{pr.weight} lbs</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground uppercase tracking-wide">Max Reps</div>
+                    <div className="text-lg font-bold text-foreground">{pr.reps}</div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
