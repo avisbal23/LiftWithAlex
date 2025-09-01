@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus, Trash2, Eye } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { type Exercise, type InsertExercise, type UpdateExercise } from "@shared/schema";
@@ -16,6 +18,8 @@ interface WorkoutTableProps {
 export default function WorkoutTable({ category, title, description }: WorkoutTableProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [selectedNotes, setSelectedNotes] = useState<{ exercise: string; notes: string } | null>(null);
+  const [editingNotes, setEditingNotes] = useState<string>("");
 
   const { data: exercises = [], isLoading } = useQuery<Exercise[]>({
     queryKey: ["/api/exercises", category],
@@ -146,6 +150,9 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                     Notes
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    View
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -189,6 +196,57 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                         className="border-none bg-transparent p-2 text-sm text-muted-foreground focus:bg-background hover:bg-accent transition-colors"
                         data-testid={`input-notes-${exercise.id}`}
                       />
+                    </td>
+                    <td className="px-6 py-4">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setSelectedNotes({ exercise: exercise.name, notes: exercise.notes });
+                              setEditingNotes(exercise.notes);
+                            }}
+                            className="text-muted-foreground hover:text-foreground p-1 rounded transition-colors"
+                            data-testid={`button-view-notes-${exercise.id}`}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-lg">
+                          <DialogHeader>
+                            <DialogTitle>Notes for {exercise.name}</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <Textarea
+                              value={editingNotes}
+                              onChange={(e) => setEditingNotes(e.target.value)}
+                              placeholder="Add your workout notes here..."
+                              className="min-h-32 resize-none"
+                              data-testid={`textarea-notes-${exercise.id}`}
+                            />
+                            <div className="flex justify-end space-x-2">
+                              <Button
+                                variant="outline"
+                                onClick={() => setEditingNotes(exercise.notes)}
+                                data-testid={`button-cancel-notes-${exercise.id}`}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                onClick={() => {
+                                  updateExercise(exercise.id, "notes", editingNotes);
+                                  setSelectedNotes(null);
+                                }}
+                                disabled={updateMutation.isPending}
+                                data-testid={`button-save-notes-${exercise.id}`}
+                              >
+                                Save Notes
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </td>
                     <td className="px-6 py-4">
                       <Button
