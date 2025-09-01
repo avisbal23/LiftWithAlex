@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { type WorkoutLog } from "@shared/schema";
 import Navigation from "@/components/layout/navigation";
 import { Link } from "wouter";
-import { Trophy, Calendar, Edit3, Save, X } from "lucide-react";
+import { Trophy, Calendar, Edit3, Save, X, Scale, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -258,6 +258,22 @@ export default function Home() {
               <Link to="/legs2">
                 <Badge className="bg-green-400/10 text-green-500 border-green-100 hover:bg-green-400/20 transition-colors px-4 py-2 text-sm cursor-pointer">
                   Leg Day 2
+                </Badge>
+              </Link>
+            </div>
+            
+            {/* Additional Tools */}
+            <div className="flex flex-wrap justify-center gap-3">
+              <Link to="/weight">
+                <Badge className="bg-orange-500/10 text-orange-600 border-orange-200 hover:bg-orange-500/20 transition-colors px-4 py-2 text-sm cursor-pointer flex items-center gap-1">
+                  <Scale className="w-3 h-3" />
+                  Weight
+                </Badge>
+              </Link>
+              <Link to="/admin">
+                <Badge className="bg-gray-500/10 text-gray-600 border-gray-200 hover:bg-gray-500/20 transition-colors px-4 py-2 text-sm cursor-pointer flex items-center gap-1">
+                  <Settings className="w-3 h-3" />
+                  Admin
                 </Badge>
               </Link>
             </div>
