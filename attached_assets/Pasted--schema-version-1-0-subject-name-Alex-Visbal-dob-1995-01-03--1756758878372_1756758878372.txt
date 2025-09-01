@@ -1,0 +1,80 @@
+{
+  "schema_version": "1.0",
+  "subject": {
+    "name": "Alex Visbal",
+    "dob": "1995-01-03"
+  },
+  "datasets": [
+    {
+      "as_of": "2023-02-10",
+      "source": "labcorp_pdf",
+      "panels": {
+        "hormone_balance": {
+          "total_testosterone": { "value": 349, "unit": "ng/dL" },
+          "free_testosterone": { "value": 10.7, "unit": "pg/mL" },
+          "shbg": { "value": 29.9, "unit": "nmol/L" },
+          "estradiol": { "value": 29.6, "unit": "pg/mL" },
+          "estrogens_total": { "value": 66, "unit": "pg/mL" },
+          "dhea_sulfate": { "value": 255.0, "unit": "ug/dL" },
+          "cortisol_am": { "value": 13.4, "unit": "ug/dL" },
+          "psa": { "value": 1.4, "unit": "ng/mL" }
+        },
+        "thyroid": {
+          "tsh": { "value": 3.86, "unit": "uIU/mL" },
+          "free_t3": { "value": 3.3, "unit": "pg/mL" },
+          "free_t4": { "value": 1.64, "unit": "ng/dL" },
+          "tpo_ab": { "value": 9, "unit": "IU/mL", "qualifier": "<" }
+        },
+        "vitamin_inflammation_glucose": {
+          "vitamin_d_25oh": { "value": 63.1, "unit": "ng/mL" },
+          "crp_hs": { "value": 0.39, "unit": "mg/L" },
+          "insulin": { "value": 3.1, "unit": "uIU/mL" },
+          "hba1c": { "value": 5.2, "unit": "%"}
+        },
+        "lipids": {
+          "cholesterol_total": { "value": 177, "unit": "mg/dL" },
+          "triglycerides": { "value": 60, "unit": "mg/dL" },
+          "hdl": { "value": 55, "unit": "mg/dL" },
+          "ldl_calc": { "value": 110, "unit": "mg/dL", "flag": "high" },
+          "vldl_calc": { "value": 12, "unit": "mg/dL" }
+        },
+        "proteins_misc": {
+          "albumin": { "value": 4.7, "unit": "g/dL" }
+        }
+      }
+    },
+    {
+      "as_of": "recent",
+      "source": "user_screenshots",
+      "panels": {
+        "hormone_balance": {
+          "total_testosterone": { "value": 390, "unit": "ng/dL" },
+          "free_testosterone": { "value": 84.42, "unit": "pg/mL" },
+          "shbg": { "value": 27.4, "unit": "nmol/L" },
+          "estrogens_total": { "value": 16, "unit": "pg/mL" },
+          "testosterone_estrogen_ratio": { "value": 24.37, "unit": "ratio" }
+        },
+        "thyroid": {
+          "tsh": { "value": 3.0, "unit": "uIU/mL" },
+          "free_t3": { "value": 3.27, "unit": "pg/mL" }
+        },
+        "vitamin_inflammation_glucose": {
+          "vitamin_d_25oh": { "value": 62, "unit": "ng/mL" },
+          "crp_hs": { "value": 0.5, "unit": "mg/L" }
+        },
+        "lipids": {
+          "hdl": { "value": 55, "unit": "mg/dL" },
+          "ldl_calc": { "value": 123.4, "unit": "mg/dL" },
+          "apob": { "value": 101, "unit": "mg/dL", "flag": "high" },
+          "ldl_apob_ratio": { "value": 1.22, "unit": "ratio" },
+          "triglycerides": { "value": 88, "unit": "mg/dL" },
+          "tg_hdl_ratio": { "value": 1.6, "unit": "ratio" }
+        },
+        "proteins_misc": {
+          "albumin": { "value": 4.6, "unit": "g/dL" },
+          "ferritin": { "value": 262, "unit": "ng/mL" }
+        }
+      }
+    }
+  ]
+}

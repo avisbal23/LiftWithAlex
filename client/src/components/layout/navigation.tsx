@@ -12,6 +12,8 @@ const tabs = [
   { name: "Legs 2", path: "/legs2" },
   { name: "Cardio", path: "/cardio" },
   { name: "Weight", path: "/weight" },
+  { name: "Blood", path: "/blood" },
+  { name: "Admin", path: "/admin" },
 ];
 
 export default function Navigation() {

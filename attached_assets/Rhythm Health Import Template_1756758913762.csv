@@ -1,0 +1,17 @@
+marker,value,unit,reference_range,status,time
+SHBG,27.4,nmol/L,13.3 - 89.5,average,2025-08-16
+Estrogen,16,pg/mL,15 - 32,average,2025-08-16
+Ferritin,262,ng/mL,30 - 350,average,2025-08-16
+Total Testosterone,390,ng/dL,250 - 900,average,2025-08-16
+Vitamin D,62,ng/mL,30 - 80,optimal,2025-08-16
+Free Testosterone,84.42,pg/mL,46 - 224,average,2025-08-16
+Albumin,4.6,g/dL,3.5 - 5,optimal,2025-08-16
+CRP (C-Reactive Protein),0.5,mg/L,0 - 3.0,optimal,2025-08-16
+HDL Cholesterol,55,mg/dL,40 - 120,average,2025-08-16
+Triglycerides,88,mg/dL,0 - 149,optimal,2025-08-16
+LDL Cholesterol,123.4,mg/dL,40 - 150,average,2025-08-16
+ApoB,101,mg/dL,0 - 90,outOfRange,2025-08-16
+Free T3,3.27,pg/mL,2 - 4.4,average,2025-08-16
+Thyroid Stimulating Hormone,3,uIU/mL,0.45 - 4.5,average,2025-08-16
+LDL/ApoB Ratio,1.22,pct,1.2 - 1.4,average,2025-08-16
+Triglycerides/HDL Ratio,1.6,mg/dL,1.25 - 2.5,average,2025-08-16

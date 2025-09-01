@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema } from "@shared/schema";
+import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -195,6 +195,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(entries);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch weight entries in range" });
+    }
+  });
+
+  // Blood entry routes
+  
+  // Create new blood entry
+  app.post("/api/blood-entries", async (req, res) => {
+    try {
+      const validatedData = insertBloodEntrySchema.parse(req.body);
+      const bloodEntry = await storage.createBloodEntry(validatedData);
+      res.status(201).json(bloodEntry);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create blood entry" });
+      }
+    }
+  });
+
+  // Update blood entry
+  app.patch("/api/blood-entries/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const validatedData = updateBloodEntrySchema.parse(req.body);
+      const bloodEntry = await storage.updateBloodEntry(id, validatedData);
+      
+      if (!bloodEntry) {
+        return res.status(404).json({ message: "Blood entry not found" });
+      }
+      
+      res.json(bloodEntry);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update blood entry" });
+      }
+    }
+  });
+
+  // Delete blood entry
+  app.delete("/api/blood-entries/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const deleted = await storage.deleteBloodEntry(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Blood entry not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete blood entry" });
+    }
+  });
+
+  // Get all blood entries
+  app.get("/api/blood-entries", async (req, res) => {
+    try {
+      const entries = await storage.getAllBloodEntries();
+      res.json(entries);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch blood entries" });
     }
   });
 

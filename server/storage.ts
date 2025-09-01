@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -21,6 +21,11 @@ export interface IStorage {
   deleteWeightEntry(id: string): Promise<boolean>;
   getAllWeightEntries(): Promise<WeightEntry[]>;
   getWeightEntriesInDateRange(startDate: Date, endDate: Date): Promise<WeightEntry[]>;
+  
+  createBloodEntry(entry: InsertBloodEntry): Promise<BloodEntry>;
+  updateBloodEntry(id: string, entry: UpdateBloodEntry): Promise<BloodEntry | undefined>;
+  deleteBloodEntry(id: string): Promise<boolean>;
+  getAllBloodEntries(): Promise<BloodEntry[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -28,15 +33,18 @@ export class MemStorage implements IStorage {
   private exercises: Map<string, Exercise>;
   private workoutLogs: Map<string, WorkoutLog>;
   private weightEntries: Map<string, WeightEntry>;
+  private bloodEntries: Map<string, BloodEntry>;
 
   constructor() {
     this.users = new Map();
     this.exercises = new Map();
     this.workoutLogs = new Map();
     this.weightEntries = new Map();
+    this.bloodEntries = new Map();
     
     // Add some initial sample data
     this.seedData();
+    this.seedBloodData();
   }
 
   private seedData() {
@@ -217,6 +225,158 @@ export class MemStorage implements IStorage {
     });
   }
 
+  private seedBloodData() {
+    // Add initial blood lab data from your provided JSON
+    
+    // February 2023 Lab Results
+    const feb2023Id = randomUUID();
+    const feb2023Entry: BloodEntry = {
+      id: feb2023Id,
+      asOf: new Date("2023-02-10"),
+      source: "labcorp_pdf",
+      
+      // Hormone Balance
+      totalTestosterone: 349,
+      totalTestosteroneUnit: "ng/dL",
+      freeTestosterone: 10.7,
+      freeTestosteroneUnit: "pg/mL",
+      shbg: 29.9,
+      shbgUnit: "nmol/L",
+      estradiol: 29.6,
+      estradiolUnit: "pg/mL",
+      estrogensTotal: 66,
+      estrogensTotalUnit: "pg/mL",
+      dheasulfate: 255.0,
+      dheasulfateUnit: "ug/dL",
+      cortisolAm: 13.4,
+      cortisolAmUnit: "ug/dL",
+      psa: 1.4,
+      psaUnit: "ng/mL",
+      testosteroneEstrogenRatio: null,
+      
+      // Thyroid
+      tsh: 3.86,
+      tshUnit: "uIU/mL",
+      freeT3: 3.3,
+      freeT3Unit: "pg/mL",
+      freeT4: 1.64,
+      freeT4Unit: "ng/dL",
+      tpoAb: 9,
+      tpoAbUnit: "IU/mL",
+      
+      // Vitamin/Inflammation/Glucose
+      vitaminD25oh: 63.1,
+      vitaminD25ohUnit: "ng/mL",
+      crpHs: 0.39,
+      crpHsUnit: "mg/L",
+      insulin: 3.1,
+      insulinUnit: "uIU/mL",
+      hba1c: 5.2,
+      hba1cUnit: "%",
+      
+      // Lipids
+      cholesterolTotal: 177,
+      cholesterolTotalUnit: "mg/dL",
+      triglycerides: 60,
+      triglyceridesUnit: "mg/dL",
+      hdl: 55,
+      hdlUnit: "mg/dL",
+      ldlCalc: 110,
+      ldlCalcUnit: "mg/dL",
+      ldlCalcFlag: "high",
+      vldlCalc: 12,
+      vldlCalcUnit: "mg/dL",
+      apob: null,
+      apobUnit: "mg/dL",
+      apobFlag: null,
+      ldlApobRatio: null,
+      tgHdlRatio: null,
+      
+      // Proteins/Misc
+      albumin: 4.7,
+      albuminUnit: "g/dL",
+      ferritin: null,
+      ferritinUnit: "ng/mL",
+      
+      createdAt: new Date(),
+    };
+    this.bloodEntries.set(feb2023Id, feb2023Entry);
+
+    // Recent Lab Results
+    const recentId = randomUUID();
+    const recentEntry: BloodEntry = {
+      id: recentId,
+      asOf: new Date(), // recent
+      source: "user_screenshots",
+      
+      // Hormone Balance
+      totalTestosterone: 390,
+      totalTestosteroneUnit: "ng/dL",
+      freeTestosterone: 84.42,
+      freeTestosteroneUnit: "pg/mL",
+      shbg: 27.4,
+      shbgUnit: "nmol/L",
+      estradiol: null,
+      estradiolUnit: "pg/mL",
+      estrogensTotal: 16,
+      estrogensTotalUnit: "pg/mL",
+      dheasulfate: null,
+      dheasulfateUnit: "ug/dL",
+      cortisolAm: null,
+      cortisolAmUnit: "ug/dL",
+      psa: null,
+      psaUnit: "ng/mL",
+      testosteroneEstrogenRatio: 24.37,
+      
+      // Thyroid
+      tsh: 3.0,
+      tshUnit: "uIU/mL",
+      freeT3: 3.27,
+      freeT3Unit: "pg/mL",
+      freeT4: null,
+      freeT4Unit: "ng/dL",
+      tpoAb: null,
+      tpoAbUnit: "IU/mL",
+      
+      // Vitamin/Inflammation/Glucose
+      vitaminD25oh: 62,
+      vitaminD25ohUnit: "ng/mL",
+      crpHs: 0.5,
+      crpHsUnit: "mg/L",
+      insulin: null,
+      insulinUnit: "uIU/mL",
+      hba1c: null,
+      hba1cUnit: "%",
+      
+      // Lipids
+      cholesterolTotal: null,
+      cholesterolTotalUnit: "mg/dL",
+      triglycerides: 88,
+      triglyceridesUnit: "mg/dL",
+      hdl: 55,
+      hdlUnit: "mg/dL",
+      ldlCalc: 123.4,
+      ldlCalcUnit: "mg/dL",
+      ldlCalcFlag: null,
+      vldlCalc: null,
+      vldlCalcUnit: "mg/dL",
+      apob: 101,
+      apobUnit: "mg/dL",
+      apobFlag: "high",
+      ldlApobRatio: 1.22,
+      tgHdlRatio: 1.6,
+      
+      // Proteins/Misc
+      albumin: 4.6,
+      albuminUnit: "g/dL",
+      ferritin: 262,
+      ferritinUnit: "ng/mL",
+      
+      createdAt: new Date(),
+    };
+    this.bloodEntries.set(recentId, recentEntry);
+  }
+
   async getUser(id: string): Promise<User | undefined> {
     return this.users.get(id);
   }
@@ -351,6 +511,46 @@ export class MemStorage implements IStorage {
       .sort((a, b) => {
         const dateA = a.date instanceof Date ? a.date : new Date(a.date);
         const dateB = b.date instanceof Date ? b.date : new Date(b.date);
+        return dateA.getTime() - dateB.getTime();
+      });
+  }
+
+  // Blood Entry Methods
+  async createBloodEntry(entry: InsertBloodEntry): Promise<BloodEntry> {
+    const id = randomUUID();
+    const now = new Date();
+    const bloodEntry: BloodEntry = {
+      id,
+      ...entry,
+      createdAt: now,
+    };
+    this.bloodEntries.set(id, bloodEntry);
+    return bloodEntry;
+  }
+
+  async updateBloodEntry(id: string, updateEntry: UpdateBloodEntry): Promise<BloodEntry | undefined> {
+    const existing = this.bloodEntries.get(id);
+    if (!existing) {
+      return undefined;
+    }
+    
+    const updated: BloodEntry = {
+      ...existing,
+      ...updateEntry,
+    };
+    this.bloodEntries.set(id, updated);
+    return updated;
+  }
+
+  async deleteBloodEntry(id: string): Promise<boolean> {
+    return this.bloodEntries.delete(id);
+  }
+
+  async getAllBloodEntries(): Promise<BloodEntry[]> {
+    return Array.from(this.bloodEntries.values())
+      .sort((a, b) => {
+        const dateA = a.asOf instanceof Date ? a.asOf : new Date(a.asOf);
+        const dateB = b.asOf instanceof Date ? b.asOf : new Date(b.asOf);
         return dateA.getTime() - dateB.getTime();
       });
   }
