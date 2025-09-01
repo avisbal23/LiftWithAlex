@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Bar } from "recharts";
-import { Calendar, Upload, Plus, Trash2, Download } from "lucide-react";
+import { Calendar, Upload, Plus, Trash2, Download, X } from "lucide-react";
 import { format, subDays, subMonths, parseISO } from "date-fns";
 import { type WeightEntry, type InsertWeightEntry } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -38,6 +38,9 @@ export default function WeightTracking() {
     muscleMass: "",
     bmi: "",
   });
+  
+  // State for dismissible callout
+  const [showCallout, setShowCallout] = useState(true);
 
   // Fetch weight entries
   const { data: weightEntries = [], isLoading } = useQuery<WeightEntry[]>({
@@ -257,24 +260,35 @@ export default function WeightTracking() {
         </div>
 
         {/* RENPHO Import Callout */}
-        <div className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border border-orange-200 dark:border-orange-800 rounded-lg p-4 mb-8">
-          <div className="flex items-start gap-3">
-            <div className="bg-orange-100 dark:bg-orange-900 p-2 rounded-lg">
-              <Calendar className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-orange-900 dark:text-orange-100 mb-1">
-                💡 Import Data from RENPHO App
-              </h3>
-              <p className="text-sm text-orange-800 dark:text-orange-200 mb-2">
-                You can directly import your weight and body composition data from the RENPHO app. Export your data from RENPHO and use the import feature below to automatically sync your measurements.
-              </p>
-              <p className="text-xs text-orange-700 dark:text-orange-300">
-                Supports RENPHO CSV export format with all body composition metrics.
-              </p>
+        {showCallout && (
+          <div className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border border-orange-200 dark:border-orange-800 rounded-lg p-4 mb-8 relative">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowCallout(false)}
+              className="absolute top-2 right-2 h-6 w-6 p-0 text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-200 hover:bg-orange-100 dark:hover:bg-orange-900/50"
+              data-testid="button-close-callout"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+            <div className="flex items-start gap-3 pr-8">
+              <div className="bg-orange-100 dark:bg-orange-900 p-2 rounded-lg">
+                <Calendar className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-orange-900 dark:text-orange-100 mb-1">
+                  💡 Import Data from RENPHO App
+                </h3>
+                <p className="text-sm text-orange-800 dark:text-orange-200 mb-2">
+                  You can directly import your weight and body composition data from the RENPHO app. Export your data from RENPHO and use the import feature below to automatically sync your measurements.
+                </p>
+                <p className="text-xs text-orange-700 dark:text-orange-300">
+                  Supports RENPHO CSV export format with all body composition metrics.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="flex items-center justify-between mb-6">
           <div></div>

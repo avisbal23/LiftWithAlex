@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Droplets, Plus, TrendingUp, TrendingDown, Calendar, Upload, Download, AlertTriangle, CheckCircle, FileText, RotateCcw } from "lucide-react";
+import { Droplets, Plus, TrendingUp, TrendingDown, Calendar, Upload, Download, AlertTriangle, CheckCircle, FileText, RotateCcw, X } from "lucide-react";
 import { type BloodEntry } from "@shared/schema";
 
 export default function BloodTracking() {
@@ -20,6 +20,7 @@ export default function BloodTracking() {
   const [isImporting, setIsImporting] = useState(false);
   const [importFormat, setImportFormat] = useState<"json" | "csv">("csv");
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
+  const [showCallout, setShowCallout] = useState(true);
 
   const { data: bloodEntries = [] } = useQuery<BloodEntry[]>({
     queryKey: ["/api/blood-entries"],
@@ -541,24 +542,35 @@ export default function BloodTracking() {
         </div>
 
         {/* Rhythm Health Import Callout */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-8">
-          <div className="flex items-start gap-3">
-            <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-lg">
-              <Droplets className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
-                💡 Import Data from Rhythm Health
-              </h3>
-              <p className="text-sm text-blue-800 dark:text-blue-200 mb-2">
-                You can directly import your blood lab results from Rhythm Health. Export your data from their platform and use the import feature below to automatically populate your health tracking.
-              </p>
-              <p className="text-xs text-blue-700 dark:text-blue-300">
-                Supports both CSV and JSON formats from Rhythm Health exports.
-              </p>
+        {showCallout && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-8 relative">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowCallout(false)}
+              className="absolute top-2 right-2 h-6 w-6 p-0 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900/50"
+              data-testid="button-close-callout"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+            <div className="flex items-start gap-3 pr-8">
+              <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-lg">
+                <Droplets className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                  💡 Import Data from Rhythm Health
+                </h3>
+                <p className="text-sm text-blue-800 dark:text-blue-200 mb-2">
+                  You can directly import your blood lab results from Rhythm Health. Export your data from their platform and use the import feature below to automatically populate your health tracking.
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  Supports both CSV and JSON formats from Rhythm Health exports.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="flex items-center justify-between mb-8">
           <div></div>
