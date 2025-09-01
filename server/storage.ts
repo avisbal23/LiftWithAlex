@@ -70,7 +70,6 @@ export class MemStorage implements IStorage {
     // Add some initial sample data
     this.seedData();
     this.seedBloodData();
-    this.seedQuotes();
   }
 
   private seedData() {
@@ -658,32 +657,6 @@ export class MemStorage implements IStorage {
     this.quotes.clear();
   }
 
-  private seedQuotes() {
-    const sampleQuotes = [
-      { text: "The only way to do great work is to love what you do.", author: "Steve Jobs", category: "motivational", isActive: 1 },
-      { text: "Success isn't always about greatness. It's about consistency.", author: "Dwayne Johnson", category: "fitness", isActive: 1 },
-      { text: "Discipline is choosing between what you want now and what you want most.", author: "Abraham Lincoln", category: "mindset", isActive: 1 },
-      { text: "The groundwork for all happiness is good health.", author: "Leigh Hunt", category: "fitness", isActive: 1 },
-      { text: "Don't watch the clock; do what it does. Keep going.", author: "Sam Levenson", category: "motivational", isActive: 1 },
-      { text: "You are never too old to set another goal or dream a new dream.", author: "C.S. Lewis", category: "success", isActive: 1 },
-      { text: "Strength does not come from physical capacity. It comes from indomitable will.", author: "Mahatma Gandhi", category: "fitness", isActive: 1 },
-      { text: "The only impossible journey is the one you never begin.", author: "Tony Robbins", category: "motivational", isActive: 1 }
-    ];
-
-    sampleQuotes.forEach(quote => {
-      const id = randomUUID();
-      const now = new Date();
-      const quoteEntry: Quote = {
-        id,
-        text: quote.text,
-        author: quote.author,
-        category: quote.category,
-        isActive: quote.isActive,
-        createdAt: now,
-      };
-      this.quotes.set(id, quoteEntry);
-    });
-  }
 }
 
 export const storage = new MemStorage();
