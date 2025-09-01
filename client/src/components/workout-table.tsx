@@ -140,9 +140,14 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="space-y-4 mb-6">
-        {/* Today is X Day Button */}
-        <div className="flex justify-center">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground" data-testid={`heading-${category}`}>
+            {title}
+          </h2>
+          <p className="text-muted-foreground">{description}</p>
+        </div>
+        <div className="flex items-center gap-3">
           <Button 
             onClick={() => logWorkoutMutation.mutate(category)}
             disabled={logWorkoutMutation.isPending}
@@ -152,16 +157,6 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
           >
             Today is {getCategoryDisplayName(category)}
           </Button>
-        </div>
-
-        {/* Header Section */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-foreground" data-testid={`heading-${category}`}>
-              {title}
-            </h2>
-            <p className="text-muted-foreground">{description}</p>
-          </div>
           <Button 
             onClick={addNewExercise} 
             disabled={createMutation.isPending}
