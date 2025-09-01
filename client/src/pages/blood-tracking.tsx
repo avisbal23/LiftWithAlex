@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Droplets, Plus, TrendingUp, TrendingDown, Calendar, Upload, Download, AlertTriangle, CheckCircle, FileText, RotateCcw, X } from "lucide-react";
+import { Droplets, Plus, TrendingUp, TrendingDown, Calendar, Upload, Download, AlertTriangle, CheckCircle, FileText, RotateCcw, X, Edit3, Save } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { type BloodEntry } from "@shared/schema";
 
 export default function BloodTracking() {
@@ -21,6 +22,8 @@ export default function BloodTracking() {
   const [importFormat, setImportFormat] = useState<"json" | "csv">("csv");
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
   const [showCallout, setShowCallout] = useState(true);
+  const [editingValues, setEditingValues] = useState<Record<string, { value: string; unit: string }>>({});
+  const [editingCard, setEditingCard] = useState<string | null>(null);
 
   const { data: bloodEntries = [] } = useQuery<BloodEntry[]>({
     queryKey: ["/api/blood-entries"],
@@ -33,6 +36,21 @@ export default function BloodTracking() {
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/blood-entries"] });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<BloodEntry> }) => 
+      apiRequest(`/api/blood-entries/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/blood-entries"] });
+      toast({
+        title: "Updated successfully",
+        description: "Blood lab values have been updated.",
+      });
     },
   });
 
@@ -353,6 +371,61 @@ export default function BloodTracking() {
     });
   };
 
+  const startEditing = (cardId: string, values: Array<{ label: string; value: number | null; unit: string | null }>) => {
+    setEditingCard(cardId);
+    const editingState: Record<string, { value: string; unit: string }> = {};
+    values.forEach(({ label, value, unit }) => {
+      const key = `${cardId}-${label}`;
+      editingState[key] = {
+        value: value?.toString() || "",
+        unit: unit || ""
+      };
+    });
+    setEditingValues(editingState);
+  };
+
+  const saveEditing = async (entryId: string, values: Array<{ label: string; value: number | null; unit: string | null }>) => {
+    if (!editingCard) return;
+    
+    const updates: Partial<BloodEntry> = {};
+    
+    // Map edited values back to database fields
+    const fieldMap: Record<string, { field: keyof BloodEntry; unitField?: keyof BloodEntry }> = {
+      "Total Testosterone": { field: "totalTestosterone", unitField: "totalTestosteroneUnit" },
+      "Free Testosterone": { field: "freeTestosterone", unitField: "freeTestosteroneUnit" },
+      "SHBG": { field: "shbg", unitField: "shbgUnit" },
+      "Estradiol": { field: "estradiol", unitField: "estradiolUnit" },
+    };
+    
+    values.forEach(({ label }) => {
+      const key = `${editingCard}-${label}`;
+      const editedValue = editingValues[key];
+      const mapping = fieldMap[label];
+      
+      if (editedValue && mapping) {
+        const numValue = parseFloat(editedValue.value);
+        if (!isNaN(numValue)) {
+          (updates as any)[mapping.field] = numValue;
+          if (mapping.unitField) {
+            (updates as any)[mapping.unitField] = editedValue.unit;
+          }
+        }
+      }
+    });
+    
+    if (Object.keys(updates).length > 0) {
+      updateMutation.mutate({ id: entryId, data: updates });
+    }
+    
+    setEditingCard(null);
+    setEditingValues({});
+  };
+
+  const cancelEditing = () => {
+    setEditingCard(null);
+    setEditingValues({});
+  };
+
   const renderValueWithFlag = (value: number | null, unit: string | null, flag: string | null = null) => {
     if (!value) return <span className="text-muted-foreground">—</span>;
     
@@ -450,75 +523,177 @@ export default function BloodTracking() {
   const renderPanelCard = (title: string, icon: React.ReactNode, values: Array<{ label: string; value: number | null; unit: string | null; flag?: string | null; change?: number | null }>, entryId: string) => {
     const cardId = `${entryId}-${title}`;
     const isFlipped = flippedCards[cardId];
+    const isEditing = editingCard === cardId;
     const explanation = getCardExplanation(title);
 
     return (
-      <Card className="relative overflow-hidden">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center justify-between text-lg">
-            <div className="flex items-center gap-2">
-              {icon}
-              {title}
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => toggleCardFlip(cardId)}
-              className="h-8 w-8 p-0 hover:bg-muted/50"
-              data-testid={`button-flip-${title.toLowerCase().replace(' ', '-')}`}
-            >
-              <RotateCcw className={`w-4 h-4 transition-transform duration-300 ${isFlipped ? 'rotate-180' : ''}`} />
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {!isFlipped ? (
-            // Front side - show values
-            values.map(({ label, value, unit, flag, change }) => (
-              <div key={label} className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">{label}</span>
-                <div className="flex items-center gap-2">
-                  {renderValueWithFlag(value, unit, flag)}
-                  {change && (
-                    <div className={`flex items-center text-xs ${change > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {change > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                      {Math.abs(change).toFixed(1)}%
-                    </div>
-                  )}
+      <div className="group relative">
+        {/* 3D Glassmorphism Card Container */}
+        <div className="relative backdrop-blur-md bg-white/30 dark:bg-gray-800/40 border border-white/40 dark:border-gray-600/50 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+          
+          {/* Glass shine effect */}
+          <div className="absolute inset-0.5 bg-gradient-to-b from-white/30 to-transparent dark:from-gray-300/30 rounded-xl opacity-60"></div>
+          
+          <div className="relative p-6">
+            {/* Header with Edit and Flip buttons */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="backdrop-blur-sm bg-white/20 dark:bg-gray-600/30 border border-white/30 dark:border-gray-500/40 rounded-lg p-2">
+                  <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/20 to-transparent dark:from-gray-400/20"></div>
+                  <div className="relative z-10">{icon}</div>
                 </div>
+                <h3 className="text-lg font-semibold text-foreground">{title}</h3>
               </div>
-            ))
-          ) : (
-            // Back side - show explanation
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {explanation.description}
-              </p>
-              <div className="space-y-2">
-                {explanation.keyPoints.map((point, index) => (
-                  <div key={index} className="text-xs text-muted-foreground flex items-start gap-2">
-                    <span className="text-primary">•</span>
-                    <span>{point}</span>
-                  </div>
-                ))}
+              
+              <div className="flex items-center gap-2">
+                {/* Edit Button */}
+                {!isFlipped && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isEditing) {
+                        saveEditing(entryId, values);
+                      } else {
+                        startEditing(cardId, values);
+                      }
+                    }}
+                    className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-all duration-200 backdrop-blur-sm bg-white/20 dark:bg-gray-600/30 border border-white/30 dark:border-gray-500/40 rounded-lg hover:bg-white/30 dark:hover:bg-gray-500/40 hover:scale-110"
+                    data-testid={`button-edit-${title.toLowerCase().replace(' ', '-')}`}
+                  >
+                    <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/20 to-transparent dark:from-gray-400/20"></div>
+                    {isEditing ? <Save className="w-3 h-3 relative z-10 text-foreground" /> : <Edit3 className="w-3 h-3 relative z-10 text-foreground" />}
+                  </Button>
+                )}
+                
+                {/* Cancel Edit Button */}
+                {isEditing && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={cancelEditing}
+                    className="h-8 w-8 p-0 backdrop-blur-sm bg-red-500/20 dark:bg-red-600/30 border border-red-400/30 dark:border-red-500/40 rounded-lg hover:bg-red-500/30 dark:hover:bg-red-500/40"
+                  >
+                    <X className="w-3 h-3 text-red-600 dark:text-red-400" />
+                  </Button>
+                )}
+                
+                {/* Flip Button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleCardFlip(cardId)}
+                  className="h-8 w-8 p-0 backdrop-blur-sm bg-white/20 dark:bg-gray-600/30 border border-white/30 dark:border-gray-500/40 rounded-lg hover:bg-white/30 dark:hover:bg-gray-500/40"
+                  data-testid={`button-flip-${title.toLowerCase().replace(' ', '-')}`}
+                >
+                  <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/20 to-transparent dark:from-gray-400/20"></div>
+                  <RotateCcw className={`w-4 h-4 relative z-10 text-foreground transition-transform duration-300 ${isFlipped ? 'rotate-180' : ''}`} />
+                </Button>
               </div>
-              {explanation.optimalRanges && (
-                <div className="border-t pt-3">
-                  <h4 className="text-sm font-semibold text-foreground mb-2">Optimal Ranges (Male, 30s, Strength Focus)</h4>
-                  <div className="space-y-1">
-                    {explanation.optimalRanges.map((range, index) => (
-                      <div key={index} className="text-xs text-muted-foreground flex items-center gap-2">
-                        <span className="text-green-600">✓</span>
-                        <span className="font-mono">{range}</span>
+            </div>
+
+            {!isFlipped ? (
+              // Front side - show values with editing capability
+              <div className="space-y-3">
+                {values.map(({ label, value, unit, flag, change }) => {
+                  const editKey = `${cardId}-${label}`;
+                  const editValue = editingValues[editKey];
+                  
+                  return (
+                    <div key={label} className="backdrop-blur-sm bg-white/10 dark:bg-gray-600/15 border border-white/20 dark:border-gray-500/30 rounded-lg p-3">
+                      <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
+                      <div className="relative flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground/90 font-medium">{label}</span>
+                        <div className="flex items-center gap-2">
+                          {isEditing ? (
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                step="0.1"
+                                value={editValue?.value || ""}
+                                onChange={(e) => setEditingValues(prev => ({
+                                  ...prev,
+                                  [editKey]: { ...prev[editKey], value: e.target.value }
+                                }))}
+                                className="w-20 h-7 text-xs"
+                                placeholder="Value"
+                              />
+                              <Input
+                                value={editValue?.unit || ""}
+                                onChange={(e) => setEditingValues(prev => ({
+                                  ...prev,
+                                  [editKey]: { ...prev[editKey], unit: e.target.value }
+                                }))}
+                                className="w-16 h-7 text-xs"
+                                placeholder="Unit"
+                              />
+                            </div>
+                          ) : (
+                            <>
+                              {renderValueWithFlag(value, unit, flag)}
+                              {change && (
+                                <div className={`flex items-center text-xs ${change > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                  {change > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                                  {Math.abs(change).toFixed(1)}%
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </div>
-                    ))}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              // Back side - show explanation
+              <div className="space-y-4">
+                <div className="backdrop-blur-sm bg-white/10 dark:bg-gray-600/15 border border-white/20 dark:border-gray-500/30 rounded-lg p-4">
+                  <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
+                  <div className="relative">
+                    <p className="text-sm text-muted-foreground/90 leading-relaxed">
+                      {explanation.description}
+                    </p>
                   </div>
                 </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                
+                <div className="space-y-2">
+                  {explanation.keyPoints.map((point, index) => (
+                    <div key={index} className="backdrop-blur-sm bg-white/5 dark:bg-gray-600/10 border border-white/10 dark:border-gray-500/20 rounded-lg p-2">
+                      <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/5 to-transparent dark:from-gray-400/5"></div>
+                      <div className="relative text-xs text-muted-foreground/80 flex items-start gap-2">
+                        <span className="text-primary">•</span>
+                        <span>{point}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {explanation.optimalRanges && (
+                  <div className="backdrop-blur-sm bg-green-500/10 dark:bg-green-600/15 border border-green-400/20 dark:border-green-500/30 rounded-lg p-3">
+                    <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-green-400/10 to-transparent dark:from-green-400/10"></div>
+                    <div className="relative">
+                      <h4 className="text-sm font-semibold text-foreground mb-2">Optimal Ranges (Male, 30s, Strength Focus)</h4>
+                      <div className="space-y-1">
+                        {explanation.optimalRanges.map((range, index) => (
+                          <div key={index} className="text-xs text-muted-foreground/80 flex items-center gap-2">
+                            <span className="text-green-600">✓</span>
+                            <span className="font-mono">{range}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          
+          {/* Bottom glass highlight */}
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 dark:via-gray-400/30 to-transparent rounded-b-xl"></div>
+        </div>
+      </div>
     );
   };
 

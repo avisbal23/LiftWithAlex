@@ -40,7 +40,7 @@ export default function Navigation() {
   }, [location]);
 
   return (
-    <nav className="bg-card border-b border-border shadow-lg">
+    <nav className="backdrop-blur-md bg-white/20 dark:bg-gray-900/30 border-b border-white/30 dark:border-gray-600/50 shadow-2xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div ref={navRef} className="flex space-x-3 overflow-x-auto scrollbar-hide py-3">
           {tabs.map((tab) => (
@@ -48,24 +48,30 @@ export default function Navigation() {
               key={tab.path}
               to={tab.path}
               className={cn(
-                "relative px-4 py-2 text-sm font-medium whitespace-nowrap flex-shrink-0 rounded-lg transition-all duration-200 ease-in-out transform",
+                "relative px-4 py-2 text-sm font-medium whitespace-nowrap flex-shrink-0 rounded-xl transition-all duration-300 ease-in-out transform",
                 location === tab.path
-                  ? "bg-gradient-to-b from-primary to-primary/80 text-white shadow-lg shadow-primary/30 -translate-y-0.5 scale-105"
-                  : "bg-gradient-to-b from-muted to-muted/70 text-muted-foreground hover:from-primary/20 hover:to-primary/10 hover:text-primary hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/20 active:translate-y-0 active:shadow-sm"
+                  ? "backdrop-blur-sm bg-primary/80 dark:bg-primary/70 text-white shadow-lg shadow-primary/30 -translate-y-0.5 scale-105 border border-white/30 dark:border-gray-400/30"
+                  : "backdrop-blur-sm bg-white/20 dark:bg-gray-700/30 text-muted-foreground hover:bg-primary/20 dark:hover:bg-primary/20 hover:text-primary hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/20 active:translate-y-0 active:shadow-sm border border-white/20 dark:border-gray-600/30"
               )}
               data-testid={`link-${tab.name.toLowerCase().replace(' ', '-')}`}
             >
+              {/* Glass shine effect */}
+              <div className={cn(
+                "absolute inset-0.5 bg-gradient-to-b from-white/30 to-transparent dark:from-gray-300/30 rounded-lg opacity-60",
+                location === tab.path ? "opacity-40" : "opacity-20"
+              )}></div>
+              
               {/* 3D Effect - Top highlight */}
               <div className={cn(
-                "absolute inset-x-0 top-0 h-px rounded-t-lg",
+                "absolute inset-x-0 top-0 h-px rounded-t-xl",
                 location === tab.path
-                  ? "bg-white/30"
+                  ? "bg-white/40"
                   : "bg-white/20 dark:bg-white/10"
               )}></div>
               
               {/* 3D Effect - Bottom shadow */}
               <div className={cn(
-                "absolute inset-x-0 bottom-0 h-px rounded-b-lg",
+                "absolute inset-x-0 bottom-0 h-px rounded-b-xl",
                 location === tab.path
                   ? "bg-black/20"
                   : "bg-black/10 dark:bg-black/20"
