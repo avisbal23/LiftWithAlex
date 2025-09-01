@@ -26,19 +26,28 @@ export class MemStorage implements IStorage {
   }
 
   private seedData() {
-    // Push exercises
+    // Push Day 1 exercises
     const pushExercises = [
       // Main Lifts
       { name: "Flat Dumbbell Press", weight: 80, reps: 6, notes: "80, 75 lbs | 5–7 reps", category: "push" },
       { name: "Incline Dumbbell Press", weight: 70, reps: 6, notes: "70, 65 lbs | 5–7 reps", category: "push" },
       { name: "Seated Cable Press", weight: 8, reps: 9, notes: "8,7 down | 8–10 reps", category: "push" },
       // Accessories
-      { name: "Downward Cable Press", weight: 33, reps: 0, notes: "___ reps", category: "push" },
-      { name: "Pec Deck", weight: 125, reps: 0, notes: "Seat height set so number 4 is visible.", category: "push" },
-      { name: "Dumbbell Shoulder Press", weight: 65, reps: 6, notes: "6 reps", category: "push" },
-      { name: "Dumbbell Lateral Raises", weight: 25, reps: 0, notes: "Go to failure.", category: "push" },
-      { name: "Shrugs (DB/KB)", weight: 25, reps: 0, notes: "Work weight up as you figure out form.", category: "push" },
-      { name: "Tricep Extensions (Cable)", weight: 35, reps: 0, notes: "Single/Double | ___ reps", category: "push" },
+      { name: "Pec Deck", weight: 125, reps: 0, notes: "125 lbs | reps not logged | Seat height 4", category: "push" },
+      { name: "Dumbbell Shoulder Press", weight: 65, reps: 6, notes: "65 lbs | 6 reps", category: "push" },
+      { name: "Dumbbell Lateral Raises", weight: 25, reps: 0, notes: "25 lbs | To failure", category: "push" },
+    ];
+
+    // Push Day 2 exercises
+    const push2Exercises = [
+      // Main Lifts
+      { name: "Flat Dumbbell Press", weight: 80, reps: 6, notes: "80, 75 lbs | 5–7 reps", category: "push2" },
+      { name: "Incline Dumbbell Press", weight: 70, reps: 6, notes: "70, 65 lbs | 5–7 reps", category: "push2" },
+      { name: "Seated Cable Press", weight: 8, reps: 9, notes: "8,7 down | 8–10 reps", category: "push2" },
+      // Accessories
+      { name: "Downward Cable Press", weight: 33, reps: 0, notes: "33 lbs | reps not logged", category: "push2" },
+      { name: "Tricep Extensions (Cable, Single/Double)", weight: 35, reps: 0, notes: "35 lbs | reps not logged", category: "push2" },
+      { name: "Shrugs (DB/KB)", weight: 25, reps: 0, notes: "25 lbs | To failure", category: "push2" },
     ];
 
     // Pull exercises
@@ -72,7 +81,7 @@ export class MemStorage implements IStorage {
       { name: "Calf Extensions", weight: 100, reps: 0, notes: "~100 lbs (est.) | ___ reps", category: "legs" },
     ];
 
-    [...pushExercises, ...pullExercises, ...legExercises].forEach(exercise => {
+    [...pushExercises, ...push2Exercises, ...pullExercises, ...legExercises].forEach(exercise => {
       const id = randomUUID();
       const fullExercise: Exercise = {
         ...exercise,
