@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -32,6 +32,11 @@ export interface IStorage {
   deletePhotoProgress(id: string): Promise<boolean>;
   getAllPhotoProgress(): Promise<PhotoProgress[]>;
   getPhotoProgressByBodyPart(bodyPart: string): Promise<PhotoProgress[]>;
+  
+  createThought(entry: InsertThought): Promise<Thought>;
+  updateThought(id: string, entry: UpdateThought): Promise<Thought | undefined>;
+  deleteThought(id: string): Promise<boolean>;
+  getAllThoughts(): Promise<Thought[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -41,6 +46,7 @@ export class MemStorage implements IStorage {
   private weightEntries: Map<string, WeightEntry>;
   private bloodEntries: Map<string, BloodEntry>;
   private photoProgress: Map<string, PhotoProgress>;
+  private thoughts: Map<string, Thought>;
 
   constructor() {
     this.users = new Map();
@@ -49,6 +55,7 @@ export class MemStorage implements IStorage {
     this.weightEntries = new Map();
     this.bloodEntries = new Map();
     this.photoProgress = new Map();
+    this.thoughts = new Map();
     
     // Add some initial sample data
     this.seedData();
@@ -533,6 +540,46 @@ export class MemStorage implements IStorage {
       .sort((a, b) => {
         const dateA = a.takenAt instanceof Date ? a.takenAt : new Date(a.takenAt);
         const dateB = b.takenAt instanceof Date ? b.takenAt : new Date(b.takenAt);
+        return dateB.getTime() - dateA.getTime(); // Most recent first
+      });
+  }
+
+  // Thoughts Methods
+  async createThought(entry: InsertThought): Promise<Thought> {
+    const id = randomUUID();
+    const now = new Date();
+    const thought: Thought = {
+      id,
+      ...entry,
+      createdAt: now,
+    };
+    this.thoughts.set(id, thought);
+    return thought;
+  }
+
+  async updateThought(id: string, updateEntry: UpdateThought): Promise<Thought | undefined> {
+    const existing = this.thoughts.get(id);
+    if (!existing) {
+      return undefined;
+    }
+    
+    const updated: Thought = {
+      ...existing,
+      ...updateEntry,
+    };
+    this.thoughts.set(id, updated);
+    return updated;
+  }
+
+  async deleteThought(id: string): Promise<boolean> {
+    return this.thoughts.delete(id);
+  }
+
+  async getAllThoughts(): Promise<Thought[]> {
+    return Array.from(this.thoughts.values())
+      .sort((a, b) => {
+        const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+        const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
         return dateB.getTime() - dateA.getTime(); // Most recent first
       });
   }

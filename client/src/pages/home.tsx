@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { type WorkoutLog } from "@shared/schema";
 import Navigation from "@/components/layout/navigation";
 import { Link } from "wouter";
-import { Trophy, Calendar, Edit3, Save, X, Scale, Settings } from "lucide-react";
+import { Trophy, Calendar, Edit3, Save, X, Scale, Settings, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -268,6 +268,12 @@ export default function Home() {
                 <Badge className="bg-orange-500/10 text-orange-600 border-orange-200 hover:bg-orange-500/20 transition-colors px-4 py-2 text-sm cursor-pointer flex items-center gap-1">
                   <Scale className="w-3 h-3" />
                   Weight
+                </Badge>
+              </Link>
+              <Link to="/thoughts">
+                <Badge className="bg-pink-500/10 text-pink-600 border-pink-200 hover:bg-pink-500/20 transition-colors px-4 py-2 text-sm cursor-pointer flex items-center gap-1">
+                  <MessageCircle className="w-3 h-3" />
+                  Thoughts
                 </Badge>
               </Link>
               <Link to="/admin">

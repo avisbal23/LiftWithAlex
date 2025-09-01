@@ -15,6 +15,7 @@ import Cardio from "@/pages/cardio";
 import WeightTracking from "@/pages/weight-tracking";
 import BloodTracking from "@/pages/blood-tracking";
 import PhotoProgress from "@/pages/photo-progress";
+import Thoughts from "@/pages/thoughts";
 import Admin from "@/pages/admin";
 import Header from "@/components/layout/header";
 
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/weight" component={WeightTracking} />
       <Route path="/blood" component={BloodTracking} />
       <Route path="/photos" component={PhotoProgress} />
+      <Route path="/thoughts" component={Thoughts} />
       <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>

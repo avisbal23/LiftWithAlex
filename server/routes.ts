@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
-import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema } from "@shared/schema";
+import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -388,6 +388,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error setting ACL policy:", error);
       res.status(500).json({ error: "Failed to set photo permissions" });
+    }
+  });
+
+  // Thoughts & Reflections Routes
+
+  // Get all thoughts
+  app.get("/api/thoughts", async (req, res) => {
+    try {
+      const thoughts = await storage.getAllThoughts();
+      res.json(thoughts);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch thoughts" });
+    }
+  });
+
+  // Create thought
+  app.post("/api/thoughts", async (req, res) => {
+    try {
+      const validatedData = insertThoughtSchema.parse(req.body);
+      const thought = await storage.createThought(validatedData);
+      res.status(201).json(thought);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create thought" });
+      }
+    }
+  });
+
+  // Update thought
+  app.patch("/api/thoughts/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const validatedData = updateThoughtSchema.parse(req.body);
+      const thought = await storage.updateThought(id, validatedData);
+      
+      if (!thought) {
+        return res.status(404).json({ message: "Thought not found" });
+      }
+      
+      res.json(thought);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update thought" });
+      }
+    }
+  });
+
+  // Delete thought
+  app.delete("/api/thoughts/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const deleted = await storage.deleteThought(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Thought not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete thought" });
     }
   });
 

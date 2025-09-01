@@ -139,6 +139,14 @@ export const photoProgress = pgTable("photo_progress", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const thoughts = pgTable("thoughts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  content: text("content").notNull(),
+  mood: text("mood").default("neutral"), // 'happy', 'sad', 'excited', 'frustrated', 'grateful', 'motivated', 'contemplative', 'neutral'
+  tags: text("tags").array().default(sql`ARRAY[]::text[]`), // Array of tag strings
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -177,6 +185,13 @@ export const insertPhotoProgressSchema = createInsertSchema(photoProgress).omit(
 
 export const updatePhotoProgressSchema = insertPhotoProgressSchema.partial();
 
+export const insertThoughtSchema = createInsertSchema(thoughts).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const updateThoughtSchema = insertThoughtSchema.partial();
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Exercise = typeof exercises.$inferSelect;
@@ -193,3 +208,6 @@ export type UpdateBloodEntry = z.infer<typeof updateBloodEntrySchema>;
 export type PhotoProgress = typeof photoProgress.$inferSelect;
 export type InsertPhotoProgress = z.infer<typeof insertPhotoProgressSchema>;
 export type UpdatePhotoProgress = z.infer<typeof updatePhotoProgressSchema>;
+export type Thought = typeof thoughts.$inferSelect;
+export type InsertThought = z.infer<typeof insertThoughtSchema>;
+export type UpdateThought = z.infer<typeof updateThoughtSchema>;
