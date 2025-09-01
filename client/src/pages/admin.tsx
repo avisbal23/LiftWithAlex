@@ -310,25 +310,26 @@ export default function Admin() {
   };
 
   const downloadQuotesTemplate = () => {
-    const csvHeaders = 'text,author,category,isActive';
-    const sampleRows = [
-      '"The only way to do great work is to love what you do.","Steve Jobs","motivational",1',
-      '"Success isn\'t always about greatness. It\'s about consistency.","Dwayne Johnson","fitness",1',
-      '"Discipline is choosing between what you want now and what you want most.","Abraham Lincoln","mindset",1'
+    const sampleQuotes = [
+      '"The only way to do great work is to love what you do." - Steve Jobs',
+      '"Success isn\'t always about greatness. It\'s about consistency." - Dwayne Johnson',
+      '"Discipline is choosing between what you want now and what you want most." - Abraham Lincoln',
+      '"Fear = Fuel" - Me',
+      '"OUT WORK, OUT BELIEVE" - Me'
     ];
     
-    const csvContent = [csvHeaders, ...sampleRows].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const textContent = sampleQuotes.join('\n');
+    const blob = new Blob([textContent], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'quotes-import-template.csv';
+    link.download = 'quotes-import-template.txt';
     link.click();
     window.URL.revokeObjectURL(url);
     
     toast({
       title: "Template Downloaded",
-      description: "Quotes import template CSV file downloaded",
+      description: "Quotes import template text file downloaded",
     });
   };
 
@@ -342,23 +343,22 @@ export default function Admin() {
       return;
     }
 
-    const csvHeaders = 'text,author,category,isActive,createdAt';
-    const csvRows = quotes.map(quote => {
-      return `"${quote.text.replace(/"/g, '""')}","${quote.author.replace(/"/g, '""')}","${quote.category || ''}",${quote.isActive},"${quote.createdAt}"`;
-    });
+    // Export in your preferred format: "Quote text" - Author
+    const textContent = quotes.map(quote => {
+      return `"${quote.text}" - ${quote.author}`;
+    }).join('\n');
     
-    const csvContent = [csvHeaders, ...csvRows].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const blob = new Blob([textContent], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `quotes-export-${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `quotes-export-${new Date().toISOString().split('T')[0]}.txt`;
     link.click();
     window.URL.revokeObjectURL(url);
     
     toast({
       title: "Export Successful",
-      description: `${quotes.length} quotes exported to CSV`,
+      description: `${quotes.length} quotes exported to text file`,
     });
   };
 
@@ -366,7 +366,7 @@ export default function Admin() {
     if (!quotesImportData.trim()) {
       toast({
         title: "Error", 
-        description: "Please paste quotes CSV data to import",
+        description: "Please paste quotes text data to import",
         variant: "destructive",
       });
       return;
@@ -375,31 +375,32 @@ export default function Admin() {
     setIsImporting(true);
     try {
       const lines = quotesImportData.trim().split('\n');
-      if (lines.length < 2) {
-        throw new Error("CSV must have at least header and one data row");
+      if (lines.length < 1) {
+        throw new Error("Must have at least one quote to import");
       }
       
-      const headers = lines[0].split(',').map(h => h.trim());
-      const expectedHeaders = ['text', 'author', 'category', 'isActive'];
+      const parsedQuotes = [];
       
-      if (!expectedHeaders.every(header => headers.includes(header))) {
-        throw new Error(`CSV must include headers: ${expectedHeaders.join(', ')}`);
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) continue;
+        
+        // Parse format: "Quote text" - Author
+        const match = trimmedLine.match(/^"(.+?)"\s*-\s*(.+)$/);
+        if (match) {
+          const [, text, author] = match;
+          parsedQuotes.push({
+            text: text.trim(),
+            author: author.trim(),
+            category: 'motivational', // Default category
+            isActive: true
+          });
+        }
       }
       
-      const rows = lines.slice(1).map(line => {
-        // Handle quoted CSV values
-        const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-        const row: any = {};
-        headers.forEach((header, index) => {
-          let value = values[index]?.trim() || '';
-          // Remove surrounding quotes
-          if (value.startsWith('"') && value.endsWith('"')) {
-            value = value.slice(1, -1).replace(/""/g, '"');
-          }
-          row[header] = value;
-        });
-        return row;
-      });
+      if (parsedQuotes.length === 0) {
+        throw new Error('No valid quotes found. Expected format: "Quote text" - Author');
+      }
 
       // Clear existing quotes first
       const deletePromises = quotes.map(quote => 
@@ -410,15 +411,10 @@ export default function Admin() {
       await Promise.all(deletePromises);
 
       // Import new quotes
-      const importPromises = rows.map((row: any) => 
+      const importPromises = parsedQuotes.map(quote => 
         apiRequest("/api/quotes", {
           method: "POST",
-          body: JSON.stringify({
-            text: row.text || '',
-            author: row.author || '',
-            category: row.category || 'motivational',
-            isActive: parseInt(row.isActive) || 1
-          }),
+          body: JSON.stringify(quote),
         })
       );
       await Promise.all(importPromises);
@@ -428,13 +424,13 @@ export default function Admin() {
       
       toast({
         title: "Import Successful",
-        description: `${rows.length} quotes imported from CSV`,
+        description: `${parsedQuotes.length} quotes imported successfully`,
       });
       setQuotesImportData("");
     } catch (error) {
       toast({
         title: "Import Failed",
-        description: error instanceof Error ? error.message : "Invalid CSV format",
+        description: error instanceof Error ? error.message : "Invalid text format",
         variant: "destructive",
       });
     } finally {
@@ -608,9 +604,11 @@ export default function Admin() {
                 <Label htmlFor="quotes-import">Import Quotes Data</Label>
                 <Textarea
                   id="quotes-import"
-                  placeholder={`Paste your quotes CSV here...
-Format: text,author,category,isActive
-"Quote text","Author Name","category",1`}
+                  placeholder={`Paste your quotes here...
+Format: "Quote text" - Author
+Example:
+"The only way to do great work is to love what you do." - Steve Jobs
+"Fear = Fuel" - Me`}
                   value={quotesImportData}
                   onChange={(e) => setQuotesImportData(e.target.value)}
                   className="min-h-[100px] font-mono text-sm"
