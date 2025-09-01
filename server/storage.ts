@@ -849,6 +849,16 @@ export class DatabaseStorage implements IStorage {
       takenAt: new Date('2025-09-01')
     };
     await db.insert(photoProgress).values([photoSample]);
+
+    // Sample quotes
+    const quoteSamples = [
+      { text: "The iron never lies to you.", author: "Henry Rollins", isActive: 1 },
+      { text: "If you want something you've never had, you must be willing to do something you've never done.", author: "Thomas Jefferson", isActive: 1 },
+      { text: "Success isn't always about greatness. It's about consistency.", author: "Dwayne Johnson", isActive: 1 },
+      { text: "The only bad workout is the one that didn't happen.", author: "Unknown", isActive: 1 },
+      { text: "Strength does not come from physical capacity. It comes from an indomitable will.", author: "Mahatma Gandhi", isActive: 1 }
+    ];
+    await db.insert(quotes).values(quoteSamples);
   }
   // User operations
   async getUser(id: string): Promise<User | undefined> {
