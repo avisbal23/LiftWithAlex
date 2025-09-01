@@ -518,7 +518,7 @@ function PRCard({ pr, isEditing, onEdit, onSave, onDelete, onCancel }: {
       </CardHeader>
       <CardContent className="flex-1 flex flex-col justify-center space-y-3">
         <Badge className={pr.color} variant="outline" size="sm">
-          {pr.category}
+          {pr.exercise}
         </Badge>
         
         {pr.category === "Cardio" ? (
