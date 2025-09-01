@@ -79,20 +79,31 @@ export class MemStorage implements IStorage {
       { name: "Between Legs Cable Bicep Curls", weight: 30, reps: 0, notes: "30 lbs | reps not logged", category: "pull2" },
     ];
 
-    // Leg exercises
+    // Leg Day 1 exercises
     const legExercises = [
       // Main Lifts
-      { name: "Barbell Squats", weight: 135, reps: 0, notes: "~135 lbs (est.) | ___ reps", category: "legs" },
-      { name: "Trap Bar Deadlifts", weight: 135, reps: 0, notes: "Estimated 135 lbs; focus on controlled form.", category: "legs" },
-      { name: "Leg Press", weight: 180, reps: 0, notes: "Stay on heels; fully extend.", category: "legs" },
-      { name: "Kettlebell Lunges", weight: 35, reps: 30, notes: "35 lbs each hand; 15 each way, 30 total; 5 sets; 3 second intervals; follow with squats.", category: "legs" },
+      { name: "Barbell Squats", weight: 135, reps: 0, notes: "~135 lbs (est.) | reps not logged", category: "legs" },
+      { name: "Trap Bar Deadlifts", weight: 135, reps: 0, notes: "~135 lbs (est.) | reps not logged", category: "legs" },
+      { name: "Kettlebell Lunges", weight: 35, reps: 30, notes: "35 lbs each | 30 reps (15 each side)", category: "legs" },
+      { name: "Calf Extensions", weight: 100, reps: 0, notes: "~100 lbs (est.) | reps not logged", category: "legs" },
       // Accessories
-      { name: "Quad Extensions", weight: 100, reps: 10, notes: "100 lbs for 10 reps; slow downs only.", category: "legs" },
-      { name: "Hamstring Curls", weight: 70, reps: 0, notes: "Estimated 70 lbs; reps controlled.", category: "legs" },
-      { name: "Calf Extensions", weight: 100, reps: 0, notes: "~100 lbs (est.) | ___ reps", category: "legs" },
+      { name: "Leg Press", weight: 180, reps: 0, notes: "~180 lbs (est.) | reps not logged", category: "legs" },
+      { name: "Hip Thrusts", weight: 95, reps: 0, notes: "~95 lbs (est.) | reps not logged", category: "legs" },
     ];
 
-    [...pushExercises, ...push2Exercises, ...pullExercises, ...pull2Exercises, ...legExercises].forEach(exercise => {
+    // Leg Day 2 exercises
+    const legs2Exercises = [
+      // Main Lifts
+      { name: "Leg Press", weight: 180, reps: 0, notes: "~180 lbs (est.) | reps not logged", category: "legs2" },
+      { name: "Barbell Squats", weight: 135, reps: 0, notes: "~135 lbs (est.) | reps not logged", category: "legs2" },
+      { name: "Kettlebell Lunges", weight: 35, reps: 30, notes: "35 lbs each | 30 reps (15 each side)", category: "legs2" },
+      { name: "Calf Extensions", weight: 100, reps: 0, notes: "~100 lbs (est.) | reps not logged", category: "legs2" },
+      // Accessories
+      { name: "Quad Extensions", weight: 100, reps: 10, notes: "100 lbs | 10 reps (slow downs)", category: "legs2" },
+      { name: "Hamstring Curls", weight: 70, reps: 0, notes: "~70 lbs (est.) | reps not logged", category: "legs2" },
+    ];
+
+    [...pushExercises, ...push2Exercises, ...pullExercises, ...pull2Exercises, ...legExercises, ...legs2Exercises].forEach(exercise => {
       const id = randomUUID();
       const fullExercise: Exercise = {
         ...exercise,
