@@ -340,18 +340,45 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Personal Records Section */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <Trophy className="w-6 h-6 text-yellow-500" />
-              Personal Records
-            </h2>
+        {/* Personal Records Section - 3D Glassmorphism */}
+        <div className="relative">
+          {/* Glass Background */}
+          <div className="backdrop-blur-lg bg-black/10 dark:bg-gray-200/10 border border-white/20 dark:border-gray-600/20 rounded-2xl shadow-2xl">
+            {/* 3D Glass Effect */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-black/5 dark:from-gray-300/10 dark:to-gray-700/5 rounded-2xl"></div>
             
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button data-testid="button-add-pr">Add PR</Button>
-              </DialogTrigger>
+            <div className="relative p-8 space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  {/* 3D Trophy Icon */}
+                  <div className="relative">
+                    <Trophy className="w-6 h-6 text-yellow-500 relative z-10 drop-shadow-lg" />
+                    <div className="absolute inset-0 text-yellow-400/30 transform translate-x-0.5 translate-y-0.5 blur-sm">
+                      <Trophy className="w-6 h-6" />
+                    </div>
+                  </div>
+                  {/* 3D Text */}
+                  <span className="relative">
+                    <span className="absolute inset-0 text-black/20 dark:text-gray-600/30 transform translate-x-0.5 translate-y-0.5 blur-sm">
+                      Personal Records
+                    </span>
+                    <span className="relative bg-gradient-to-b from-foreground to-foreground/70 bg-clip-text text-transparent font-extrabold">
+                      Personal Records
+                    </span>
+                  </span>
+                </h2>
+                
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button 
+                      data-testid="button-add-pr"
+                      className="relative backdrop-blur-sm bg-white/10 dark:bg-gray-600/20 border border-white/20 dark:border-gray-500/30 hover:bg-white/20 dark:hover:bg-gray-500/30 transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                    >
+                      {/* Button 3D Effect */}
+                      <div className="absolute inset-0 rounded-md bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
+                      <span className="relative z-10">Add PR</span>
+                    </Button>
+                  </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Add Personal Record</DialogTitle>
@@ -428,18 +455,23 @@ export default function Home() {
             </Dialog>
           </div>
           
-          <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
-            {prs.map((pr) => (
-              <PRCard
-                key={pr.id}
-                pr={pr}
-                isEditing={editingId === pr.id}
-                onEdit={() => handleEdit(pr.id)}
-                onSave={(updatedData) => handleSave(pr.id, updatedData)}
-                onDelete={() => handleDelete(pr.id)}
-                onCancel={() => setEditingId(null)}
-              />
-            ))}
+              <div className="grid grid-cols-2 gap-6">
+                {prs.map((pr) => (
+                  <PRCard
+                    key={pr.id}
+                    pr={pr}
+                    isEditing={editingId === pr.id}
+                    onEdit={() => handleEdit(pr.id)}
+                    onSave={(updatedData) => handleSave(pr.id, updatedData)}
+                    onDelete={() => handleDelete(pr.id)}
+                    onCancel={() => setEditingId(null)}
+                  />
+                ))}
+              </div>
+            </div>
+            
+            {/* Bottom Glass Highlight */}
+            <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 dark:via-gray-400/30 to-transparent rounded-b-2xl"></div>
           </div>
         </div>
       </main>
@@ -566,84 +598,129 @@ function PRCard({ pr, isEditing, onEdit, onSave, onDelete, onCancel }: {
   }
 
   return (
-    <Card 
-      className="hover:shadow-md transition-all duration-300 group aspect-square flex flex-col cursor-pointer shadow-lg dark:shadow-white/20 shadow-black/10"
+    <div 
+      className="relative group cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:scale-105"
       onClick={handleFlip}
     >
-      <CardContent className="flex-1 flex flex-col justify-center items-center p-4 relative">
-        {/* Edit button - only visible on hover */}
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit();
-          }}
-          className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-          data-testid={`button-edit-pr-${pr.id}`}
-        >
-          <Edit3 className="w-3 h-3" />
-        </Button>
+      {/* 3D Glassmorphism Card */}
+      <div className="backdrop-blur-lg bg-black/20 dark:bg-gray-200/15 border border-white/30 dark:border-gray-600/40 rounded-xl shadow-2xl group-hover:shadow-3xl transition-all duration-300">
+        {/* 3D Glass Effect */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/15 to-black/5 dark:from-gray-300/15 dark:to-gray-700/5 rounded-xl"></div>
+        
+        {/* Inner Glass Highlight */}
+        <div className="absolute inset-0.5 bg-gradient-to-b from-white/20 to-transparent dark:from-gray-300/20 rounded-xl opacity-50"></div>
+        <div className="relative flex-1 flex flex-col justify-center items-center p-6 aspect-square">
+          {/* 3D Glass Edit Button */}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
+            className="absolute top-3 right-3 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-all duration-200 backdrop-blur-sm bg-white/20 dark:bg-gray-600/30 border border-white/30 dark:border-gray-500/40 rounded-lg hover:bg-white/30 dark:hover:bg-gray-500/40 hover:scale-110"
+            data-testid={`button-edit-pr-${pr.id}`}
+          >
+            <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/20 to-transparent dark:from-gray-400/20"></div>
+            <Edit3 className="w-3 h-3 relative z-10 text-foreground" />
+          </Button>
 
-        {!isFlipped ? (
-          // Front side - Simple view with exercise name
-          <div className="text-center space-y-3">
-            <Badge className={`${pr.color} text-base px-4 py-2`} variant="outline">
-              {pr.exercise}
-            </Badge>
-            
-            {pr.category === "Cardio" ? (
-              <div className="text-center space-y-1">
-                <div className="text-2xl font-bold text-foreground">
-                  {pr.time}
+          {!isFlipped ? (
+            // Front side - 3D Glassmorphism view
+            <div className="text-center space-y-4">
+              {/* 3D Glass Badge */}
+              <div className="relative inline-block">
+                <div className="backdrop-blur-sm bg-white/20 dark:bg-gray-600/25 border border-white/30 dark:border-gray-500/40 rounded-full px-4 py-2 shadow-lg">
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/20 to-transparent dark:from-gray-400/20"></div>
+                  <span className="relative z-10 text-base font-medium text-foreground">{pr.exercise}</span>
                 </div>
-                <div className="text-sm text-muted-foreground">Best Time</div>
-              </div>
-            ) : (
-              <div className="text-center space-y-1">
-                <div className="text-2xl font-bold text-foreground">
-                  {pr.weight} lbs
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Max {pr.reps} reps
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          // Back side - Structured data view
-          <div className="w-full space-y-3 text-center">
-            <Badge className={`${pr.color} text-sm mb-2`} variant="outline">
-              {pr.category}
-            </Badge>
-            
-            <div className="space-y-2">
-              <div>
-                <div className="text-xs text-muted-foreground uppercase tracking-wide">Exercise</div>
-                <div className="text-sm font-semibold">{pr.exercise}</div>
               </div>
               
               {pr.category === "Cardio" ? (
-                <div>
-                  <div className="text-xs text-muted-foreground uppercase tracking-wide">Best Time</div>
-                  <div className="text-lg font-bold text-foreground">{pr.time}</div>
+                <div className="text-center space-y-2">
+                  {/* 3D Text Effect */}
+                  <div className="relative">
+                    <div className="absolute inset-0 text-black/20 dark:text-gray-600/30 transform translate-x-0.5 translate-y-0.5 blur-sm text-3xl font-bold">
+                      {pr.time}
+                    </div>
+                    <div className="relative text-3xl font-bold bg-gradient-to-b from-foreground to-foreground/70 bg-clip-text text-transparent">
+                      {pr.time}
+                    </div>
+                  </div>
+                  <div className="text-sm text-muted-foreground/80 font-medium">Best Time</div>
                 </div>
               ) : (
-                <>
-                  <div>
-                    <div className="text-xs text-muted-foreground uppercase tracking-wide">Weight</div>
-                    <div className="text-lg font-bold text-foreground">{pr.weight} lbs</div>
+                <div className="text-center space-y-2">
+                  {/* 3D Weight Text */}
+                  <div className="relative">
+                    <div className="absolute inset-0 text-black/20 dark:text-gray-600/30 transform translate-x-0.5 translate-y-0.5 blur-sm text-3xl font-bold">
+                      {pr.weight} lbs
+                    </div>
+                    <div className="relative text-3xl font-bold bg-gradient-to-b from-foreground to-foreground/70 bg-clip-text text-transparent">
+                      {pr.weight} lbs
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground uppercase tracking-wide">Max Reps</div>
-                    <div className="text-lg font-bold text-foreground">{pr.reps}</div>
+                  <div className="text-sm text-muted-foreground/80 font-medium">
+                    Max {pr.reps} reps
                   </div>
-                </>
+                </div>
               )}
             </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          ) : (
+            // Back side - 3D Structured data view
+            <div className="w-full space-y-4 text-center">
+              {/* 3D Category Badge */}
+              <div className="relative inline-block mb-3">
+                <div className="backdrop-blur-sm bg-white/20 dark:bg-gray-600/25 border border-white/30 dark:border-gray-500/40 rounded-full px-3 py-1 shadow-lg">
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/20 to-transparent dark:from-gray-400/20"></div>
+                  <span className="relative z-10 text-sm font-medium text-foreground">{pr.category}</span>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                {/* Exercise Name */}
+                <div className="backdrop-blur-sm bg-white/10 dark:bg-gray-600/15 border border-white/20 dark:border-gray-500/30 rounded-lg p-3">
+                  <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
+                  <div className="relative">
+                    <div className="text-xs text-muted-foreground/70 uppercase tracking-wide font-medium">Exercise</div>
+                    <div className="text-sm font-semibold text-foreground mt-1">{pr.exercise}</div>
+                  </div>
+                </div>
+                
+                {pr.category === "Cardio" ? (
+                  <div className="backdrop-blur-sm bg-white/10 dark:bg-gray-600/15 border border-white/20 dark:border-gray-500/30 rounded-lg p-3">
+                    <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
+                    <div className="relative">
+                      <div className="text-xs text-muted-foreground/70 uppercase tracking-wide font-medium">Best Time</div>
+                      <div className="text-lg font-bold text-foreground mt-1">{pr.time}</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="backdrop-blur-sm bg-white/10 dark:bg-gray-600/15 border border-white/20 dark:border-gray-500/30 rounded-lg p-3">
+                      <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
+                      <div className="relative">
+                        <div className="text-xs text-muted-foreground/70 uppercase tracking-wide font-medium">Weight</div>
+                        <div className="text-lg font-bold text-foreground mt-1">{pr.weight} lbs</div>
+                      </div>
+                    </div>
+                    <div className="backdrop-blur-sm bg-white/10 dark:bg-gray-600/15 border border-white/20 dark:border-gray-500/30 rounded-lg p-3">
+                      <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
+                      <div className="relative">
+                        <div className="text-xs text-muted-foreground/70 uppercase tracking-wide font-medium">Max Reps</div>
+                        <div className="text-lg font-bold text-foreground mt-1">{pr.reps}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Bottom Glass Highlight */}
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 dark:via-gray-400/30 to-transparent rounded-b-xl"></div>
+      </div>
+    </div>
   );
 }
