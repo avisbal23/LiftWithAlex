@@ -2,10 +2,24 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import path from "path";
+import fs from "fs";
 import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Serve static images from server/public/images
+  app.get("/images/:filename", (req, res) => {
+    const filename = req.params.filename;
+    const imagePath = path.resolve(import.meta.dirname, "public", "images", filename);
+    
+    if (fs.existsSync(imagePath)) {
+      res.sendFile(imagePath);
+    } else {
+      res.status(404).json({ error: "Image not found" });
+    }
+  });
+
   // Get exercises by category
   app.get("/api/exercises/:category", async (req, res) => {
     try {
