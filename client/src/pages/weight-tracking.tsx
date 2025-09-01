@@ -37,7 +37,6 @@ export default function WeightTracking() {
     bodyFat: "",
     muscleMass: "",
     bmi: "",
-    remarks: "",
   });
 
   // Fetch weight entries
@@ -60,7 +59,6 @@ export default function WeightTracking() {
         bodyFat: "",
         muscleMass: "",
         bmi: "",
-        remarks: "",
       });
       toast({
         title: "Weight entry added",
@@ -114,7 +112,6 @@ export default function WeightTracking() {
       bodyFat: newEntry.bodyFat ? parseFloat(newEntry.bodyFat) : undefined,
       muscleMass: newEntry.muscleMass ? parseFloat(newEntry.muscleMass) : undefined,
       bmi: newEntry.bmi ? parseFloat(newEntry.bmi) : undefined,
-      remarks: newEntry.remarks,
     });
   };
 
@@ -371,16 +368,6 @@ export default function WeightTracking() {
                     </div>
                   </div>
                   
-                  <div>
-                    <Label htmlFor="remarks">Remarks</Label>
-                    <Input
-                      id="remarks"
-                      value={newEntry.remarks}
-                      onChange={(e) => setNewEntry(prev => ({ ...prev, remarks: e.target.value }))}
-                      placeholder="Optional notes..."
-                    />
-                  </div>
-                  
                   <Button 
                     onClick={handleAddEntry} 
                     disabled={createMutation.isPending}
@@ -594,7 +581,7 @@ export default function WeightTracking() {
         {/* Data Table */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Health Data Entries</CardTitle>
+            <CardTitle>Health Data Entries ({weightEntries.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -607,14 +594,13 @@ export default function WeightTracking() {
                     <TableHead>Body Fat %</TableHead>
                     <TableHead>Muscle Mass (lbs)</TableHead>
                     <TableHead>BMI</TableHead>
-                    <TableHead>Remarks</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {weightEntries.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
                         No health data entries found. Add your first entry to get started.
                       </TableCell>
                     </TableRow>
@@ -629,7 +615,6 @@ export default function WeightTracking() {
                           <TableCell>{entry.bodyFat ? `${entry.bodyFat}%` : "-"}</TableCell>
                           <TableCell>{entry.muscleMass || "-"}</TableCell>
                           <TableCell>{entry.bmi || "-"}</TableCell>
-                          <TableCell className="max-w-xs truncate">{entry.remarks || "-"}</TableCell>
                           <TableCell>
                             <Button
                               variant="ghost"
