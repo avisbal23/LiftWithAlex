@@ -2,12 +2,44 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 import path from "path";
 import fs from "fs";
 import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Auth middleware setup
+  await setupAuth(app);
+
+  // Authentication routes
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        // Seed demo data for new users
+        await storage.seedDemoData(userId);
+      }
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Admin clear all data endpoint
+  app.post('/api/admin/clear-all', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      await storage.clearAllUserData(userId);
+      res.json({ message: "All data cleared successfully" });
+    } catch (error) {
+      console.error("Error clearing user data:", error);
+      res.status(500).json({ message: "Failed to clear data" });
+    }
+  });
+
   // Serve static images from server/public/images
   app.get("/images/:filename", (req, res) => {
     const filename = req.params.filename;
@@ -21,14 +53,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get exercises by category
-  app.get("/api/exercises/:category", async (req, res) => {
+  app.get("/api/exercises/:category", async (req: any, res) => {
     try {
       const category = req.params.category;
       if (!["push", "pull", "legs", "push2", "pull2", "legs2", "cardio"].includes(category)) {
         return res.status(400).json({ message: "Invalid category" });
       }
       
-      const exercises = await storage.getExercisesByCategory(category);
+      // Get user ID if authenticated, otherwise get all exercises (for backward compatibility during testing)
+      const userId = req.user?.claims?.sub;
+      const exercises = await storage.getExercisesByCategory(category, userId);
       res.json(exercises);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch exercises" });

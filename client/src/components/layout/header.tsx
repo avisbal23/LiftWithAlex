@@ -1,10 +1,12 @@
-import { Moon, Sun, Settings } from "lucide-react";
+import { Moon, Sun, Settings, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Header() {
   const [isDark, setIsDark] = useState(false);
+  const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
     const saved = localStorage.getItem("theme");
@@ -50,20 +52,49 @@ export default function Header() {
             </div>
             
             <div className="flex items-center space-x-2">
-              {/* 3D Glass Buttons */}
-              <Link to="/admin">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  data-testid="button-admin"
-                  className="relative backdrop-blur-sm bg-white/10 dark:bg-gray-600/20 border border-white/20 dark:border-gray-500/30 rounded-lg text-white dark:text-gray-700 hover:bg-white/20 dark:hover:bg-gray-500/30 transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-                >
-                  {/* Button 3D Effect */}
-                  <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
-                  <Settings className="h-5 w-5 relative z-10" />
-                </Button>
-              </Link>
+              {/* User Authentication Controls */}
+              {isAuthenticated && (
+                <>
+                  {/* User Info */}
+                  {user && (
+                    <div className="flex items-center space-x-2 text-white dark:text-gray-700 text-sm">
+                      <User className="h-4 w-4" />
+                      <span className="hidden sm:inline">
+                        {user.firstName || user.email || 'User'}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Admin Button */}
+                  <Link to="/admin">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      data-testid="button-admin"
+                      className="relative backdrop-blur-sm bg-white/10 dark:bg-gray-600/20 border border-white/20 dark:border-gray-500/30 rounded-lg text-white dark:text-gray-700 hover:bg-white/20 dark:hover:bg-gray-500/30 transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                    >
+                      {/* Button 3D Effect */}
+                      <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
+                      <Settings className="h-5 w-5 relative z-10" />
+                    </Button>
+                  </Link>
+                  
+                  {/* Logout Button */}
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => window.location.href = '/api/logout'}
+                    data-testid="button-logout"
+                    className="relative backdrop-blur-sm bg-white/10 dark:bg-gray-600/20 border border-white/20 dark:border-gray-500/30 rounded-lg text-white dark:text-gray-700 hover:bg-white/20 dark:hover:bg-gray-500/30 transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                  >
+                    {/* Button 3D Effect */}
+                    <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
+                    <LogOut className="h-5 w-5 relative z-10" />
+                  </Button>
+                </>
+              )}
               
+              {/* Theme Toggle - Always Visible */}
               <Button 
                 variant="ghost" 
                 size="icon" 
