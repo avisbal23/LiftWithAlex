@@ -104,3 +104,12 @@
   outline-offset: -1px;
   background-color: hsl(var(--background));
 }
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

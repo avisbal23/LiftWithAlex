@@ -15,7 +15,7 @@ export const exercises = pgTable("exercises", {
   weight: integer("weight").default(0),
   reps: integer("reps").default(0),
   notes: text("notes").default(""),
-  category: text("category").notNull(), // 'push', 'pull', 'legs'
+  category: text("category").notNull(), // 'push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'cardio'
   createdAt: timestamp("created_at").defaultNow(),
 });
 

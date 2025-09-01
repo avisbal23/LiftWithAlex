@@ -9,7 +9,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/exercises/:category", async (req, res) => {
     try {
       const category = req.params.category;
-      if (!["push", "pull", "legs"].includes(category)) {
+      if (!["push", "pull", "legs", "push2", "pull2", "legs2", "cardio"].includes(category)) {
         return res.status(400).json({ message: "Invalid category" });
       }
       
