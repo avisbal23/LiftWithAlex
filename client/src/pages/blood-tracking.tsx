@@ -529,7 +529,7 @@ export default function BloodTracking() {
     <>
       <Navigation />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2" data-testid="heading-blood-tracking">
               Blood Lab Tracking
@@ -538,6 +538,30 @@ export default function BloodTracking() {
               Track your blood lab results and health markers
             </p>
           </div>
+        </div>
+
+        {/* Rhythm Health Import Callout */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-8">
+          <div className="flex items-start gap-3">
+            <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-lg">
+              <Droplets className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                💡 Import Data from Rhythm Health
+              </h3>
+              <p className="text-sm text-blue-800 dark:text-blue-200 mb-2">
+                You can directly import your blood lab results from Rhythm Health. Export your data from their platform and use the import feature below to automatically populate your health tracking.
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300">
+                Supports both CSV and JSON formats from Rhythm Health exports.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between mb-8">
+          <div></div>
           
           <div className="flex gap-2">
             <Button onClick={exportToCsv} variant="outline" data-testid="button-export-csv">

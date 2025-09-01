@@ -670,12 +670,13 @@ Example:
                 </div>
                 
                 <div className="mt-4 p-3 bg-blue-50 rounded-lg dark:bg-blue-950">
-                  <h5 className="font-medium text-blue-900 dark:text-blue-100 mb-1">💡 CSV Tips:</h5>
+                  <h5 className="font-medium text-blue-900 dark:text-blue-100 mb-1">💡 Data Import Sources:</h5>
                   <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
-                    <li>• Export directly imports into Excel, Google Sheets, or other CSV apps</li>
-                    <li>• Weight CSV is compatible with RENPHO app export format</li>
-                    <li>• Text fields with commas are automatically quoted</li>
-                    <li>• All imports will replace existing data</li>
+                    <li>• <strong>Weight Data:</strong> Import directly from RENPHO app CSV exports</li>
+                    <li>• <strong>Blood Labs:</strong> Import directly from Rhythm Health platform exports</li>
+                    <li>• <strong>Quotes:</strong> Import your custom motivational quotes in simple text format</li>
+                    <li>• All exports work with Excel, Google Sheets, or other CSV apps</li>
+                    <li>• All imports will replace existing data - backup first if needed</li>
                   </ul>
                 </div>
               </div>
