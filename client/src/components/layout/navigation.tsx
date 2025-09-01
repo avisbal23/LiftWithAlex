@@ -22,7 +22,7 @@ export default function Navigation() {
   const [location] = useLocation();
   const navRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to keep selected tab visible for right-side tabs
+  // Auto-scroll to keep selected tab visible, then reset scroll position
   useEffect(() => {
     const rightSideTabs = ["/pull2", "/legs2", "/cardio", "/weight", "/blood", "/photos", "/thoughts", "/admin"];
     
@@ -31,14 +31,30 @@ export default function Navigation() {
       if (tabIndex !== -1) {
         const tabElement = navRef.current.children[tabIndex] as HTMLElement;
         if (tabElement) {
-          // Scroll to show the selected tab with some padding
+          // Scroll to show the selected tab briefly
           tabElement.scrollIntoView({
             behavior: "smooth",
             block: "nearest",
             inline: "center"
           });
+          
+          // After a short delay, scroll back to the beginning to prevent horizontal scroll lock
+          setTimeout(() => {
+            if (navRef.current) {
+              navRef.current.scrollTo({
+                left: 0,
+                behavior: "smooth"
+              });
+            }
+          }, 1000);
         }
       }
+    } else if (navRef.current) {
+      // For left-side tabs, ensure we're scrolled to the beginning
+      navRef.current.scrollTo({
+        left: 0,
+        behavior: "smooth"
+      });
     }
   }, [location]);
 
