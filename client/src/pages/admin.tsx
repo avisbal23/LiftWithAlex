@@ -660,12 +660,13 @@ Example:
                 </div>
                 
                 <div>
-                  <h4 className="font-medium mb-2">Quotes CSV Format:</h4>
+                  <h4 className="font-medium mb-2">Quotes Text Format:</h4>
                   <pre className="bg-muted p-2 rounded text-xs overflow-x-auto">
-{`text,author,category,isActive
-"The only way to do great work is to love what you do.","Steve Jobs","motivational",1
-"Success isn't always about greatness. It's about consistency.","Dwayne Johnson","fitness",1
-"Discipline is choosing between what you want now and what you want most.","Abraham Lincoln","mindset",0`}
+{`"Fear = Fuel" - Me
+"OUT WORK, OUT BELIEVE" - Me
+"The Gym Is the Only Place I Love to Be a Failure" - Me
+"Control the Controlables" - Unknown
+"It's Easy to Be on the Bottom. It Doesn't Take Any Effort to Be a Loser." - Unknown`}
                   </pre>
                 </div>
                 
