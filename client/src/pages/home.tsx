@@ -155,7 +155,7 @@ export default function Home() {
         {/* Welcome Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-foreground mb-4" data-testid="heading-welcome">
-            💪 Gym Tracker
+            Visbal Gym Tracker 💪🏼
           </h1>
           <p className="text-lg text-muted-foreground mb-4">
             Track your workouts, beat your personal records
