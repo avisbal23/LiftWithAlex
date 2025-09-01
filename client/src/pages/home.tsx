@@ -93,9 +93,11 @@ export default function Home() {
   });
 
   const { data: randomQuote } = useQuery<Quote | null>({
-    queryKey: ["/api/quotes/random", Date.now()],
+    queryKey: ["/api/quotes/random"],
     staleTime: 0,
     gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 
   const getNextWorkoutDay = () => {
