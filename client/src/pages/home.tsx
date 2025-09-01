@@ -1,71 +1,96 @@
-import { useQuery } from "@tanstack/react-query";
-import { type Exercise, type WorkoutLog } from "@shared/schema";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { type WorkoutLog } from "@shared/schema";
 import Navigation from "@/components/layout/navigation";
 import { Link } from "wouter";
-import { Trophy, Weight, Calendar } from "lucide-react";
+import { Trophy, Calendar, Edit3, Save, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+
+// Static PR data that you can edit manually
+const initialPRs = [
+  {
+    id: "1",
+    exercise: "Flat Dumbbell Press",
+    weight: "80",
+    reps: "8",
+    category: "Push",
+    color: "bg-red-500/10 text-red-600 border-red-200"
+  },
+  {
+    id: "2", 
+    exercise: "Incline Dumbbell Press",
+    weight: "70",
+    reps: "10",
+    category: "Push",
+    color: "bg-red-500/10 text-red-600 border-red-200"
+  },
+  {
+    id: "3",
+    exercise: "Lat Pulldown",
+    weight: "150",
+    reps: "8",
+    category: "Pull", 
+    color: "bg-blue-500/10 text-blue-600 border-blue-200"
+  },
+  {
+    id: "4",
+    exercise: "Barbell Rows",
+    weight: "135",
+    reps: "10",
+    category: "Pull",
+    color: "bg-blue-500/10 text-blue-600 border-blue-200"
+  },
+  {
+    id: "5",
+    exercise: "Leg Press",
+    weight: "400",
+    reps: "12",
+    category: "Legs",
+    color: "bg-green-500/10 text-green-600 border-green-200"
+  },
+  {
+    id: "6",
+    exercise: "Romanian Deadlift",
+    weight: "185",
+    reps: "8", 
+    category: "Legs",
+    color: "bg-green-500/10 text-green-600 border-green-200"
+  },
+  {
+    id: "7",
+    exercise: "5K Run",
+    time: "22:30",
+    category: "Cardio",
+    color: "bg-purple-500/10 text-purple-600 border-purple-200"
+  },
+  {
+    id: "8",
+    exercise: "10K Run", 
+    time: "48:15",
+    category: "Cardio",
+    color: "bg-purple-500/10 text-purple-600 border-purple-200"
+  }
+];
 
 export default function Home() {
-  const { data: exercises = [], isLoading } = useQuery<Exercise[]>({
-    queryKey: ["/api/exercises"],
+  const [prs, setPrs] = useState(initialPRs);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [newPR, setNewPR] = useState({
+    exercise: "",
+    weight: "",
+    reps: "",
+    time: "",
+    category: "Push"
   });
 
   const { data: latestWorkoutLog } = useQuery<WorkoutLog | null>({
     queryKey: ["/api/workout-logs/latest"],
   });
-
-  const getPersonalRecords = () => {
-    if (exercises.length === 0) return {};
-
-    // Group exercises by unique name to avoid duplicates between Day 1 and Day 2
-    const uniqueExercises = exercises.reduce((acc, exercise) => {
-      const exerciseName = exercise.name;
-      
-      if (!acc[exerciseName]) {
-        acc[exerciseName] = {
-          name: exerciseName,
-          category: exercise.category,
-          maxWeight: exercise.weight || 0,
-          maxReps: exercise.reps || 0,
-          maxDuration: exercise.duration || "",
-          isCardio: exercise.category === "cardio"
-        };
-      } else {
-        // Update with better records
-        if ((exercise.weight || 0) > acc[exerciseName].maxWeight) {
-          acc[exerciseName].maxWeight = exercise.weight || 0;
-        }
-        if ((exercise.reps || 0) > acc[exerciseName].maxReps) {
-          acc[exerciseName].maxReps = exercise.reps || 0;
-        }
-        if (exercise.duration && exercise.duration < acc[exerciseName].maxDuration) {
-          acc[exerciseName].maxDuration = exercise.duration;
-        }
-      }
-      
-      return acc;
-    }, {} as Record<string, any>);
-
-    // Group by category and take first 4 from each
-    const categories = ["push", "pull", "legs", "cardio"];
-    const prsByCategory = {} as Record<string, any[]>;
-
-    categories.forEach(category => {
-      const categoryExercises = Object.values(uniqueExercises)
-        .filter((ex: any) => ex.category === category || 
-                            (category === "legs" && (ex.category === "legs2")) ||
-                            (category === "push" && (ex.category === "push2")) ||
-                            (category === "pull" && (ex.category === "pull2")))
-        .slice(0, 4);
-      
-      prsByCategory[category] = categoryExercises;
-    });
-
-    return prsByCategory;
-  };
-
-  const prs = getPersonalRecords();
 
   const getNextWorkoutDay = () => {
     if (!latestWorkoutLog) {
@@ -117,7 +142,7 @@ export default function Home() {
   };
 
   const getCategoryColor = (category: string) => {
-    switch (category) {
+    switch (category.toLowerCase()) {
       case "push": return "bg-red-500/10 text-red-600 border-red-200";
       case "pull": return "bg-blue-500/10 text-blue-600 border-blue-200";
       case "legs": return "bg-green-500/10 text-green-600 border-green-200";
@@ -126,27 +151,40 @@ export default function Home() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <>
-        <Navigation />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse">
-            <div className="h-12 bg-muted rounded mb-4"></div>
-            <div className="h-6 bg-muted rounded mb-8 w-1/2"></div>
-            <div className="space-y-6">
-              <div className="h-8 bg-muted rounded w-1/3"></div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {Array.from({length: 8}).map((_, i) => (
-                  <div key={i} className="h-24 bg-muted rounded"></div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </main>
-      </>
-    );
-  }
+  const handleEdit = (id: string) => {
+    setEditingId(id);
+  };
+
+  const handleSave = (id: string, updatedData: any) => {
+    setPrs(prev => prev.map(pr => 
+      pr.id === id 
+        ? { ...pr, ...updatedData, color: getCategoryColor(updatedData.category) }
+        : pr
+    ));
+    setEditingId(null);
+  };
+
+  const handleDelete = (id: string) => {
+    setPrs(prev => prev.filter(pr => pr.id !== id));
+  };
+
+  const handleAddPR = () => {
+    if (!newPR.exercise) return;
+    
+    const id = Math.random().toString(36).substr(2, 9);
+    const newRecord = {
+      id,
+      exercise: newPR.exercise,
+      weight: newPR.weight,
+      reps: newPR.reps,
+      time: newPR.time,
+      category: newPR.category,
+      color: getCategoryColor(newPR.category)
+    };
+    
+    setPrs(prev => [...prev, newRecord]);
+    setNewPR({ exercise: "", weight: "", reps: "", time: "", category: "Push" });
+  };
 
   return (
     <>
@@ -227,71 +265,236 @@ export default function Home() {
         </div>
 
         {/* Personal Records Section */}
-        {Object.keys(prs).length > 0 && (
-          <div className="space-y-8">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
               <Trophy className="w-6 h-6 text-yellow-500" />
               Personal Records
             </h2>
             
-            {Object.entries(prs).map(([category, exercises]) => (
-              exercises.length > 0 && (
-                <div key={category} className="space-y-4">
-                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                    <Weight className="w-5 h-5" />
-                    {getCategoryDisplayName(category)}
-                  </h3>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {exercises.map((exercise: any, index: number) => (
-                      <Card key={index} className="hover:shadow-md transition-shadow">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium text-foreground truncate">
-                            {exercise.name}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                          <Badge className={getCategoryColor(category)} variant="outline">
-                            {getCategoryDisplayName(category)}
-                          </Badge>
-                          
-                          {exercise.isCardio ? (
-                            <div className="space-y-1">
-                              {exercise.maxDuration && (
-                                <div className="text-lg font-bold text-foreground">
-                                  {exercise.maxDuration}
-                                </div>
-                              )}
-                              <div className="text-xs text-muted-foreground">Best Time</div>
-                            </div>
-                          ) : (
-                            <div className="space-y-1">
-                              <div className="text-lg font-bold text-foreground">
-                                {exercise.maxWeight} lbs
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                Max {exercise.maxReps} reps
-                              </div>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button data-testid="button-add-pr">Add PR</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add Personal Record</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="exercise">Exercise Name</Label>
+                    <Input
+                      id="exercise"
+                      value={newPR.exercise}
+                      onChange={(e) => setNewPR(prev => ({ ...prev, exercise: e.target.value }))}
+                      placeholder="Bench Press"
+                    />
                   </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="category">Category</Label>
+                      <select
+                        id="category"
+                        value={newPR.category}
+                        onChange={(e) => setNewPR(prev => ({ ...prev, category: e.target.value }))}
+                        className="w-full px-3 py-2 border border-border rounded-md bg-background"
+                      >
+                        <option value="Push">Push</option>
+                        <option value="Pull">Pull</option>
+                        <option value="Legs">Legs</option>
+                        <option value="Cardio">Cardio</option>
+                      </select>
+                    </div>
+                    
+                    {newPR.category === "Cardio" ? (
+                      <div>
+                        <Label htmlFor="time">Time</Label>
+                        <Input
+                          id="time"
+                          value={newPR.time}
+                          onChange={(e) => setNewPR(prev => ({ ...prev, time: e.target.value }))}
+                          placeholder="22:30"
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <div>
+                          <Label htmlFor="weight">Weight (lbs)</Label>
+                          <Input
+                            id="weight"
+                            value={newPR.weight}
+                            onChange={(e) => setNewPR(prev => ({ ...prev, weight: e.target.value }))}
+                            placeholder="225"
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  
+                  {newPR.category !== "Cardio" && (
+                    <div>
+                      <Label htmlFor="reps">Reps</Label>
+                      <Input
+                        id="reps"
+                        value={newPR.reps}
+                        onChange={(e) => setNewPR(prev => ({ ...prev, reps: e.target.value }))}
+                        placeholder="8"
+                      />
+                    </div>
+                  )}
+                  
+                  <Button onClick={handleAddPR} className="w-full">
+                    Add Personal Record
+                  </Button>
                 </div>
-              )
+              </DialogContent>
+            </Dialog>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {prs.map((pr) => (
+              <PRCard
+                key={pr.id}
+                pr={pr}
+                isEditing={editingId === pr.id}
+                onEdit={() => handleEdit(pr.id)}
+                onSave={(updatedData) => handleSave(pr.id, updatedData)}
+                onDelete={() => handleDelete(pr.id)}
+                onCancel={() => setEditingId(null)}
+              />
             ))}
           </div>
-        )}
-
-        {Object.keys(prs).length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">🏋️‍♂️</div>
-            <h2 className="text-xl font-semibold text-foreground mb-2">Ready to start?</h2>
-            <p className="text-muted-foreground">Add some exercises to track your progress</p>
-          </div>
-        )}
+        </div>
       </main>
     </>
+  );
+}
+
+function PRCard({ pr, isEditing, onEdit, onSave, onDelete, onCancel }: {
+  pr: any;
+  isEditing: boolean;
+  onEdit: () => void;
+  onSave: (data: any) => void;
+  onDelete: () => void;
+  onCancel: () => void;
+}) {
+  const [editData, setEditData] = useState(pr);
+
+  const handleSave = () => {
+    onSave(editData);
+  };
+
+  if (isEditing) {
+    return (
+      <Card className="border-primary">
+        <CardHeader className="pb-2">
+          <Input
+            value={editData.exercise}
+            onChange={(e) => setEditData(prev => ({ ...prev, exercise: e.target.value }))}
+            className="text-sm font-medium"
+            placeholder="Exercise name"
+          />
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <select
+            value={editData.category}
+            onChange={(e) => setEditData(prev => ({ ...prev, category: e.target.value }))}
+            className="w-full px-2 py-1 text-xs border border-border rounded bg-background"
+          >
+            <option value="Push">Push</option>
+            <option value="Pull">Pull</option>
+            <option value="Legs">Legs</option>
+            <option value="Cardio">Cardio</option>
+          </select>
+          
+          {editData.category === "Cardio" ? (
+            <Input
+              value={editData.time || ""}
+              onChange={(e) => setEditData(prev => ({ ...prev, time: e.target.value }))}
+              placeholder="22:30"
+              className="text-sm"
+            />
+          ) : (
+            <div className="space-y-2">
+              <Input
+                value={editData.weight || ""}
+                onChange={(e) => setEditData(prev => ({ ...prev, weight: e.target.value }))}
+                placeholder="Weight"
+                className="text-sm"
+              />
+              <Input
+                value={editData.reps || ""}
+                onChange={(e) => setEditData(prev => ({ ...prev, reps: e.target.value }))}
+                placeholder="Reps"
+                className="text-sm"
+              />
+            </div>
+          )}
+          
+          <div className="flex gap-1">
+            <Button size="sm" onClick={handleSave} className="flex-1">
+              <Save className="w-3 h-3" />
+            </Button>
+            <Button size="sm" variant="outline" onClick={onCancel} className="flex-1">
+              <X className="w-3 h-3" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="hover:shadow-md transition-shadow group">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-foreground truncate flex items-center justify-between">
+          {pr.exercise}
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={onEdit}
+              className="h-6 w-6 p-0"
+              data-testid={`button-edit-pr-${pr.id}`}
+            >
+              <Edit3 className="w-3 h-3" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={onDelete}
+              className="h-6 w-6 p-0 text-red-500 hover:text-red-600"
+              data-testid={`button-delete-pr-${pr.id}`}
+            >
+              <X className="w-3 h-3" />
+            </Button>
+          </div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <Badge className={pr.color} variant="outline">
+          {pr.category}
+        </Badge>
+        
+        {pr.category === "Cardio" ? (
+          <div className="space-y-1">
+            <div className="text-lg font-bold text-foreground">
+              {pr.time}
+            </div>
+            <div className="text-xs text-muted-foreground">Best Time</div>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <div className="text-lg font-bold text-foreground">
+              {pr.weight} lbs
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Max {pr.reps} reps
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
