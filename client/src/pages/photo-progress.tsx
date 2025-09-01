@@ -17,6 +17,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { insertPhotoProgressSchema, type PhotoProgress, type InsertPhotoProgress } from "@shared/schema";
 import type { UploadResult } from "@uppy/core";
+import Navigation from "@/components/layout/navigation";
 
 const bodyPartOptions = [
   { value: "front", label: "Front" },
@@ -204,16 +205,21 @@ export default function PhotoProgressPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+      <>
+        <Navigation />
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
         <div className="max-w-7xl mx-auto">
           <div className="text-center py-8">Loading photo progress...</div>
         </div>
-      </div>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+    <>
+      <Navigation />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -643,6 +649,7 @@ export default function PhotoProgressPage() {
           </Dialog>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
