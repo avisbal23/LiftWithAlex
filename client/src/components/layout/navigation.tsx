@@ -50,7 +50,7 @@ export default function Navigation() {
               className={cn(
                 "relative px-4 py-2 text-sm font-medium whitespace-nowrap flex-shrink-0 rounded-xl transition-all duration-300 ease-in-out transform",
                 location === tab.path
-                  ? "backdrop-blur-sm bg-primary/90 dark:bg-primary/80 text-primary-foreground shadow-lg shadow-primary/30 -translate-y-0.5 scale-105 border border-primary/40 dark:border-primary/50"
+                  ? "backdrop-blur-sm bg-primary dark:bg-primary text-white shadow-lg shadow-primary/30 -translate-y-0.5 scale-105 border border-primary/60 dark:border-primary/70"
                   : "backdrop-blur-sm bg-white/20 dark:bg-gray-700/30 text-muted-foreground hover:bg-primary/20 dark:hover:bg-primary/20 hover:text-primary hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/20 active:translate-y-0 active:shadow-sm border border-white/20 dark:border-gray-600/30"
               )}
               data-testid={`link-${tab.name.toLowerCase().replace(' ', '-')}`}
