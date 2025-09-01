@@ -133,95 +133,199 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
           </div>
         </div>
       ) : (
-        <div className="bg-card rounded-lg border border-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-muted">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Exercise
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Weight (lbs)
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Reps
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Notes
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    View
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-background divide-y divide-border">
-                {exercises.map((exercise) => (
-                  <tr key={exercise.id} data-testid={`row-exercise-${exercise.id}`}>
-                    <td className="px-6 py-4">
+        <div>
+          {/* Desktop Table View */}
+          <div className="hidden md:block bg-card rounded-lg border border-border overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Exercise
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Weight (lbs)
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Reps
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Notes
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      View
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-background divide-y divide-border">
+                  {exercises.map((exercise) => (
+                    <tr key={exercise.id} data-testid={`row-exercise-${exercise.id}`}>
+                      <td className="px-6 py-4">
+                        <Input
+                          type="text"
+                          value={exercise.name}
+                          onChange={(e) => updateExercise(exercise.id, "name", e.target.value)}
+                          className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors"
+                          data-testid={`input-exercise-name-${exercise.id}`}
+                        />
+                      </td>
+                      <td className="px-6 py-4">
+                        <Input
+                          type="number"
+                          value={exercise.weight}
+                          onChange={(e) => updateExercise(exercise.id, "weight", parseInt(e.target.value) || 0)}
+                          className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
+                          data-testid={`input-weight-${exercise.id}`}
+                        />
+                      </td>
+                      <td className="px-6 py-4">
+                        <Input
+                          type="number"
+                          value={exercise.reps}
+                          onChange={(e) => updateExercise(exercise.id, "reps", parseInt(e.target.value) || 0)}
+                          className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-16"
+                          data-testid={`input-reps-${exercise.id}`}
+                        />
+                      </td>
+                      <td className="px-6 py-4">
+                        <Input
+                          type="text"
+                          value={exercise.notes}
+                          onChange={(e) => updateExercise(exercise.id, "notes", e.target.value)}
+                          placeholder="Add notes..."
+                          className="border-none bg-transparent p-2 text-sm text-muted-foreground focus:bg-background hover:bg-accent transition-colors"
+                          data-testid={`input-notes-${exercise.id}`}
+                        />
+                      </td>
+                      <td className="px-6 py-4">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSelectedNotes({ exercise: exercise.name, notes: exercise.notes });
+                                setEditingNotes(exercise.notes);
+                              }}
+                              className="text-muted-foreground hover:text-foreground p-1 rounded transition-colors"
+                              data-testid={`button-view-notes-${exercise.id}`}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>Exercise Details</DialogTitle>
+                            </DialogHeader>
+                            <Card>
+                              <CardHeader>
+                                <div className="flex items-center justify-between">
+                                  <CardTitle className="text-xl">{exercise.name}</CardTitle>
+                                  <Badge variant="secondary" className="capitalize">
+                                    {category}
+                                  </Badge>
+                                </div>
+                              </CardHeader>
+                              <CardContent className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <div className="text-sm font-medium text-muted-foreground">Weight</div>
+                                    <div className="text-2xl font-bold text-primary">
+                                      {exercise.weight} <span className="text-base font-normal text-muted-foreground">lbs</span>
+                                    </div>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <div className="text-sm font-medium text-muted-foreground">Reps</div>
+                                    <div className="text-2xl font-bold text-primary">
+                                      {exercise.reps || "—"}
+                                    </div>
+                                  </div>
+                                </div>
+                                {exercise.notes && (
+                                  <div className="space-y-2">
+                                    <div className="text-sm font-medium text-muted-foreground">Notes & Instructions</div>
+                                    <div className="p-4 bg-muted rounded-lg">
+                                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                                        {exercise.notes}
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                                <div className="text-xs text-muted-foreground pt-2 border-t">
+                                  Last updated: {new Date(exercise.createdAt).toLocaleDateString("en-US", { 
+                                    month: "short", 
+                                    day: "numeric", 
+                                    year: "numeric",
+                                    hour: "numeric",
+                                    minute: "2-digit"
+                                  })}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </DialogContent>
+                        </Dialog>
+                      </td>
+                      <td className="px-6 py-4">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteExercise(exercise.id)}
+                          disabled={deleteMutation.isPending}
+                          className="text-destructive hover:text-destructive/80 p-1 rounded transition-colors"
+                          data-testid={`button-delete-${exercise.id}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-4">
+            {exercises.map((exercise) => (
+              <Card key={exercise.id} className="bg-card" data-testid={`card-exercise-${exercise.id}`}>
+                <CardContent className="p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
                       <Input
                         type="text"
                         value={exercise.name}
                         onChange={(e) => updateExercise(exercise.id, "name", e.target.value)}
-                        className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors"
-                        data-testid={`input-exercise-name-${exercise.id}`}
+                        className="font-semibold text-base border-none bg-transparent p-0 text-foreground focus:bg-background hover:bg-accent transition-colors"
+                        data-testid={`input-exercise-name-mobile-${exercise.id}`}
                       />
-                    </td>
-                    <td className="px-6 py-4">
-                      <Input
-                        type="number"
-                        value={exercise.weight}
-                        onChange={(e) => updateExercise(exercise.id, "weight", parseInt(e.target.value) || 0)}
-                        className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
-                        data-testid={`input-weight-${exercise.id}`}
-                      />
-                    </td>
-                    <td className="px-6 py-4">
-                      <Input
-                        type="number"
-                        value={exercise.reps}
-                        onChange={(e) => updateExercise(exercise.id, "reps", parseInt(e.target.value) || 0)}
-                        className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-16"
-                        data-testid={`input-reps-${exercise.id}`}
-                      />
-                    </td>
-                    <td className="px-6 py-4">
-                      <Input
-                        type="text"
-                        value={exercise.notes}
-                        onChange={(e) => updateExercise(exercise.id, "notes", e.target.value)}
-                        placeholder="Add notes..."
-                        className="border-none bg-transparent p-2 text-sm text-muted-foreground focus:bg-background hover:bg-accent transition-colors"
-                        data-testid={`input-notes-${exercise.id}`}
-                      />
-                    </td>
-                    <td className="px-6 py-4">
+                    </div>
+                    <div className="flex space-x-2">
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button
                             variant="ghost"
-                            size="icon"
+                            size="sm"
                             onClick={() => {
                               setSelectedNotes({ exercise: exercise.name, notes: exercise.notes });
                               setEditingNotes(exercise.notes);
                             }}
-                            className="text-muted-foreground hover:text-foreground p-1 rounded transition-colors"
-                            data-testid={`button-view-notes-${exercise.id}`}
+                            className="text-muted-foreground hover:text-foreground"
+                            data-testid={`button-view-notes-mobile-${exercise.id}`}
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
+                        <DialogContent className="max-w-[95vw] mx-4">
                           <DialogHeader>
                             <DialogTitle>Exercise Details</DialogTitle>
                           </DialogHeader>
                           <Card>
                             <CardHeader>
                               <div className="flex items-center justify-between">
-                                <CardTitle className="text-xl">{exercise.name}</CardTitle>
+                                <CardTitle className="text-lg">{exercise.name}</CardTitle>
                                 <Badge variant="secondary" className="capitalize">
                                   {category}
                                 </Badge>
@@ -231,13 +335,13 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                   <div className="text-sm font-medium text-muted-foreground">Weight</div>
-                                  <div className="text-2xl font-bold text-primary">
-                                    {exercise.weight} <span className="text-base font-normal text-muted-foreground">lbs</span>
+                                  <div className="text-xl font-bold text-primary">
+                                    {exercise.weight} <span className="text-sm font-normal text-muted-foreground">lbs</span>
                                   </div>
                                 </div>
                                 <div className="space-y-2">
                                   <div className="text-sm font-medium text-muted-foreground">Reps</div>
-                                  <div className="text-2xl font-bold text-primary">
+                                  <div className="text-xl font-bold text-primary">
                                     {exercise.reps || "—"}
                                   </div>
                                 </div>
@@ -245,43 +349,67 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               {exercise.notes && (
                                 <div className="space-y-2">
                                   <div className="text-sm font-medium text-muted-foreground">Notes & Instructions</div>
-                                  <div className="p-4 bg-muted rounded-lg">
+                                  <div className="p-3 bg-muted rounded-lg">
                                     <p className="text-sm leading-relaxed whitespace-pre-wrap">
                                       {exercise.notes}
                                     </p>
                                   </div>
                                 </div>
                               )}
-                              <div className="text-xs text-muted-foreground pt-2 border-t">
-                                Last updated: {new Date(exercise.createdAt).toLocaleDateString("en-US", { 
-                                  month: "short", 
-                                  day: "numeric", 
-                                  year: "numeric",
-                                  hour: "numeric",
-                                  minute: "2-digit"
-                                })}
-                              </div>
                             </CardContent>
                           </Card>
                         </DialogContent>
                       </Dialog>
-                    </td>
-                    <td className="px-6 py-4">
                       <Button
                         variant="ghost"
-                        size="icon"
+                        size="sm"
                         onClick={() => deleteExercise(exercise.id)}
                         disabled={deleteMutation.isPending}
-                        className="text-destructive hover:text-destructive/80 p-1 rounded transition-colors"
-                        data-testid={`button-delete-${exercise.id}`}
+                        className="text-destructive hover:text-destructive/80"
+                        data-testid={`button-delete-mobile-${exercise.id}`}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Weight (lbs)</label>
+                      <Input
+                        type="number"
+                        value={exercise.weight}
+                        onChange={(e) => updateExercise(exercise.id, "weight", parseInt(e.target.value) || 0)}
+                        className="text-base font-semibold"
+                        data-testid={`input-weight-mobile-${exercise.id}`}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Reps</label>
+                      <Input
+                        type="number"
+                        value={exercise.reps}
+                        onChange={(e) => updateExercise(exercise.id, "reps", parseInt(e.target.value) || 0)}
+                        className="text-base font-semibold"
+                        data-testid={`input-reps-mobile-${exercise.id}`}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Notes</label>
+                    <Input
+                      type="text"
+                      value={exercise.notes}
+                      onChange={(e) => updateExercise(exercise.id, "notes", e.target.value)}
+                      placeholder="Add notes..."
+                      className="text-sm"
+                      data-testid={`input-notes-mobile-${exercise.id}`}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       )}
