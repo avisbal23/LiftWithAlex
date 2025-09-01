@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { type WorkoutLog, type Quote } from "@shared/schema";
 import Navigation from "@/components/layout/navigation";
 import { Link } from "wouter";
-import { Trophy, Calendar, Edit3, Save, X, Scale, Settings, MessageCircle, Trash2 } from "lucide-react";
+import { Trophy, Calendar, Edit3, Save, X, Scale, Settings, MessageCircle, Trash2, Activity, Camera } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -324,6 +324,22 @@ export default function Home() {
                 <Badge className="bg-pink-500/10 text-pink-600 border-pink-200 hover:bg-pink-500/20 transition-colors px-4 py-2 text-sm cursor-pointer flex items-center gap-1">
                   <MessageCircle className="w-3 h-3" />
                   Thoughts
+                </Badge>
+              </Link>
+            </div>
+            
+            {/* Quick Access - Blood & Photos */}
+            <div className="flex flex-wrap justify-center gap-3 mb-4">
+              <Link to="/blood-tracking">
+                <Badge className="bg-red-500/10 text-red-600 border-red-200 hover:bg-red-500/20 transition-colors px-4 py-2 text-sm cursor-pointer flex items-center gap-1">
+                  <Activity className="w-3 h-3" />
+                  Blood Labs
+                </Badge>
+              </Link>
+              <Link to="/photo-progress">
+                <Badge className="bg-indigo-500/10 text-indigo-600 border-indigo-200 hover:bg-indigo-500/20 transition-colors px-4 py-2 text-sm cursor-pointer flex items-center gap-1">
+                  <Camera className="w-3 h-3" />
+                  Photo Progress
                 </Badge>
               </Link>
             </div>
