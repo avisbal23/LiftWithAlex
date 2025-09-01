@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -11,15 +11,21 @@ export interface IStorage {
   updateExercise(id: string, exercise: UpdateExercise): Promise<Exercise | undefined>;
   deleteExercise(id: string): Promise<boolean>;
   getAllExercises(): Promise<Exercise[]>;
+  
+  createWorkoutLog(log: InsertWorkoutLog): Promise<WorkoutLog>;
+  getLatestWorkoutLog(): Promise<WorkoutLog | undefined>;
+  getAllWorkoutLogs(): Promise<WorkoutLog[]>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private exercises: Map<string, Exercise>;
+  private workoutLogs: Map<string, WorkoutLog>;
 
   constructor() {
     this.users = new Map();
     this.exercises = new Map();
+    this.workoutLogs = new Map();
     
     // Add some initial sample data
     this.seedData();
@@ -188,6 +194,28 @@ export class MemStorage implements IStorage {
   async getAllExercises(): Promise<Exercise[]> {
     return Array.from(this.exercises.values())
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async createWorkoutLog(insertLog: InsertWorkoutLog): Promise<WorkoutLog> {
+    const id = randomUUID();
+    const log: WorkoutLog = {
+      ...insertLog,
+      id,
+      completedAt: new Date(),
+    };
+    this.workoutLogs.set(id, log);
+    return log;
+  }
+
+  async getLatestWorkoutLog(): Promise<WorkoutLog | undefined> {
+    const logs = Array.from(this.workoutLogs.values())
+      .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+    return logs[0];
+  }
+
+  async getAllWorkoutLogs(): Promise<WorkoutLog[]> {
+    return Array.from(this.workoutLogs.values())
+      .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
   }
 }
 

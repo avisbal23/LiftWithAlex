@@ -1,14 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
-import { type Exercise } from "@shared/schema";
+import { type Exercise, type WorkoutLog } from "@shared/schema";
 import Navigation from "@/components/layout/navigation";
 import { Link } from "wouter";
-import { Trophy, Weight } from "lucide-react";
+import { Trophy, Weight, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function Home() {
   const { data: exercises = [], isLoading } = useQuery<Exercise[]>({
     queryKey: ["/api/exercises"],
+  });
+
+  const { data: latestWorkoutLog } = useQuery<WorkoutLog | null>({
+    queryKey: ["/api/workout-logs/latest"],
   });
 
   const getPersonalRecords = () => {
@@ -63,11 +67,50 @@ export default function Home() {
 
   const prs = getPersonalRecords();
 
+  const getNextWorkoutDay = () => {
+    if (!latestWorkoutLog) {
+      return "Push Day"; // Default to starting with push
+    }
+
+    // Define the workout cycle
+    const workoutCycle = ["push", "pull", "legs", "push2", "pull2", "legs2"];
+    const currentIndex = workoutCycle.indexOf(latestWorkoutLog.category);
+    
+    if (currentIndex === -1) {
+      // If it's cardio or unknown, suggest push
+      return "Push Day";
+    }
+    
+    // Move to next in cycle, wrap around to beginning
+    const nextIndex = (currentIndex + 1) % workoutCycle.length;
+    const nextCategory = workoutCycle[nextIndex];
+    
+    return getCategoryDisplayName(nextCategory);
+  };
+
+  const getLastWorkoutInfo = () => {
+    if (!latestWorkoutLog) return null;
+    
+    const daysDiff = Math.floor(
+      (new Date().getTime() - new Date(latestWorkoutLog.completedAt).getTime()) / 
+      (1000 * 60 * 60 * 24)
+    );
+    
+    return {
+      category: getCategoryDisplayName(latestWorkoutLog.category),
+      daysAgo: daysDiff,
+      date: new Date(latestWorkoutLog.completedAt)
+    };
+  };
+
   const getCategoryDisplayName = (category: string) => {
     switch (category) {
-      case "push": return "Push";
-      case "pull": return "Pull"; 
-      case "legs": return "Legs";
+      case "push": return "Push Day";
+      case "pull": return "Pull Day"; 
+      case "legs": return "Leg Day";
+      case "push2": return "Push Day 2";
+      case "pull2": return "Pull Day 2";
+      case "legs2": return "Leg Day 2";
       case "cardio": return "Cardio";
       default: return category;
     }
@@ -114,32 +157,72 @@ export default function Home() {
           <h1 className="text-4xl font-bold text-foreground mb-4" data-testid="heading-welcome">
             💪 Gym Tracker
           </h1>
-          <p className="text-lg text-muted-foreground mb-8">
+          <p className="text-lg text-muted-foreground mb-4">
             Track your workouts, beat your personal records
           </p>
           
+          {/* Today's Suggested Workout */}
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <Calendar className="w-5 h-5 text-primary" />
+            <span className="text-lg font-medium text-foreground">
+              Today is <span className="text-primary font-bold">{getNextWorkoutDay()}</span>
+            </span>
+          </div>
+
+          {getLastWorkoutInfo() && (
+            <p className="text-sm text-muted-foreground mb-8">
+              Last workout: {getLastWorkoutInfo()?.category} {
+                getLastWorkoutInfo()?.daysAgo === 0 ? "today" :
+                getLastWorkoutInfo()?.daysAgo === 1 ? "yesterday" :
+                `${getLastWorkoutInfo()?.daysAgo} days ago`
+              }
+            </p>
+          )}
+          
           {/* Quick Navigation */}
-          <div className="flex flex-wrap justify-center gap-3">
-            <Link to="/push">
-              <Badge className="bg-red-500/10 text-red-600 border-red-200 hover:bg-red-500/20 transition-colors px-4 py-2 text-sm cursor-pointer">
-                Push Day
-              </Badge>
-            </Link>
-            <Link to="/pull">
-              <Badge className="bg-blue-500/10 text-blue-600 border-blue-200 hover:bg-blue-500/20 transition-colors px-4 py-2 text-sm cursor-pointer">
-                Pull Day
-              </Badge>
-            </Link>
-            <Link to="/legs">
-              <Badge className="bg-green-500/10 text-green-600 border-green-200 hover:bg-green-500/20 transition-colors px-4 py-2 text-sm cursor-pointer">
-                Leg Day
-              </Badge>
-            </Link>
-            <Link to="/cardio">
-              <Badge className="bg-purple-500/10 text-purple-600 border-purple-200 hover:bg-purple-500/20 transition-colors px-4 py-2 text-sm cursor-pointer">
-                Cardio
-              </Badge>
-            </Link>
+          <div className="space-y-4">
+            {/* Main Days */}
+            <div className="flex flex-wrap justify-center gap-3">
+              <Link to="/push">
+                <Badge className="bg-red-500/10 text-red-600 border-red-200 hover:bg-red-500/20 transition-colors px-4 py-2 text-sm cursor-pointer">
+                  Push Day
+                </Badge>
+              </Link>
+              <Link to="/pull">
+                <Badge className="bg-blue-500/10 text-blue-600 border-blue-200 hover:bg-blue-500/20 transition-colors px-4 py-2 text-sm cursor-pointer">
+                  Pull Day
+                </Badge>
+              </Link>
+              <Link to="/legs">
+                <Badge className="bg-green-500/10 text-green-600 border-green-200 hover:bg-green-500/20 transition-colors px-4 py-2 text-sm cursor-pointer">
+                  Leg Day
+                </Badge>
+              </Link>
+              <Link to="/cardio">
+                <Badge className="bg-purple-500/10 text-purple-600 border-purple-200 hover:bg-purple-500/20 transition-colors px-4 py-2 text-sm cursor-pointer">
+                  Cardio
+                </Badge>
+              </Link>
+            </div>
+            
+            {/* Day 2 Options */}
+            <div className="flex flex-wrap justify-center gap-3">
+              <Link to="/push2">
+                <Badge className="bg-red-400/10 text-red-500 border-red-100 hover:bg-red-400/20 transition-colors px-4 py-2 text-sm cursor-pointer">
+                  Push Day 2
+                </Badge>
+              </Link>
+              <Link to="/pull2">
+                <Badge className="bg-blue-400/10 text-blue-500 border-blue-100 hover:bg-blue-400/20 transition-colors px-4 py-2 text-sm cursor-pointer">
+                  Pull Day 2
+                </Badge>
+              </Link>
+              <Link to="/legs2">
+                <Badge className="bg-green-400/10 text-green-500 border-green-100 hover:bg-green-400/20 transition-colors px-4 py-2 text-sm cursor-pointer">
+                  Leg Day 2
+                </Badge>
+              </Link>
+            </div>
           </div>
         </div>
 

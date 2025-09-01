@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertExerciseSchema, updateExerciseSchema } from "@shared/schema";
+import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -79,6 +79,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete exercise" });
+    }
+  });
+
+  // Create workout log entry
+  app.post("/api/workout-logs", async (req, res) => {
+    try {
+      const validatedData = insertWorkoutLogSchema.parse(req.body);
+      const log = await storage.createWorkoutLog(validatedData);
+      res.status(201).json(log);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create workout log" });
+      }
+    }
+  });
+
+  // Get latest workout log
+  app.get("/api/workout-logs/latest", async (req, res) => {
+    try {
+      const log = await storage.getLatestWorkoutLog();
+      res.json(log || null);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch latest workout log" });
+    }
+  });
+
+  // Get all workout logs
+  app.get("/api/workout-logs", async (req, res) => {
+    try {
+      const logs = await storage.getAllWorkoutLogs();
+      res.json(logs);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch workout logs" });
     }
   });
 

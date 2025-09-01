@@ -25,6 +25,12 @@ export const exercises = pgTable("exercises", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const workoutLogs = pgTable("workout_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  category: text("category").notNull(), // 'push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'cardio'
+  completedAt: timestamp("completed_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -37,8 +43,15 @@ export const insertExerciseSchema = createInsertSchema(exercises).omit({
 
 export const updateExerciseSchema = insertExerciseSchema.partial();
 
+export const insertWorkoutLogSchema = createInsertSchema(workoutLogs).omit({
+  id: true,
+  completedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Exercise = typeof exercises.$inferSelect;
 export type InsertExercise = z.infer<typeof insertExerciseSchema>;
 export type UpdateExercise = z.infer<typeof updateExerciseSchema>;
+export type WorkoutLog = typeof workoutLogs.$inferSelect;
+export type InsertWorkoutLog = z.infer<typeof insertWorkoutLogSchema>;

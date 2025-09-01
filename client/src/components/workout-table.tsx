@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Eye, ChevronDown } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { type Exercise, type InsertExercise, type UpdateExercise } from "@shared/schema";
+import { type Exercise, type InsertExercise, type UpdateExercise, type InsertWorkoutLog } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
 interface WorkoutTableProps {
@@ -63,6 +63,33 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
     },
   });
 
+  const logWorkoutMutation = useMutation({
+    mutationFn: async (workoutCategory: string) => {
+      const response = await apiRequest("POST", "/api/workout-logs", { category: workoutCategory });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/workout-logs/latest"] });
+      toast({
+        title: "Workout logged!",
+        description: `Completed ${getCategoryDisplayName(category)} workout`,
+      });
+    },
+  });
+
+  const getCategoryDisplayName = (cat: string) => {
+    switch (cat) {
+      case "push": return "Push Day";
+      case "pull": return "Pull Day";
+      case "legs": return "Leg Day";
+      case "push2": return "Push Day 2";
+      case "pull2": return "Pull Day 2";
+      case "legs2": return "Leg Day 2";
+      case "cardio": return "Cardio";
+      default: return cat;
+    }
+  };
+
   const addNewExercise = () => {
     createMutation.mutate({
       name: "New Exercise",
@@ -113,22 +140,38 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground" data-testid={`heading-${category}`}>
-            {title}
-          </h2>
-          <p className="text-muted-foreground">{description}</p>
+      <div className="space-y-4 mb-6">
+        {/* Today is X Day Button */}
+        <div className="flex justify-center">
+          <Button 
+            onClick={() => logWorkoutMutation.mutate(category)}
+            disabled={logWorkoutMutation.isPending}
+            variant="outline"
+            className="bg-primary/5 border-primary/20 hover:bg-primary/10 text-primary font-medium"
+            data-testid={`button-today-is-${category}-day`}
+          >
+            Today is {getCategoryDisplayName(category)}
+          </Button>
         </div>
-        <Button 
-          onClick={addNewExercise} 
-          disabled={createMutation.isPending}
-          data-testid={`button-add-exercise-${category}`}
-          className="hidden md:inline-flex"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Exercise
-        </Button>
+
+        {/* Header Section */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground" data-testid={`heading-${category}`}>
+              {title}
+            </h2>
+            <p className="text-muted-foreground">{description}</p>
+          </div>
+          <Button 
+            onClick={addNewExercise} 
+            disabled={createMutation.isPending}
+            data-testid={`button-add-exercise-${category}`}
+            className="hidden md:inline-flex"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Exercise
+          </Button>
+        </div>
       </div>
 
       {exercises.length === 0 ? (
