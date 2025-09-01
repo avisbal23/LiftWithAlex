@@ -18,8 +18,16 @@ import PhotoProgress from "@/pages/photo-progress";
 import Thoughts from "@/pages/thoughts";
 import Admin from "@/pages/admin";
 import Header from "@/components/layout/header";
+import { PasswordGate } from "@/components/password-gate";
+import { useAuth } from "@/hooks/useAuth";
 
 function Router() {
+  const { isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return <PasswordGate />;
+  }
+
   return (
     <Switch>
       <Route path="/" component={Home} />
