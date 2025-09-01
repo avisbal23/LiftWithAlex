@@ -332,10 +332,24 @@ export default function BloodTracking() {
   };
 
   const toggleCardFlip = (cardId: string) => {
-    setFlippedCards(prev => ({
-      ...prev,
-      [cardId]: !prev[cardId]
-    }));
+    setFlippedCards(prev => {
+      // If this card is already flipped, just unflip it
+      if (prev[cardId]) {
+        return {
+          ...prev,
+          [cardId]: false
+        };
+      }
+      
+      // Otherwise, flip this card and unflip all others
+      const newFlippedCards: Record<string, boolean> = {};
+      Object.keys(prev).forEach(key => {
+        newFlippedCards[key] = false;
+      });
+      newFlippedCards[cardId] = true;
+      
+      return newFlippedCards;
+    });
   };
 
   const renderValueWithFlag = (value: number | null, unit: string | null, flag: string | null = null) => {
