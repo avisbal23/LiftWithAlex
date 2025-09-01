@@ -225,11 +225,6 @@ export default function Home() {
               </blockquote>
               <cite className="text-sm text-muted-foreground">
                 — {randomQuote.author}
-                {randomQuote.category && (
-                  <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-                    {randomQuote.category}
-                  </span>
-                )}
               </cite>
             </div>
           )}
