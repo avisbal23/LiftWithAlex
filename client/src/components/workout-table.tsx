@@ -79,6 +79,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
     });
   };
 
+  const isCardio = category === "cardio";
+
   const deleteExercise = (id: string) => {
     if (confirm("Are you sure you want to delete this exercise?")) {
       deleteMutation.mutate(id);
@@ -141,14 +143,36 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                 <thead className="bg-muted">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Exercise
+                      {isCardio ? "Activity" : "Exercise"}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Weight (lbs)
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Reps
-                    </th>
+                    {isCardio ? (
+                      <>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Duration
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Distance
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Pace
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Calories
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          RPE
+                        </th>
+                      </>
+                    ) : (
+                      <>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Weight (lbs)
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Reps
+                        </th>
+                      </>
+                    )}
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Notes
                     </th>
@@ -172,24 +196,83 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                           data-testid={`input-exercise-name-${exercise.id}`}
                         />
                       </td>
-                      <td className="px-6 py-4">
-                        <Input
-                          type="number"
-                          value={exercise.weight}
-                          onChange={(e) => updateExercise(exercise.id, "weight", parseInt(e.target.value) || 0)}
-                          className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
-                          data-testid={`input-weight-${exercise.id}`}
-                        />
-                      </td>
-                      <td className="px-6 py-4">
-                        <Input
-                          type="number"
-                          value={exercise.reps}
-                          onChange={(e) => updateExercise(exercise.id, "reps", parseInt(e.target.value) || 0)}
-                          className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-16"
-                          data-testid={`input-reps-${exercise.id}`}
-                        />
-                      </td>
+                      {isCardio ? (
+                        <>
+                          <td className="px-6 py-4">
+                            <Input
+                              type="text"
+                              value={exercise.duration || ""}
+                              onChange={(e) => updateExercise(exercise.id, "duration", e.target.value)}
+                              placeholder="28:32"
+                              className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
+                              data-testid={`input-duration-${exercise.id}`}
+                            />
+                          </td>
+                          <td className="px-6 py-4">
+                            <Input
+                              type="text"
+                              value={exercise.distance || ""}
+                              onChange={(e) => updateExercise(exercise.id, "distance", e.target.value)}
+                              placeholder="3.1 miles"
+                              className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-24"
+                              data-testid={`input-distance-${exercise.id}`}
+                            />
+                          </td>
+                          <td className="px-6 py-4">
+                            <Input
+                              type="text"
+                              value={exercise.pace || ""}
+                              onChange={(e) => updateExercise(exercise.id, "pace", e.target.value)}
+                              placeholder="9:10/mile"
+                              className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-24"
+                              data-testid={`input-pace-${exercise.id}`}
+                            />
+                          </td>
+                          <td className="px-6 py-4">
+                            <Input
+                              type="number"
+                              value={exercise.calories || 0}
+                              onChange={(e) => updateExercise(exercise.id, "calories", parseInt(e.target.value) || 0)}
+                              placeholder="320"
+                              className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
+                              data-testid={`input-calories-${exercise.id}`}
+                            />
+                          </td>
+                          <td className="px-6 py-4">
+                            <Input
+                              type="number"
+                              value={exercise.rpe || 0}
+                              onChange={(e) => updateExercise(exercise.id, "rpe", parseInt(e.target.value) || 0)}
+                              placeholder="8"
+                              min="1"
+                              max="10"
+                              className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-16"
+                              data-testid={`input-rpe-${exercise.id}`}
+                            />
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="px-6 py-4">
+                            <Input
+                              type="number"
+                              value={exercise.weight}
+                              onChange={(e) => updateExercise(exercise.id, "weight", parseInt(e.target.value) || 0)}
+                              className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
+                              data-testid={`input-weight-${exercise.id}`}
+                            />
+                          </td>
+                          <td className="px-6 py-4">
+                            <Input
+                              type="number"
+                              value={exercise.reps}
+                              onChange={(e) => updateExercise(exercise.id, "reps", parseInt(e.target.value) || 0)}
+                              className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-16"
+                              data-testid={`input-reps-${exercise.id}`}
+                            />
+                          </td>
+                        </>
+                      )}
                       <td className="px-6 py-4">
                         <Input
                           type="text"
@@ -332,20 +415,55 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               </div>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                  <div className="text-sm font-medium text-muted-foreground">Weight</div>
-                                  <div className="text-xl font-bold text-primary">
-                                    {exercise.weight} <span className="text-sm font-normal text-muted-foreground">lbs</span>
+                              {isCardio ? (
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <div className="text-sm font-medium text-muted-foreground">Duration</div>
+                                    <div className="text-xl font-bold text-primary">
+                                      {exercise.duration || "—"}
+                                    </div>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <div className="text-sm font-medium text-muted-foreground">Distance</div>
+                                    <div className="text-xl font-bold text-primary">
+                                      {exercise.distance || "—"}
+                                    </div>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <div className="text-sm font-medium text-muted-foreground">Pace</div>
+                                    <div className="text-xl font-bold text-primary">
+                                      {exercise.pace || "—"}
+                                    </div>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <div className="text-sm font-medium text-muted-foreground">Calories</div>
+                                    <div className="text-xl font-bold text-primary">
+                                      {exercise.calories || "—"}
+                                    </div>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <div className="text-sm font-medium text-muted-foreground">RPE</div>
+                                    <div className="text-xl font-bold text-primary">
+                                      {exercise.rpe || "—"} <span className="text-sm font-normal text-muted-foreground">/10</span>
+                                    </div>
                                   </div>
                                 </div>
-                                <div className="space-y-2">
-                                  <div className="text-sm font-medium text-muted-foreground">Reps</div>
-                                  <div className="text-xl font-bold text-primary">
-                                    {exercise.reps || "—"}
+                              ) : (
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <div className="text-sm font-medium text-muted-foreground">Weight</div>
+                                    <div className="text-xl font-bold text-primary">
+                                      {exercise.weight} <span className="text-sm font-normal text-muted-foreground">lbs</span>
+                                    </div>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <div className="text-sm font-medium text-muted-foreground">Reps</div>
+                                    <div className="text-xl font-bold text-primary">
+                                      {exercise.reps || "—"}
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
+                              )}
                               {exercise.notes && (
                                 <div className="space-y-2">
                                   <div className="text-sm font-medium text-muted-foreground">Notes & Instructions</div>
@@ -373,28 +491,90 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Weight (lbs)</label>
-                      <Input
-                        type="number"
-                        value={exercise.weight}
-                        onChange={(e) => updateExercise(exercise.id, "weight", parseInt(e.target.value) || 0)}
-                        className="text-base font-semibold"
-                        data-testid={`input-weight-mobile-${exercise.id}`}
-                      />
+                  {isCardio ? (
+                    <div className="grid grid-cols-2 gap-3 space-y-3">
+                      <div className="space-y-1 col-span-2">
+                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Duration</label>
+                        <Input
+                          type="text"
+                          value={exercise.duration || ""}
+                          onChange={(e) => updateExercise(exercise.id, "duration", e.target.value)}
+                          placeholder="28:32"
+                          className="text-base font-semibold"
+                          data-testid={`input-duration-mobile-${exercise.id}`}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Distance</label>
+                        <Input
+                          type="text"
+                          value={exercise.distance || ""}
+                          onChange={(e) => updateExercise(exercise.id, "distance", e.target.value)}
+                          placeholder="3.1 miles"
+                          className="text-base font-semibold"
+                          data-testid={`input-distance-mobile-${exercise.id}`}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pace</label>
+                        <Input
+                          type="text"
+                          value={exercise.pace || ""}
+                          onChange={(e) => updateExercise(exercise.id, "pace", e.target.value)}
+                          placeholder="9:10/mile"
+                          className="text-base font-semibold"
+                          data-testid={`input-pace-mobile-${exercise.id}`}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Calories</label>
+                        <Input
+                          type="number"
+                          value={exercise.calories || 0}
+                          onChange={(e) => updateExercise(exercise.id, "calories", parseInt(e.target.value) || 0)}
+                          placeholder="320"
+                          className="text-base font-semibold"
+                          data-testid={`input-calories-mobile-${exercise.id}`}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">RPE (1-10)</label>
+                        <Input
+                          type="number"
+                          value={exercise.rpe || 0}
+                          onChange={(e) => updateExercise(exercise.id, "rpe", parseInt(e.target.value) || 0)}
+                          placeholder="8"
+                          min="1"
+                          max="10"
+                          className="text-base font-semibold"
+                          data-testid={`input-rpe-mobile-${exercise.id}`}
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Reps</label>
-                      <Input
-                        type="number"
-                        value={exercise.reps}
-                        onChange={(e) => updateExercise(exercise.id, "reps", parseInt(e.target.value) || 0)}
-                        className="text-base font-semibold"
-                        data-testid={`input-reps-mobile-${exercise.id}`}
-                      />
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Weight (lbs)</label>
+                        <Input
+                          type="number"
+                          value={exercise.weight}
+                          onChange={(e) => updateExercise(exercise.id, "weight", parseInt(e.target.value) || 0)}
+                          className="text-base font-semibold"
+                          data-testid={`input-weight-mobile-${exercise.id}`}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Reps</label>
+                        <Input
+                          type="number"
+                          value={exercise.reps}
+                          onChange={(e) => updateExercise(exercise.id, "reps", parseInt(e.target.value) || 0)}
+                          className="text-base font-semibold"
+                          data-testid={`input-reps-mobile-${exercise.id}`}
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Notes</label>
