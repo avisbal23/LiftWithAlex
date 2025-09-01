@@ -50,22 +50,33 @@ export class MemStorage implements IStorage {
       { name: "Shrugs (DB/KB)", weight: 25, reps: 0, notes: "25 lbs | To failure", category: "push2" },
     ];
 
-    // Pull exercises
+    // Pull Day 1 exercises
     const pullExercises = [
       // Main Lifts
-      { name: "Pull-Ups (Assisted)", weight: 20, reps: 0, notes: "4 sets to failure, 20 lbs assisted.", category: "pull" },
-      { name: "Seated Lat Pulldowns (Wide)", weight: 130, reps: 7, notes: "130 lbs for 6–8 reps.", category: "pull" },
-      { name: "Diverging Lat Pulldown", weight: 80, reps: 0, notes: "80 lbs then 60 lbs; use thumb-over grip.", category: "pull" },
-      { name: "Seated Low Rows (Close Grip)", weight: 70, reps: 0, notes: "Keep weight low at belly button; go slow.", category: "pull" },
+      { name: "Pull-Ups (Assisted)", weight: 20, reps: 0, notes: "20 lbs assist | To failure", category: "pull" },
+      { name: "Seated Low Rows (Close Grip)", weight: 70, reps: 0, notes: "~70 lbs (est.) | reps not logged", category: "pull" },
+      { name: "EZ Bar Preacher Curl", weight: 50, reps: 7, notes: "50 lbs | 6–8 reps", category: "pull" },
+      { name: "Tricep Extensions (Cable, Single/Double)", weight: 35, reps: 0, notes: "35 lbs | reps not logged", category: "pull" },
+      { name: "Shrugs (DB)", weight: 25, reps: 0, notes: "25 lbs | To failure", category: "pull" },
       // Accessories
-      { name: "Straight Arm Pulldowns (Bar)", weight: 35, reps: 0, notes: "Use straight bar, not cable grip; 35 lbs.", category: "pull" },
-      { name: "Cable X Front Crosses", weight: 6, reps: 0, notes: "Weight = 6 down; horizontal = 5; vertical = 3.", category: "pull" },
-      { name: "Through the Legs Cable Bicep Curls", weight: 30, reps: 0, notes: "30 lbs; lean forward a bit.", category: "pull" },
-      { name: "Between Legs Cable Bicep Curls", weight: 30, reps: 0, notes: "___ reps", category: "pull" },
-      { name: "Standing Dumbbell Curls", weight: 25, reps: 0, notes: "25 lbs to failure + tricep extension 50+ lbs.", category: "pull" },
-      { name: "EZ Bar Preacher Curl", weight: 50, reps: 7, notes: "50 lbs, 6–8 reps; dumbbells 25s with slow negatives and straight ups.", category: "pull" },
-      { name: "Incline Dumbbell Curls", weight: 25, reps: 0, notes: "___ reps", category: "pull" },
-      { name: "Shrugs (DB)", weight: 25, reps: 0, notes: "To failure", category: "pull" },
+      { name: "Seated Lat Pulldowns (Wide)", weight: 130, reps: 7, notes: "130 lbs | 6–8 reps", category: "pull" },
+      { name: "Incline Dumbbell Curls", weight: 25, reps: 0, notes: "25 lbs | reps not logged", category: "pull" },
+      { name: "Straight Arm Pulldowns (Bar)", weight: 35, reps: 0, notes: "35 lbs | reps not logged", category: "pull" },
+    ];
+
+    // Pull Day 2 exercises
+    const pull2Exercises = [
+      // Main Lifts
+      { name: "Seated Lat Pulldowns (Wide)", weight: 130, reps: 7, notes: "130 lbs | 6–8 reps", category: "pull2" },
+      { name: "Diverging Lat Pulldown", weight: 80, reps: 0, notes: "80 lbs, 60 lbs | reps not logged", category: "pull2" },
+      { name: "Standing Dumbbell Curls", weight: 25, reps: 0, notes: "25 lbs | To failure", category: "pull2" },
+      { name: "Downward Cable Press", weight: 33, reps: 0, notes: "33 lbs | reps not logged", category: "pull2" },
+      { name: "Shrugs (DB)", weight: 25, reps: 0, notes: "25 lbs | To failure", category: "pull2" },
+      // Accessories
+      { name: "Pull-Ups (Assisted)", weight: 20, reps: 0, notes: "20 lbs assist | To failure", category: "pull2" },
+      { name: "Cable X Front Crosses", weight: 6, reps: 0, notes: "6 down | reps not logged", category: "pull2" },
+      { name: "Through the Legs Cable Bicep Curls", weight: 30, reps: 0, notes: "30 lbs | reps not logged", category: "pull2" },
+      { name: "Between Legs Cable Bicep Curls", weight: 30, reps: 0, notes: "30 lbs | reps not logged", category: "pull2" },
     ];
 
     // Leg exercises
@@ -81,7 +92,7 @@ export class MemStorage implements IStorage {
       { name: "Calf Extensions", weight: 100, reps: 0, notes: "~100 lbs (est.) | ___ reps", category: "legs" },
     ];
 
-    [...pushExercises, ...push2Exercises, ...pullExercises, ...legExercises].forEach(exercise => {
+    [...pushExercises, ...push2Exercises, ...pullExercises, ...pull2Exercises, ...legExercises].forEach(exercise => {
       const id = randomUUID();
       const fullExercise: Exercise = {
         ...exercise,
