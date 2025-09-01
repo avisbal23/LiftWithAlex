@@ -396,7 +396,7 @@ export default function Home() {
             </Dialog>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
             {prs.map((pr) => (
               <PRCard
                 key={pr.id}
@@ -490,11 +490,11 @@ function PRCard({ pr, isEditing, onEdit, onSave, onDelete, onCancel }: {
   }
 
   return (
-    <Card className="hover:shadow-md transition-shadow group">
-      <CardHeader className="pb-2">
+    <Card className="hover:shadow-md transition-shadow group aspect-square flex flex-col">
+      <CardHeader className="pb-2 flex-shrink-0">
         <CardTitle className="text-sm font-medium text-foreground truncate flex items-center justify-between">
-          {pr.exercise}
-          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="truncate">{pr.exercise}</span>
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
             <Button
               size="sm"
               variant="ghost"
@@ -516,21 +516,21 @@ function PRCard({ pr, isEditing, onEdit, onSave, onDelete, onCancel }: {
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2">
-        <Badge className={pr.color} variant="outline">
+      <CardContent className="flex-1 flex flex-col justify-center space-y-3">
+        <Badge className={pr.color} variant="outline" size="sm">
           {pr.category}
         </Badge>
         
         {pr.category === "Cardio" ? (
-          <div className="space-y-1">
-            <div className="text-lg font-bold text-foreground">
+          <div className="text-center space-y-1">
+            <div className="text-xl font-bold text-foreground">
               {pr.time}
             </div>
             <div className="text-xs text-muted-foreground">Best Time</div>
           </div>
         ) : (
-          <div className="space-y-1">
-            <div className="text-lg font-bold text-foreground">
+          <div className="text-center space-y-1">
+            <div className="text-xl font-bold text-foreground">
               {pr.weight} lbs
             </div>
             <div className="text-xs text-muted-foreground">
