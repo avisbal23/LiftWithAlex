@@ -138,45 +138,69 @@ export class MemStorage implements IStorage {
       this.exercises.set(id, fullExercise);
     });
 
-    // Sample weight entries (RENPHO format sample data)
+    // Your actual RENPHO health data
     const weightSampleData = [
       { 
-        date: new Date('2025-01-24'), time: '4:00:21 PM', weight: 172.8, bodyFat: 15.1, 
-        fatFreeMass: 146.8, muscleMass: 139.4, bmi: 27.1, subcutaneousFat: 12.5, 
-        skeletalMuscle: 54.8, bodyWater: 61.3, visceralFat: 10, boneMass: 7.2, 
-        protein: 19.4, bmr: 1790, metabolicAge: 31, remarks: '--',
+        date: new Date('2025-08-24'), time: '11:52:37 AM', weight: 166.4, bodyFat: 15.0, 
+        fatFreeMass: 141.4, muscleMass: 134.2, bmi: 26.8, subcutaneousFat: 12.4, 
+        skeletalMuscle: 54.9, bodyWater: 61.4, visceralFat: 9, boneMass: 7.2, 
+        protein: 19.4, bmr: 1769, metabolicAge: 31, remarks: '--',
         optimalWeight: null, targetToOptimalWeight: null, targetToOptimalFatMass: null, 
         targetToOptimalMuscleMass: null, bodyType: null
       },
       { 
-        date: new Date('2025-01-25'), time: '9:49:10 AM', weight: 172.0, bodyFat: 15.0, 
-        fatFreeMass: 146.2, muscleMass: 138.8, bmi: 26.9, subcutaneousFat: 12.4, 
-        skeletalMuscle: 54.9, bodyWater: 61.4, visceralFat: 10, boneMass: 7.4, 
-        protein: 19.4, bmr: 1816, metabolicAge: 31, remarks: '--',
+        date: new Date('2025-08-21'), time: '7:47:06 AM', weight: 167.4, bodyFat: 15.1, 
+        fatFreeMass: 142.0, muscleMass: 135.0, bmi: 27.0, subcutaneousFat: 12.5, 
+        skeletalMuscle: 54.8, bodyWater: 61.3, visceralFat: 10, boneMass: 7.0, 
+        protein: 19.4, bmr: 1747, metabolicAge: 31, remarks: '--',
         optimalWeight: null, targetToOptimalWeight: null, targetToOptimalFatMass: null, 
         targetToOptimalMuscleMass: null, bodyType: null
       },
       { 
-        date: new Date('2025-01-28'), time: '6:49:05 AM', weight: 173.6, bodyFat: 15.2, 
-        fatFreeMass: 147.2, muscleMass: 139.8, bmi: 27.2, subcutaneousFat: 12.5, 
-        skeletalMuscle: 54.8, bodyWater: 61.2, visceralFat: 10, boneMass: 7.2, 
-        protein: 19.3, bmr: 1799, metabolicAge: 31, remarks: '--',
+        date: new Date('2025-08-18'), time: '5:29:39 AM', weight: 164.8, bodyFat: 14.8, 
+        fatFreeMass: 140.4, muscleMass: 133.4, bmi: 26.6, subcutaneousFat: 12.3, 
+        skeletalMuscle: 55.0, bodyWater: 61.5, visceralFat: 9, boneMass: 7.0, 
+        protein: 19.4, bmr: 1760, metabolicAge: 31, remarks: '--',
         optimalWeight: null, targetToOptimalWeight: null, targetToOptimalFatMass: null, 
         targetToOptimalMuscleMass: null, bodyType: null
       },
       { 
-        date: new Date('2025-02-03'), time: '10:36:31 AM', weight: 170.4, bodyFat: 14.8, 
-        fatFreeMass: 145.2, muscleMass: 137.8, bmi: 26.7, subcutaneousFat: 12.3, 
-        skeletalMuscle: 55.0, bodyWater: 61.5, visceralFat: 9, boneMass: 7.4, 
-        protein: 19.4, bmr: 1803, metabolicAge: 31, remarks: '--',
+        date: new Date('2025-08-14'), time: '9:22:50 AM', weight: 161.8, bodyFat: 14.4, 
+        fatFreeMass: 138.6, muscleMass: 131.6, bmi: 26.1, subcutaneousFat: 12.0, 
+        skeletalMuscle: 55.3, bodyWater: 61.8, visceralFat: 9, boneMass: 7.0, 
+        protein: 19.5, bmr: 1734, metabolicAge: 30, remarks: '--',
         optimalWeight: null, targetToOptimalWeight: null, targetToOptimalFatMass: null, 
         targetToOptimalMuscleMass: null, bodyType: null
       },
       { 
-        date: new Date('2025-02-12'), time: '7:15:02 AM', weight: 173.6, bodyFat: 15.2, 
-        fatFreeMass: 147.2, muscleMass: 139.8, bmi: 27.2, subcutaneousFat: 12.5, 
-        skeletalMuscle: 54.8, bodyWater: 61.2, visceralFat: 10, boneMass: 7.2, 
-        protein: 19.3, bmr: 1799, metabolicAge: 31, remarks: '--',
+        date: new Date('2025-07-21'), time: '5:00:26 AM', weight: 168.6, bodyFat: 15.2, 
+        fatFreeMass: 143.0, muscleMass: 136.0, bmi: 27.2, subcutaneousFat: 12.5, 
+        skeletalMuscle: 54.8, bodyWater: 61.2, visceralFat: 10, boneMass: 7.0, 
+        protein: 19.3, bmr: 1756, metabolicAge: 31, remarks: '--',
+        optimalWeight: null, targetToOptimalWeight: null, targetToOptimalFatMass: null, 
+        targetToOptimalMuscleMass: null, bodyType: null
+      },
+      { 
+        date: new Date('2025-06-25'), time: '8:27:38 AM', weight: 164.6, bodyFat: 14.7, 
+        fatFreeMass: 140.4, muscleMass: 133.4, bmi: 26.6, subcutaneousFat: 12.2, 
+        skeletalMuscle: 55.1, bodyWater: 61.6, visceralFat: 9, boneMass: 7.0, 
+        protein: 19.4, bmr: 1756, metabolicAge: 31, remarks: '--',
+        optimalWeight: null, targetToOptimalWeight: null, targetToOptimalFatMass: null, 
+        targetToOptimalMuscleMass: null, bodyType: null
+      },
+      { 
+        date: new Date('2025-05-27'), time: '7:06:45 AM', weight: 173.8, bodyFat: 15.9, 
+        fatFreeMass: 146.2, muscleMass: 138.8, bmi: 28.1, subcutaneousFat: 13.0, 
+        skeletalMuscle: 54.3, bodyWater: 60.7, visceralFat: 11, boneMass: 7.2, 
+        protein: 19.2, bmr: 1799, metabolicAge: 32, remarks: '--',
+        optimalWeight: null, targetToOptimalWeight: null, targetToOptimalFatMass: null, 
+        targetToOptimalMuscleMass: null, bodyType: null
+      },
+      { 
+        date: new Date('2025-04-29'), time: '7:21:07 AM', weight: 179.6, bodyFat: 15.9, 
+        fatFreeMass: 151.2, muscleMass: 143.6, bmi: 28.1, subcutaneousFat: 13.0, 
+        skeletalMuscle: 54.3, bodyWater: 60.7, visceralFat: 11, boneMass: 7.6, 
+        protein: 19.2, bmr: 1846, metabolicAge: 32, remarks: '--',
         optimalWeight: null, targetToOptimalWeight: null, targetToOptimalFatMass: null, 
         targetToOptimalMuscleMass: null, bodyType: null
       },
