@@ -819,6 +819,17 @@ export class DatabaseStorage implements IStorage {
       category: "push"
     };
     await db.insert(workoutLogs).values([workoutLogSample]);
+
+    // Sample photo progress entry
+    const photoSample = {
+      title: "Starter Progress Photo",
+      description: "Your fitness journey starts here! This is a placeholder to show how your progress photos will appear.",
+      photoUrl: "@assets/starter-photo.png",
+      bodyPart: "front",
+      weight: 165,
+      takenAt: new Date('2025-09-01')
+    };
+    await db.insert(photoProgress).values([photoSample]);
   }
   // User operations
   async getUser(id: string): Promise<User | undefined> {
