@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Upload, Database, FileText, Activity, Droplets } from "lucide-react";
+import { Download, Upload, Database, FileText, Activity, Droplets, FileDown } from "lucide-react";
 import { type Exercise, type WeightEntry } from "@shared/schema";
 
 export default function Admin() {
@@ -25,6 +25,52 @@ export default function Admin() {
   const { data: weightEntries = [] } = useQuery<WeightEntry[]>({
     queryKey: ["/api/weight-entries"],
   });
+
+  const downloadWorkoutTemplate = () => {
+    const csvHeaders = 'name,category,weight,reps,notes,duration,distance,pace,calories,rpe,createdAt';
+    const sampleRows = [
+      '"Flat Dumbbell Press","push",80,6,"Good form","","","",0,0,"2025-01-24T12:00:00.000Z"',
+      '"Cardio Run","cardio",0,0,"Morning run","30:00","3.5 miles","8:34/mi",350,7,"2025-01-24T07:00:00.000Z"',
+      '"Lat Pulldown","pull",150,8,"Focus on squeeze","","","",0,0,"2025-01-24T12:15:00.000Z"'
+    ];
+    
+    const csvContent = [csvHeaders, ...sampleRows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'workout-import-template.csv';
+    link.click();
+    window.URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Template Downloaded",
+      description: "Workout import template CSV file downloaded",
+    });
+  };
+
+  const downloadWeightTemplate = () => {
+    const csvHeaders = 'Date,Time,Weight(lb),Body Fat(%),Fat-Free Mass(lb),Muscle Mass(lb),BMI,Subcutaneous Fat(%),Skeletal Muscle(%),Body Water(%),Visceral Fat,Bone Mass(lb),Protein (%),BMR(kcal),Metabolic Age';
+    const sampleRows = [
+      '8/24/25,11:52:37 AM,166.4,15.0,141.4,134.2,26.8,12.4,54.9,61.4,9,7.2,19.4,1769,31',
+      '8/21/25,7:47:06 AM,167.4,15.1,142.0,135.0,27.0,12.5,54.8,61.3,10,7.0,19.4,1747,31',
+      '8/18/25,8:15:22 AM,168.2,15.3,142.8,135.8,27.1,12.7,54.7,61.2,10,7.0,19.3,1752,31'
+    ];
+    
+    const csvContent = [csvHeaders, ...sampleRows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'weight-import-template.csv';
+    link.click();
+    window.URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Template Downloaded",
+      description: "Weight import template CSV file downloaded (RENPHO format)",
+    });
+  };
 
   const exportWorkouts = () => {
     if (exercises.length === 0) {
@@ -281,7 +327,7 @@ export default function Admin() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button 
                   onClick={exportWorkouts}
                   className="flex items-center gap-2"
@@ -289,6 +335,15 @@ export default function Admin() {
                 >
                   <Download className="w-4 h-4" />
                   Export All Workouts
+                </Button>
+                <Button 
+                  onClick={downloadWorkoutTemplate}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                  data-testid="button-download-workout-template"
+                >
+                  <FileDown className="w-4 h-4" />
+                  Download Template
                 </Button>
                 <span className="text-sm text-muted-foreground flex items-center">
                   ({exercises.length} exercises)
@@ -330,7 +385,7 @@ export default function Admin() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button 
                   onClick={exportWeights}
                   className="flex items-center gap-2"
@@ -338,6 +393,15 @@ export default function Admin() {
                 >
                   <Download className="w-4 h-4" />
                   Export Weight Data
+                </Button>
+                <Button 
+                  onClick={downloadWeightTemplate}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                  data-testid="button-download-weight-template"
+                >
+                  <FileDown className="w-4 h-4" />
+                  Download Template
                 </Button>
                 <span className="text-sm text-muted-foreground flex items-center">
                   ({weightEntries.length} entries)
