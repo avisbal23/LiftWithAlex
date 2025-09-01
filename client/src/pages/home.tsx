@@ -141,6 +141,19 @@ export default function Home() {
     }
   };
 
+  const getCategoryUrl = (displayName: string) => {
+    switch (displayName) {
+      case "Push Day": return "/push";
+      case "Pull Day": return "/pull";
+      case "Leg Day": return "/legs";
+      case "Push Day 2": return "/push2";
+      case "Pull Day 2": return "/pull2";
+      case "Leg Day 2": return "/legs2";
+      case "Cardio": return "/cardio";
+      default: return "/push";
+    }
+  };
+
   const getCategoryColor = (category: string) => {
     switch (category.toLowerCase()) {
       case "push": return "bg-red-500/10 text-red-600 border-red-200";
@@ -203,7 +216,12 @@ export default function Home() {
           <div className="flex items-center justify-center gap-2 mb-8">
             <Calendar className="w-5 h-5 text-primary" />
             <span className="text-lg font-medium text-foreground">
-              Today is <span className="text-primary font-bold">{getNextWorkoutDay()}</span>
+              Today is{" "}
+              <Link to={getCategoryUrl(getNextWorkoutDay())}>
+                <span className="text-primary font-bold hover:text-primary/80 transition-colors cursor-pointer underline decoration-2 underline-offset-2" data-testid="link-today-workout">
+                  {getNextWorkoutDay()}
+                </span>
+              </Link>
             </span>
           </div>
 
