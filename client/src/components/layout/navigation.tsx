@@ -13,6 +13,7 @@ const tabs = [
   { name: "Cardio", path: "/cardio" },
   { name: "Weight", path: "/weight" },
   { name: "Blood", path: "/blood" },
+  { name: "Photos", path: "/photos" },
   { name: "Admin", path: "/admin" },
 ];
 
@@ -22,7 +23,7 @@ export default function Navigation() {
 
   // Auto-scroll to keep selected tab visible for right-side tabs
   useEffect(() => {
-    const rightSideTabs = ["/pull2", "/legs2", "/cardio", "/weight"];
+    const rightSideTabs = ["/pull2", "/legs2", "/cardio", "/weight", "/blood", "/photos", "/admin"];
     
     if (rightSideTabs.includes(location) && navRef.current) {
       const tabIndex = tabs.findIndex(tab => tab.path === location);

@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -26,6 +26,12 @@ export interface IStorage {
   updateBloodEntry(id: string, entry: UpdateBloodEntry): Promise<BloodEntry | undefined>;
   deleteBloodEntry(id: string): Promise<boolean>;
   getAllBloodEntries(): Promise<BloodEntry[]>;
+  
+  createPhotoProgress(entry: InsertPhotoProgress): Promise<PhotoProgress>;
+  updatePhotoProgress(id: string, entry: UpdatePhotoProgress): Promise<PhotoProgress | undefined>;
+  deletePhotoProgress(id: string): Promise<boolean>;
+  getAllPhotoProgress(): Promise<PhotoProgress[]>;
+  getPhotoProgressByBodyPart(bodyPart: string): Promise<PhotoProgress[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -34,6 +40,7 @@ export class MemStorage implements IStorage {
   private workoutLogs: Map<string, WorkoutLog>;
   private weightEntries: Map<string, WeightEntry>;
   private bloodEntries: Map<string, BloodEntry>;
+  private photoProgress: Map<string, PhotoProgress>;
 
   constructor() {
     this.users = new Map();
@@ -41,6 +48,7 @@ export class MemStorage implements IStorage {
     this.workoutLogs = new Map();
     this.weightEntries = new Map();
     this.bloodEntries = new Map();
+    this.photoProgress = new Map();
     
     // Add some initial sample data
     this.seedData();
@@ -476,6 +484,56 @@ export class MemStorage implements IStorage {
         const dateA = a.asOf instanceof Date ? a.asOf : new Date(a.asOf);
         const dateB = b.asOf instanceof Date ? b.asOf : new Date(b.asOf);
         return dateA.getTime() - dateB.getTime();
+      });
+  }
+
+  // Photo Progress Methods
+  async createPhotoProgress(entry: InsertPhotoProgress): Promise<PhotoProgress> {
+    const id = randomUUID();
+    const now = new Date();
+    const photoProgress: PhotoProgress = {
+      id,
+      ...entry,
+      createdAt: now,
+    };
+    this.photoProgress.set(id, photoProgress);
+    return photoProgress;
+  }
+
+  async updatePhotoProgress(id: string, updateEntry: UpdatePhotoProgress): Promise<PhotoProgress | undefined> {
+    const existing = this.photoProgress.get(id);
+    if (!existing) {
+      return undefined;
+    }
+    
+    const updated: PhotoProgress = {
+      ...existing,
+      ...updateEntry,
+    };
+    this.photoProgress.set(id, updated);
+    return updated;
+  }
+
+  async deletePhotoProgress(id: string): Promise<boolean> {
+    return this.photoProgress.delete(id);
+  }
+
+  async getAllPhotoProgress(): Promise<PhotoProgress[]> {
+    return Array.from(this.photoProgress.values())
+      .sort((a, b) => {
+        const dateA = a.takenAt instanceof Date ? a.takenAt : new Date(a.takenAt);
+        const dateB = b.takenAt instanceof Date ? b.takenAt : new Date(b.takenAt);
+        return dateB.getTime() - dateA.getTime(); // Most recent first
+      });
+  }
+
+  async getPhotoProgressByBodyPart(bodyPart: string): Promise<PhotoProgress[]> {
+    return Array.from(this.photoProgress.values())
+      .filter(photo => photo.bodyPart === bodyPart)
+      .sort((a, b) => {
+        const dateA = a.takenAt instanceof Date ? a.takenAt : new Date(a.takenAt);
+        const dateB = b.takenAt instanceof Date ? b.takenAt : new Date(b.takenAt);
+        return dateB.getTime() - dateA.getTime(); // Most recent first
       });
   }
 }

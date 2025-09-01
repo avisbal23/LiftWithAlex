@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema } from "@shared/schema";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -259,6 +260,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(entries);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch blood entries" });
+    }
+  });
+
+  // Photo Progress Routes
+
+  // Get all photo progress entries
+  app.get("/api/photo-progress", async (req, res) => {
+    try {
+      const entries = await storage.getAllPhotoProgress();
+      res.json(entries);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch photo progress" });
+    }
+  });
+
+  // Get photo progress by body part
+  app.get("/api/photo-progress/body-part/:bodyPart", async (req, res) => {
+    try {
+      const bodyPart = req.params.bodyPart;
+      const entries = await storage.getPhotoProgressByBodyPart(bodyPart);
+      res.json(entries);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch photo progress by body part" });
+    }
+  });
+
+  // Create photo progress entry
+  app.post("/api/photo-progress", async (req, res) => {
+    try {
+      const validatedData = insertPhotoProgressSchema.parse(req.body);
+      const entry = await storage.createPhotoProgress(validatedData);
+      res.status(201).json(entry);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create photo progress entry" });
+      }
+    }
+  });
+
+  // Update photo progress entry
+  app.patch("/api/photo-progress/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const validatedData = updatePhotoProgressSchema.parse(req.body);
+      const entry = await storage.updatePhotoProgress(id, validatedData);
+      
+      if (!entry) {
+        return res.status(404).json({ message: "Photo progress entry not found" });
+      }
+      
+      res.json(entry);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update photo progress entry" });
+      }
+    }
+  });
+
+  // Delete photo progress entry
+  app.delete("/api/photo-progress/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const deleted = await storage.deletePhotoProgress(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Photo progress entry not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete photo progress entry" });
+    }
+  });
+
+  // Object Storage Routes
+
+  // Serve private objects (for photo progress)
+  app.get("/objects/:objectPath(*)", async (req, res) => {
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const objectFile = await objectStorageService.getObjectEntityFile(req.path);
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error serving object:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
+    }
+  });
+
+  // Get upload URL for photo progress
+  app.post("/api/objects/upload", async (req, res) => {
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+
+  // Set ACL policy after photo upload
+  app.put("/api/objects/set-acl", async (req, res) => {
+    if (!req.body.photoURL) {
+      return res.status(400).json({ error: "photoURL is required" });
+    }
+
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(req.body.photoURL);
+      
+      // For single user app, set as public photos
+      const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
+      await objectStorageService.trySetObjectEntityAclPolicy(req.body.photoURL, {
+        owner: "single-user",
+        visibility: "public", // Photos are publicly viewable
+      });
+
+      res.status(200).json({ objectPath });
+    } catch (error) {
+      console.error("Error setting ACL policy:", error);
+      res.status(500).json({ error: "Failed to set photo permissions" });
     }
   });
 

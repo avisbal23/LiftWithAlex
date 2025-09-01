@@ -128,6 +128,17 @@ export const bloodEntries = pgTable("blood_entries", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const photoProgress = pgTable("photo_progress", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description").default(""),
+  photoUrl: text("photo_url").notNull(), // Object storage path like /objects/uploads/uuid
+  bodyPart: text("body_part"), // 'front', 'back', 'side', 'arms', 'legs', 'abs', etc.
+  weight: real("weight"), // Weight at time of photo (optional)
+  takenAt: timestamp("taken_at").notNull(), // When photo was taken
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -159,6 +170,13 @@ export const insertBloodEntrySchema = createInsertSchema(bloodEntries).omit({
 
 export const updateBloodEntrySchema = insertBloodEntrySchema.partial();
 
+export const insertPhotoProgressSchema = createInsertSchema(photoProgress).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const updatePhotoProgressSchema = insertPhotoProgressSchema.partial();
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Exercise = typeof exercises.$inferSelect;
@@ -172,3 +190,6 @@ export type UpdateWeightEntry = z.infer<typeof updateWeightEntrySchema>;
 export type BloodEntry = typeof bloodEntries.$inferSelect;
 export type InsertBloodEntry = z.infer<typeof insertBloodEntrySchema>;
 export type UpdateBloodEntry = z.infer<typeof updateBloodEntrySchema>;
+export type PhotoProgress = typeof photoProgress.$inferSelect;
+export type InsertPhotoProgress = z.infer<typeof insertPhotoProgressSchema>;
+export type UpdatePhotoProgress = z.infer<typeof updatePhotoProgressSchema>;
