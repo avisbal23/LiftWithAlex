@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema } from "@shared/schema";
+import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -114,6 +114,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(logs);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch workout logs" });
+    }
+  });
+
+  // Create weight entry
+  app.post("/api/weight-entries", async (req, res) => {
+    try {
+      const validatedData = insertWeightEntrySchema.parse(req.body);
+      const entry = await storage.createWeightEntry(validatedData);
+      res.status(201).json(entry);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create weight entry" });
+      }
+    }
+  });
+
+  // Update weight entry
+  app.patch("/api/weight-entries/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const validatedData = updateWeightEntrySchema.parse(req.body);
+      const entry = await storage.updateWeightEntry(id, validatedData);
+      
+      if (!entry) {
+        return res.status(404).json({ message: "Weight entry not found" });
+      }
+      
+      res.json(entry);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update weight entry" });
+      }
+    }
+  });
+
+  // Delete weight entry
+  app.delete("/api/weight-entries/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const deleted = await storage.deleteWeightEntry(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Weight entry not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete weight entry" });
+    }
+  });
+
+  // Get all weight entries
+  app.get("/api/weight-entries", async (req, res) => {
+    try {
+      const entries = await storage.getAllWeightEntries();
+      res.json(entries);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch weight entries" });
+    }
+  });
+
+  // Get weight entries in date range
+  app.get("/api/weight-entries/range", async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "startDate and endDate are required" });
+      }
+      
+      const entries = await storage.getWeightEntriesInDateRange(
+        new Date(startDate as string),
+        new Date(endDate as string)
+      );
+      res.json(entries);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch weight entries in range" });
     }
   });
 

@@ -12,6 +12,7 @@ import Push2 from "@/pages/push2";
 import Pull2 from "@/pages/pull2";
 import Legs2 from "@/pages/legs2";
 import Cardio from "@/pages/cardio";
+import WeightTracking from "@/pages/weight-tracking";
 import Header from "@/components/layout/header";
 
 function Router() {
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/pull2" component={Pull2} />
       <Route path="/legs2" component={Legs2} />
       <Route path="/cardio" component={Cardio} />
+      <Route path="/weight" component={WeightTracking} />
       <Route component={NotFound} />
     </Switch>
   );

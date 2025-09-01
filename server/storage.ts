@@ -15,17 +15,25 @@ export interface IStorage {
   createWorkoutLog(log: InsertWorkoutLog): Promise<WorkoutLog>;
   getLatestWorkoutLog(): Promise<WorkoutLog | undefined>;
   getAllWorkoutLogs(): Promise<WorkoutLog[]>;
+  
+  createWeightEntry(entry: InsertWeightEntry): Promise<WeightEntry>;
+  updateWeightEntry(id: string, entry: UpdateWeightEntry): Promise<WeightEntry | undefined>;
+  deleteWeightEntry(id: string): Promise<boolean>;
+  getAllWeightEntries(): Promise<WeightEntry[]>;
+  getWeightEntriesInDateRange(startDate: Date, endDate: Date): Promise<WeightEntry[]>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private exercises: Map<string, Exercise>;
   private workoutLogs: Map<string, WorkoutLog>;
+  private weightEntries: Map<string, WeightEntry>;
 
   constructor() {
     this.users = new Map();
     this.exercises = new Map();
     this.workoutLogs = new Map();
+    this.weightEntries = new Map();
     
     // Add some initial sample data
     this.seedData();
@@ -129,6 +137,27 @@ export class MemStorage implements IStorage {
       };
       this.exercises.set(id, fullExercise);
     });
+
+    // Sample weight entries
+    const weightSampleData = [
+      { weight: 180, date: new Date('2024-01-01'), notes: 'Starting weight', bodyFat: 15, muscle: 150 },
+      { weight: 182, date: new Date('2024-01-15'), notes: 'Holiday gain', bodyFat: 16, muscle: 149 },
+      { weight: 179, date: new Date('2024-02-01'), notes: 'Back on track', bodyFat: 14, muscle: 151 },
+      { weight: 178, date: new Date('2024-02-15'), notes: 'Good progress', bodyFat: 13, muscle: 152 },
+      { weight: 176, date: new Date('2024-03-01'), notes: 'Steady decline', bodyFat: 12, muscle: 153 },
+      { weight: 175, date: new Date('2024-03-15'), notes: 'Feeling strong', bodyFat: 11, muscle: 155 },
+      { weight: 173, date: new Date('2024-04-01'), notes: 'New low!', bodyFat: 10, muscle: 157 },
+    ];
+
+    weightSampleData.forEach(entry => {
+      const id = randomUUID();
+      const fullEntry: WeightEntry = {
+        ...entry,
+        id,
+        createdAt: new Date(),
+      };
+      this.weightEntries.set(id, fullEntry);
+    });
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -216,6 +245,49 @@ export class MemStorage implements IStorage {
   async getAllWorkoutLogs(): Promise<WorkoutLog[]> {
     return Array.from(this.workoutLogs.values())
       .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+  }
+
+  async createWeightEntry(insertEntry: InsertWeightEntry): Promise<WeightEntry> {
+    const id = randomUUID();
+    const entry: WeightEntry = {
+      ...insertEntry,
+      id,
+      createdAt: new Date(),
+    };
+    this.weightEntries.set(id, entry);
+    return entry;
+  }
+
+  async updateWeightEntry(id: string, updateEntry: UpdateWeightEntry): Promise<WeightEntry | undefined> {
+    const existing = this.weightEntries.get(id);
+    if (!existing) {
+      return undefined;
+    }
+    
+    const updated: WeightEntry = {
+      ...existing,
+      ...updateEntry,
+    };
+    this.weightEntries.set(id, updated);
+    return updated;
+  }
+
+  async deleteWeightEntry(id: string): Promise<boolean> {
+    return this.weightEntries.delete(id);
+  }
+
+  async getAllWeightEntries(): Promise<WeightEntry[]> {
+    return Array.from(this.weightEntries.values())
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }
+
+  async getWeightEntriesInDateRange(startDate: Date, endDate: Date): Promise<WeightEntry[]> {
+    return Array.from(this.weightEntries.values())
+      .filter(entry => {
+        const entryDate = new Date(entry.date);
+        return entryDate >= startDate && entryDate <= endDate;
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }
 }
 
