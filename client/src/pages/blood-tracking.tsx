@@ -377,6 +377,13 @@ export default function BloodTracking() {
             "Free Testosterone: Bioavailable portion that enters muscle cells for growth and recovery",
             "SHBG: Lower levels mean more free testosterone available for muscle building",
             "Estrogens: Balance prevents muscle loss and supports bone strength for heavy lifting"
+          ],
+          optimalRanges: [
+            "Total Testosterone: 650-900 ng/dL",
+            "Free Testosterone: 20-35 pg/mL",
+            "SHBG: 20-40 nmol/L",
+            "Estradiol (Sensitive): 20-35 pg/mL",
+            "Testosterone:Estrogen Ratio: 15-30"
           ]
         };
       case "Thyroid":
@@ -387,6 +394,11 @@ export default function BloodTracking() {
             "Free T3: Powers intense training sessions and accelerates muscle recovery",
             "Free T4: Maintains steady energy for consistent gym performance and mental focus",
             "Optimal thyroid = explosive workouts, faster recovery, sharper mind"
+          ],
+          optimalRanges: [
+            "TSH: 0.8-2.0 uIU/mL",
+            "Free T3: 3.3-4.4 pg/mL",
+            "Free T4: 1.1-1.6 ng/dL"
           ]
         };
       case "Lipids":
@@ -397,6 +409,15 @@ export default function BloodTracking() {
             "HDL: Higher levels improve oxygen delivery and exercise capacity",
             "Triglycerides: Lower levels support better insulin sensitivity and muscle building",
             "ApoB: Key marker for maintaining peak cardiovascular performance under stress"
+          ],
+          optimalRanges: [
+            "Total Cholesterol: 160-200 mg/dL",
+            "HDL: 50-80 mg/dL",
+            "LDL (Calculated): 60-100 mg/dL",
+            "Triglycerides: 50-90 mg/dL",
+            "TG:HDL Ratio: 0.5-1.5",
+            "ApoB: 60-80 mg/dL",
+            "Non-HDL Cholesterol: 80-110 mg/dL"
           ]
         };
       case "Health Markers":
@@ -407,6 +428,14 @@ export default function BloodTracking() {
             "CRP (hs): Low inflammation means faster muscle recovery and better sleep",
             "HbA1c: Stable blood sugar optimizes muscle building and prevents energy crashes",
             "Ferritin: Adequate iron ensures oxygen delivery for intense training and mental focus"
+          ],
+          optimalRanges: [
+            "Vitamin D (25-OH): 50-70 ng/mL",
+            "CRP (hs): 0.0-0.7 mg/L",
+            "Insulin (Fasting): 2-5 uIU/mL",
+            "HbA1c: 4.8-5.2%",
+            "Albumin: 4.3-5.0 g/dL",
+            "Ferritin: 80-160 ng/mL"
           ]
         };
       default:
@@ -460,7 +489,7 @@ export default function BloodTracking() {
             ))
           ) : (
             // Back side - show explanation
-            <div className="space-y-3">
+            <div className="space-y-4">
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {explanation.description}
               </p>
@@ -472,6 +501,19 @@ export default function BloodTracking() {
                   </div>
                 ))}
               </div>
+              {explanation.optimalRanges && (
+                <div className="border-t pt-3">
+                  <h4 className="text-sm font-semibold text-foreground mb-2">Optimal Ranges (Male, 30s, Strength Focus)</h4>
+                  <div className="space-y-1">
+                    {explanation.optimalRanges.map((range, index) => (
+                      <div key={index} className="text-xs text-muted-foreground flex items-center gap-2">
+                        <span className="text-green-600">✓</span>
+                        <span className="font-mono">{range}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
