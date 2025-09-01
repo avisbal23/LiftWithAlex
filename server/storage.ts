@@ -138,15 +138,48 @@ export class MemStorage implements IStorage {
       this.exercises.set(id, fullExercise);
     });
 
-    // Sample weight entries
+    // Sample weight entries (RENPHO format sample data)
     const weightSampleData = [
-      { weight: 180, date: new Date('2024-01-01'), notes: 'Starting weight', bodyFat: 15, muscle: 150 },
-      { weight: 182, date: new Date('2024-01-15'), notes: 'Holiday gain', bodyFat: 16, muscle: 149 },
-      { weight: 179, date: new Date('2024-02-01'), notes: 'Back on track', bodyFat: 14, muscle: 151 },
-      { weight: 178, date: new Date('2024-02-15'), notes: 'Good progress', bodyFat: 13, muscle: 152 },
-      { weight: 176, date: new Date('2024-03-01'), notes: 'Steady decline', bodyFat: 12, muscle: 153 },
-      { weight: 175, date: new Date('2024-03-15'), notes: 'Feeling strong', bodyFat: 11, muscle: 155 },
-      { weight: 173, date: new Date('2024-04-01'), notes: 'New low!', bodyFat: 10, muscle: 157 },
+      { 
+        date: new Date('2025-01-24'), time: '4:00:21 PM', weight: 172.8, bodyFat: 15.1, 
+        fatFreeMass: 146.8, muscleMass: 139.4, bmi: 27.1, subcutaneousFat: 12.5, 
+        skeletalMuscle: 54.8, bodyWater: 61.3, visceralFat: 10, boneMass: 7.2, 
+        protein: 19.4, bmr: 1790, metabolicAge: 31, remarks: '--',
+        optimalWeight: null, targetToOptimalWeight: null, targetToOptimalFatMass: null, 
+        targetToOptimalMuscleMass: null, bodyType: null
+      },
+      { 
+        date: new Date('2025-01-25'), time: '9:49:10 AM', weight: 172.0, bodyFat: 15.0, 
+        fatFreeMass: 146.2, muscleMass: 138.8, bmi: 26.9, subcutaneousFat: 12.4, 
+        skeletalMuscle: 54.9, bodyWater: 61.4, visceralFat: 10, boneMass: 7.4, 
+        protein: 19.4, bmr: 1816, metabolicAge: 31, remarks: '--',
+        optimalWeight: null, targetToOptimalWeight: null, targetToOptimalFatMass: null, 
+        targetToOptimalMuscleMass: null, bodyType: null
+      },
+      { 
+        date: new Date('2025-01-28'), time: '6:49:05 AM', weight: 173.6, bodyFat: 15.2, 
+        fatFreeMass: 147.2, muscleMass: 139.8, bmi: 27.2, subcutaneousFat: 12.5, 
+        skeletalMuscle: 54.8, bodyWater: 61.2, visceralFat: 10, boneMass: 7.2, 
+        protein: 19.3, bmr: 1799, metabolicAge: 31, remarks: '--',
+        optimalWeight: null, targetToOptimalWeight: null, targetToOptimalFatMass: null, 
+        targetToOptimalMuscleMass: null, bodyType: null
+      },
+      { 
+        date: new Date('2025-02-03'), time: '10:36:31 AM', weight: 170.4, bodyFat: 14.8, 
+        fatFreeMass: 145.2, muscleMass: 137.8, bmi: 26.7, subcutaneousFat: 12.3, 
+        skeletalMuscle: 55.0, bodyWater: 61.5, visceralFat: 9, boneMass: 7.4, 
+        protein: 19.4, bmr: 1803, metabolicAge: 31, remarks: '--',
+        optimalWeight: null, targetToOptimalWeight: null, targetToOptimalFatMass: null, 
+        targetToOptimalMuscleMass: null, bodyType: null
+      },
+      { 
+        date: new Date('2025-02-12'), time: '7:15:02 AM', weight: 173.6, bodyFat: 15.2, 
+        fatFreeMass: 147.2, muscleMass: 139.8, bmi: 27.2, subcutaneousFat: 12.5, 
+        skeletalMuscle: 54.8, bodyWater: 61.2, visceralFat: 10, boneMass: 7.2, 
+        protein: 19.3, bmr: 1799, metabolicAge: 31, remarks: '--',
+        optimalWeight: null, targetToOptimalWeight: null, targetToOptimalFatMass: null, 
+        targetToOptimalMuscleMass: null, bodyType: null
+      },
     ];
 
     weightSampleData.forEach(entry => {
@@ -278,16 +311,24 @@ export class MemStorage implements IStorage {
 
   async getAllWeightEntries(): Promise<WeightEntry[]> {
     return Array.from(this.weightEntries.values())
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      .sort((a, b) => {
+        const dateA = a.date instanceof Date ? a.date : new Date(a.date);
+        const dateB = b.date instanceof Date ? b.date : new Date(b.date);
+        return dateA.getTime() - dateB.getTime();
+      });
   }
 
   async getWeightEntriesInDateRange(startDate: Date, endDate: Date): Promise<WeightEntry[]> {
     return Array.from(this.weightEntries.values())
       .filter(entry => {
-        const entryDate = new Date(entry.date);
+        const entryDate = entry.date instanceof Date ? entry.date : new Date(entry.date);
         return entryDate >= startDate && entryDate <= endDate;
       })
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      .sort((a, b) => {
+        const dateA = a.date instanceof Date ? a.date : new Date(a.date);
+        const dateB = b.date instanceof Date ? b.date : new Date(b.date);
+        return dateA.getTime() - dateB.getTime();
+      });
   }
 }
 

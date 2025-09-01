@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -33,11 +33,27 @@ export const workoutLogs = pgTable("workout_logs", {
 
 export const weightEntries = pgTable("weight_entries", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  weight: integer("weight").notNull(), // Weight in pounds (or could be decimal for more precision)
   date: timestamp("date").notNull(),
-  notes: text("notes").default(""),
-  bodyFat: integer("body_fat"), // Optional body fat percentage
-  muscle: integer("muscle"), // Optional muscle mass
+  time: text("time"), // Time portion like "11:52:37 AM"
+  weight: real("weight").notNull(), // Weight(lb)
+  bodyFat: real("body_fat"), // Body Fat(%)
+  fatFreeMass: real("fat_free_mass"), // Fat-Free Mass(lb)
+  muscleMass: real("muscle_mass"), // Muscle Mass(lb)
+  bmi: real("bmi"), // BMI
+  subcutaneousFat: real("subcutaneous_fat"), // Subcutaneous Fat(%)
+  skeletalMuscle: real("skeletal_muscle"), // Skeletal Muscle(%)
+  bodyWater: real("body_water"), // Body Water(%)
+  visceralFat: integer("visceral_fat"), // Visceral Fat
+  boneMass: real("bone_mass"), // Bone Mass(lb)
+  protein: real("protein"), // Protein(%)
+  bmr: integer("bmr"), // BMR(kcal)
+  metabolicAge: integer("metabolic_age"), // Metabolic Age
+  optimalWeight: real("optimal_weight"), // Optimal Weight(lb) - often null
+  targetToOptimalWeight: real("target_to_optimal_weight"), // Target to optimal weight(lb) - often null
+  targetToOptimalFatMass: real("target_to_optimal_fat_mass"), // Target to optimal fat mass(lb) - often null
+  targetToOptimalMuscleMass: real("target_to_optimal_muscle_mass"), // Target to optimal muscle mass(lb) - often null
+  bodyType: text("body_type"), // Body Type - often null
+  remarks: text("remarks"), // Remarks - often null
   createdAt: timestamp("created_at").defaultNow(),
 });
 

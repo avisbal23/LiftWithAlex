@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Bar } from "recharts";
-import { Calendar, Upload, Plus, Trash2, Edit3 } from "lucide-react";
+import { Calendar, Upload, Plus, Trash2, Download } from "lucide-react";
 import { format, subDays, subMonths, parseISO } from "date-fns";
 import { type WeightEntry, type InsertWeightEntry } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -16,24 +16,28 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function WeightTracking() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
   // State for chart controls
-  const [dateRange, setDateRange] = useState(30); // days
+  const [dateRange, setDateRange] = useState("30");
   const [showWeight, setShowWeight] = useState(true);
   const [showBodyFat, setShowBodyFat] = useState(true);
-  const [showMuscle, setShowMuscle] = useState(false);
+  const [showMuscleMass, setShowMuscleMass] = useState(false);
+  const [showBMI, setShowBMI] = useState(false);
   
   // Form state for adding new entries
   const [newEntry, setNewEntry] = useState({
     weight: "",
     date: format(new Date(), "yyyy-MM-dd"),
-    notes: "",
+    time: format(new Date(), "h:mm:ss a"),
     bodyFat: "",
-    muscle: "",
+    muscleMass: "",
+    bmi: "",
+    remarks: "",
   });
 
   // Fetch weight entries
@@ -52,13 +56,15 @@ export default function WeightTracking() {
       setNewEntry({
         weight: "",
         date: format(new Date(), "yyyy-MM-dd"),
-        notes: "",
+        time: format(new Date(), "h:mm:ss a"),
         bodyFat: "",
-        muscle: "",
+        muscleMass: "",
+        bmi: "",
+        remarks: "",
       });
       toast({
         title: "Weight entry added",
-        description: "Your weight data has been recorded successfully.",
+        description: "Your health data has been recorded successfully.",
       });
     },
   });
@@ -72,14 +78,15 @@ export default function WeightTracking() {
       queryClient.invalidateQueries({ queryKey: ["/api/weight-entries"] });
       toast({
         title: "Entry deleted",
-        description: "Weight entry has been removed.",
+        description: "Health data entry has been removed.",
       });
     },
   });
 
   // Filter data based on date range
   const filteredData = useMemo(() => {
-    const cutoffDate = subDays(new Date(), dateRange);
+    const daysBack = parseInt(dateRange);
+    const cutoffDate = subDays(new Date(), daysBack);
     return weightEntries
       .filter(entry => new Date(entry.date) >= cutoffDate)
       .map(entry => ({
@@ -101,11 +108,13 @@ export default function WeightTracking() {
     }
 
     createMutation.mutate({
-      weight: parseInt(newEntry.weight),
+      weight: parseFloat(newEntry.weight),
       date: new Date(newEntry.date),
-      notes: newEntry.notes,
-      bodyFat: newEntry.bodyFat ? parseInt(newEntry.bodyFat) : undefined,
-      muscle: newEntry.muscle ? parseInt(newEntry.muscle) : undefined,
+      time: newEntry.time,
+      bodyFat: newEntry.bodyFat ? parseFloat(newEntry.bodyFat) : undefined,
+      muscleMass: newEntry.muscleMass ? parseFloat(newEntry.muscleMass) : undefined,
+      bmi: newEntry.bmi ? parseFloat(newEntry.bmi) : undefined,
+      remarks: newEntry.remarks,
     });
   };
 
@@ -118,23 +127,35 @@ export default function WeightTracking() {
       try {
         const text = e.target?.result as string;
         const lines = text.split('\n');
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
         
-        // Expected format: date, weight, bodyFat, muscle, notes
+        // Skip header line and process data
         const entries: InsertWeightEntry[] = [];
         
         for (let i = 1; i < lines.length; i++) {
           if (!lines[i].trim()) continue;
           
           const values = lines[i].split(',');
-          const entry: any = {
-            date: new Date(values[0]),
-            weight: parseInt(values[1]),
-            notes: values[4] || "",
-          };
+          if (values.length < 3) continue;
           
-          if (values[2]) entry.bodyFat = parseInt(values[2]);
-          if (values[3]) entry.muscle = parseInt(values[3]);
+          // RENPHO format: Date, Time, Weight(lb), Body Fat(%), Fat-Free Mass(lb), Muscle Mass(lb), BMI, etc.
+          const entry: InsertWeightEntry = {
+            date: new Date(values[0].trim()),
+            time: values[1]?.trim() || "",
+            weight: parseFloat(values[2]) || 0,
+            bodyFat: values[3] ? parseFloat(values[3]) : undefined,
+            fatFreeMass: values[4] ? parseFloat(values[4]) : undefined,
+            muscleMass: values[5] ? parseFloat(values[5]) : undefined,
+            bmi: values[6] ? parseFloat(values[6]) : undefined,
+            subcutaneousFat: values[7] ? parseFloat(values[7]) : undefined,
+            skeletalMuscle: values[8] ? parseFloat(values[8]) : undefined,
+            bodyWater: values[9] ? parseFloat(values[9]) : undefined,
+            visceralFat: values[10] ? parseInt(values[10]) : undefined,
+            boneMass: values[11] ? parseFloat(values[11]) : undefined,
+            protein: values[12] ? parseFloat(values[12]) : undefined,
+            bmr: values[13] ? parseInt(values[13]) : undefined,
+            metabolicAge: values[14] ? parseInt(values[14]) : undefined,
+            remarks: values[19]?.trim() || "",
+          };
           
           entries.push(entry);
         }
@@ -145,19 +166,69 @@ export default function WeightTracking() {
         });
 
         toast({
-          title: "File uploaded successfully",
-          description: `Added ${entries.length} weight entries.`,
+          title: "RENPHO file uploaded successfully",
+          description: `Added ${entries.length} health data entries.`,
         });
       } catch (error) {
         toast({
           title: "Upload failed",
-          description: "Please check your file format. Expected: date,weight,bodyFat,muscle,notes",
+          description: "Please check your RENPHO CSV file format.",
           variant: "destructive",
         });
       }
     };
     reader.readAsText(file);
     event.target.value = '';
+  };
+
+  const exportCSV = () => {
+    // Create RENPHO format CSV template
+    const header = "Date, Time, Weight(lb),Body Fat(%),Fat-Free Mass(lb),Muscle Mass(lb),BMI,Subcutaneous Fat(%),Skeletal Muscle(%),Body Water(%),Visceral Fat,Bone Mass(lb),Protein (%),BMR(kcal),Metabolic Age,Optimal Weight(lb),Target to optimal weight(lb),Target to optimal fat mass(lb),Target to optimal muscle mass(lb),Body Type,Remarks";
+    
+    const rows = weightEntries
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .map(entry => {
+        const formatValue = (val: any) => val !== undefined && val !== null ? val : '--';
+        return [
+          format(new Date(entry.date), "M/d/yy"),
+          entry.time || '--',
+          entry.weight,
+          formatValue(entry.bodyFat),
+          formatValue(entry.fatFreeMass),
+          formatValue(entry.muscleMass),
+          formatValue(entry.bmi),
+          formatValue(entry.subcutaneousFat),
+          formatValue(entry.skeletalMuscle),
+          formatValue(entry.bodyWater),
+          formatValue(entry.visceralFat),
+          formatValue(entry.boneMass),
+          formatValue(entry.protein),
+          formatValue(entry.bmr),
+          formatValue(entry.metabolicAge),
+          formatValue(entry.optimalWeight),
+          formatValue(entry.targetToOptimalWeight),
+          formatValue(entry.targetToOptimalFatMass),
+          formatValue(entry.targetToOptimalMuscleMass),
+          formatValue(entry.bodyType),
+          entry.remarks || '--'
+        ].join(',');
+      });
+
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `renpho_health_data_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "CSV exported",
+      description: "Your health data has been exported in RENPHO format.",
+    });
   };
 
   if (isLoading) {
@@ -182,9 +253,9 @@ export default function WeightTracking() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-foreground" data-testid="heading-weight-tracking">
-              Weight Tracking
+              Weight & Health Tracking
             </h2>
-            <p className="text-muted-foreground">Monitor your weight, body fat, and muscle mass over time</p>
+            <p className="text-muted-foreground">Monitor your complete health metrics over time</p>
           </div>
           
           <div className="flex items-center gap-3">
@@ -202,7 +273,18 @@ export default function WeightTracking() {
               data-testid="button-upload-weight-data"
             >
               <Upload className="w-4 h-4 mr-2" />
-              Upload CSV
+              Import RENPHO
+            </Button>
+
+            {/* Export CSV */}
+            <Button
+              variant="outline"
+              onClick={exportCSV}
+              disabled={weightEntries.length === 0}
+              data-testid="button-export-csv"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
             </Button>
 
             {/* Add Entry Dialog */}
@@ -215,7 +297,7 @@ export default function WeightTracking() {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Add Weight Entry</DialogTitle>
+                  <DialogTitle>Add Health Data Entry</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -224,9 +306,10 @@ export default function WeightTracking() {
                       <Input
                         id="weight"
                         type="number"
+                        step="0.1"
                         value={newEntry.weight}
                         onChange={(e) => setNewEntry(prev => ({ ...prev, weight: e.target.value }))}
-                        placeholder="175"
+                        placeholder="172.8"
                       />
                     </div>
                     <div>
@@ -242,34 +325,59 @@ export default function WeightTracking() {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
+                      <Label htmlFor="time">Time</Label>
+                      <Input
+                        id="time"
+                        value={newEntry.time}
+                        onChange={(e) => setNewEntry(prev => ({ ...prev, time: e.target.value }))}
+                        placeholder="9:15:29 AM"
+                      />
+                    </div>
+                    <div>
                       <Label htmlFor="bodyFat">Body Fat %</Label>
                       <Input
                         id="bodyFat"
                         type="number"
+                        step="0.1"
                         value={newEntry.bodyFat}
                         onChange={(e) => setNewEntry(prev => ({ ...prev, bodyFat: e.target.value }))}
-                        placeholder="12"
+                        placeholder="15.1"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="muscleMass">Muscle Mass (lbs)</Label>
+                      <Input
+                        id="muscleMass"
+                        type="number"
+                        step="0.1"
+                        value={newEntry.muscleMass}
+                        onChange={(e) => setNewEntry(prev => ({ ...prev, muscleMass: e.target.value }))}
+                        placeholder="139.4"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="muscle">Muscle Mass (lbs)</Label>
+                      <Label htmlFor="bmi">BMI</Label>
                       <Input
-                        id="muscle"
+                        id="bmi"
                         type="number"
-                        value={newEntry.muscle}
-                        onChange={(e) => setNewEntry(prev => ({ ...prev, muscle: e.target.value }))}
-                        placeholder="155"
+                        step="0.1"
+                        value={newEntry.bmi}
+                        onChange={(e) => setNewEntry(prev => ({ ...prev, bmi: e.target.value }))}
+                        placeholder="27.1"
                       />
                     </div>
                   </div>
                   
                   <div>
-                    <Label htmlFor="notes">Notes</Label>
-                    <Textarea
-                      id="notes"
-                      value={newEntry.notes}
-                      onChange={(e) => setNewEntry(prev => ({ ...prev, notes: e.target.value }))}
-                      placeholder="Feeling strong today..."
+                    <Label htmlFor="remarks">Remarks</Label>
+                    <Input
+                      id="remarks"
+                      value={newEntry.remarks}
+                      onChange={(e) => setNewEntry(prev => ({ ...prev, remarks: e.target.value }))}
+                      placeholder="Optional notes..."
                     />
                   </div>
                   
@@ -287,44 +395,31 @@ export default function WeightTracking() {
         </div>
 
         {/* Interactive Controls */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {/* Date Range Control */}
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-3">
               <CardTitle className="text-sm">Date Range</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <Button 
-                variant={dateRange === 30 ? "default" : "outline"} 
-                size="sm" 
-                onClick={() => setDateRange(30)}
-                className="w-full"
-              >
-                30 Days
-              </Button>
-              <Button 
-                variant={dateRange === 90 ? "default" : "outline"} 
-                size="sm" 
-                onClick={() => setDateRange(90)}
-                className="w-full"
-              >
-                90 Days
-              </Button>
-              <Button 
-                variant={dateRange === 365 ? "default" : "outline"} 
-                size="sm" 
-                onClick={() => setDateRange(365)}
-                className="w-full"
-              >
-                1 Year
-              </Button>
+            <CardContent>
+              <Select value={dateRange} onValueChange={setDateRange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select range" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="30">30 Days</SelectItem>
+                  <SelectItem value="90">90 Days</SelectItem>
+                  <SelectItem value="180">6 Months</SelectItem>
+                  <SelectItem value="365">1 Year</SelectItem>
+                </SelectContent>
+              </Select>
             </CardContent>
           </Card>
 
           {/* Display Options */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Display Options</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Chart Display</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center space-x-2">
@@ -346,53 +441,65 @@ export default function WeightTracking() {
               <div className="flex items-center space-x-2">
                 <Checkbox 
                   id="show-muscle" 
-                  checked={showMuscle} 
-                  onCheckedChange={(checked) => setShowMuscle(!!checked)} 
+                  checked={showMuscleMass} 
+                  onCheckedChange={(checked) => setShowMuscleMass(!!checked)} 
                 />
                 <Label htmlFor="show-muscle" className="text-sm">Muscle Mass</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="show-bmi" 
+                  checked={showBMI} 
+                  onCheckedChange={(checked) => setShowBMI(!!checked)} 
+                />
+                <Label htmlFor="show-bmi" className="text-sm">BMI</Label>
               </div>
             </CardContent>
           </Card>
 
           {/* Stats */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Statistics</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Current Stats</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {filteredData.length > 0 && (
                 <>
                   <div className="text-sm">
-                    <span className="text-muted-foreground">Current:</span> {filteredData[filteredData.length - 1]?.weight} lbs
+                    <span className="text-muted-foreground">Weight:</span> {filteredData[filteredData.length - 1]?.weight} lbs
+                  </div>
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Body Fat:</span> {filteredData[filteredData.length - 1]?.bodyFat || "N/A"}%
                   </div>
                   <div className="text-sm">
                     <span className="text-muted-foreground">Change:</span> {
                       filteredData.length > 1 
-                        ? `${(filteredData[filteredData.length - 1]?.weight || 0) - (filteredData[0]?.weight || 0)} lbs`
+                        ? `${((filteredData[filteredData.length - 1]?.weight || 0) - (filteredData[0]?.weight || 0)).toFixed(1)} lbs`
                         : "N/A"
                     }
-                  </div>
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">Entries:</span> {filteredData.length}
                   </div>
                 </>
               )}
             </CardContent>
           </Card>
 
-          {/* File Upload Instructions */}
+          {/* Recent Entries Count */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">CSV Format</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Data Summary</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div>Expected format:</div>
-                <code className="block bg-muted p-2 rounded">
-                  date,weight,bodyFat,muscle,notes<br />
-                  2024-01-01,175,12,155,"Good start"
-                </code>
+            <CardContent className="space-y-2">
+              <div className="text-sm">
+                <span className="text-muted-foreground">Total Entries:</span> {weightEntries.length}
               </div>
+              <div className="text-sm">
+                <span className="text-muted-foreground">In Range:</span> {filteredData.length}
+              </div>
+              {filteredData.length > 0 && (
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Latest:</span> {format(new Date(filteredData[filteredData.length - 1]?.fullDate), "MMM dd")}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -401,7 +508,7 @@ export default function WeightTracking() {
         {filteredData.length > 0 ? (
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle>Weight Progress</CardTitle>
+              <CardTitle>Health Progress Chart</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={400}>
@@ -413,8 +520,14 @@ export default function WeightTracking() {
                   <Tooltip 
                     labelFormatter={(label) => `Date: ${label}`}
                     formatter={(value, name) => [
-                      `${value}${name === 'bodyFat' ? '%' : name === 'weight' || name === 'muscle' ? ' lbs' : ''}`,
-                      name === 'bodyFat' ? 'Body Fat %' : name === 'muscle' ? 'Muscle Mass' : 'Weight'
+                      `${typeof value === 'number' ? value.toFixed(1) : value}${
+                        name === 'bodyFat' ? '%' : 
+                        name === 'weight' || name === 'muscleMass' ? ' lbs' : 
+                        name === 'bmi' ? '' : ''
+                      }`,
+                      name === 'bodyFat' ? 'Body Fat %' : 
+                      name === 'muscleMass' ? 'Muscle Mass' : 
+                      name === 'bmi' ? 'BMI' : 'Weight'
                     ]}
                   />
                   <Legend />
@@ -439,13 +552,24 @@ export default function WeightTracking() {
                       name="bodyFat"
                     />
                   )}
-                  {showMuscle && (
-                    <Bar 
+                  {showMuscleMass && (
+                    <Line 
                       yAxisId="weight"
-                      dataKey="muscle" 
-                      fill="#16a34a" 
-                      opacity={0.6}
-                      name="muscle"
+                      type="monotone" 
+                      dataKey="muscleMass" 
+                      stroke="#16a34a" 
+                      strokeWidth={2}
+                      name="muscleMass"
+                    />
+                  )}
+                  {showBMI && (
+                    <Line 
+                      yAxisId="percent"
+                      type="monotone" 
+                      dataKey="bmi" 
+                      stroke="#f59e0b" 
+                      strokeWidth={2}
+                      name="bmi"
                     />
                   )}
                 </ComposedChart>
@@ -456,8 +580,8 @@ export default function WeightTracking() {
           <Card className="mb-6">
             <CardContent className="py-12 text-center">
               <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Weight Data</h3>
-              <p className="text-muted-foreground mb-4">Start tracking your weight by adding your first entry or uploading a CSV file.</p>
+              <h3 className="text-lg font-semibold mb-2">No Health Data</h3>
+              <p className="text-muted-foreground mb-4">Start tracking your health metrics by adding your first entry or importing a RENPHO CSV file.</p>
               <Dialog>
                 <DialogTrigger asChild>
                   <Button>Add First Entry</Button>
@@ -468,55 +592,98 @@ export default function WeightTracking() {
         )}
 
         {/* Data Table */}
-        <Card>
+        <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Weight Entries</CardTitle>
+            <CardTitle>Health Data Entries</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Weight (lbs)</TableHead>
-                  <TableHead>Body Fat %</TableHead>
-                  <TableHead>Muscle (lbs)</TableHead>
-                  <TableHead>Notes</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {weightEntries.length === 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                      No weight entries found. Add your first entry to get started.
-                    </TableCell>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Weight (lbs)</TableHead>
+                    <TableHead>Body Fat %</TableHead>
+                    <TableHead>Muscle Mass (lbs)</TableHead>
+                    <TableHead>BMI</TableHead>
+                    <TableHead>Remarks</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ) : (
-                  weightEntries
-                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                    .map((entry) => (
-                      <TableRow key={entry.id}>
-                        <TableCell>{format(new Date(entry.date), "MMM dd, yyyy")}</TableCell>
-                        <TableCell>{entry.weight}</TableCell>
-                        <TableCell>{entry.bodyFat || "-"}</TableCell>
-                        <TableCell>{entry.muscle || "-"}</TableCell>
-                        <TableCell className="max-w-xs truncate">{entry.notes || "-"}</TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => deleteMutation.mutate(entry.id)}
-                            disabled={deleteMutation.isPending}
-                            data-testid={`button-delete-weight-${entry.id}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {weightEntries.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                        No health data entries found. Add your first entry to get started.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    weightEntries
+                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                      .map((entry) => (
+                        <TableRow key={entry.id}>
+                          <TableCell>{format(new Date(entry.date), "MMM dd, yyyy")}</TableCell>
+                          <TableCell>{entry.time || "-"}</TableCell>
+                          <TableCell>{entry.weight}</TableCell>
+                          <TableCell>{entry.bodyFat ? `${entry.bodyFat}%` : "-"}</TableCell>
+                          <TableCell>{entry.muscleMass || "-"}</TableCell>
+                          <TableCell>{entry.bmi || "-"}</TableCell>
+                          <TableCell className="max-w-xs truncate">{entry.remarks || "-"}</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => deleteMutation.mutate(entry.id)}
+                              disabled={deleteMutation.isPending}
+                              data-testid={`button-delete-weight-${entry.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* RENPHO CSV Format Information (moved to bottom) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">RENPHO CSV Format Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-medium mb-2">Import Instructions:</h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  You can import your RENPHO health data by exporting from the RENPHO app and uploading the CSV file here. 
+                  The system will automatically parse all health metrics including weight, body fat, muscle mass, BMI, and more.
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-medium mb-2">Expected CSV Format:</h4>
+                <div className="bg-muted p-3 rounded-md overflow-x-auto">
+                  <code className="text-xs whitespace-pre">
+{`Date, Time, Weight(lb),Body Fat(%),Fat-Free Mass(lb),Muscle Mass(lb),BMI,Subcutaneous Fat(%),Skeletal Muscle(%),...
+8/24/25,11:52:37 AM,166.4,15.0,141.4,134.2,26.8,12.4,54.9,61.4,9,7.2,19.4,1769,31,--,--,--,--,--,--
+8/21/25,7:47:06 AM,167.4,15.1,142.0,135.0,27.0,12.5,54.8,61.3,10,7.0,19.4,1747,31,--,--,--,--,--,--`}
+                  </code>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="font-medium mb-2">Export Template:</h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Use the "Export CSV" button above to download your current data in RENPHO format. 
+                  You can then edit this file and re-import it to update or add new entries.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </main>
