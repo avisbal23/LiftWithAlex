@@ -67,10 +67,7 @@ export default function PhotoProgressPage() {
 
   const addMutation = useMutation({
     mutationFn: async (data: InsertPhotoProgress) => {
-      return apiRequest("/api/photo-progress", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      return apiRequest("POST", "/api/photo-progress", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/photo-progress"] });
@@ -93,10 +90,7 @@ export default function PhotoProgressPage() {
 
   const editMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<InsertPhotoProgress> }) => {
-      return apiRequest(`/api/photo-progress/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-      });
+      return apiRequest("PATCH", `/api/photo-progress/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/photo-progress"] });
@@ -119,9 +113,7 @@ export default function PhotoProgressPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/photo-progress/${id}`, {
-        method: "DELETE",
-      });
+      return apiRequest("DELETE", `/api/photo-progress/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/photo-progress"] });
@@ -142,10 +134,9 @@ export default function PhotoProgressPage() {
 
   const handlePhotoUpload = async (form: typeof addForm) => {
     try {
-      const response = await apiRequest("/api/objects/upload", {
-        method: "POST",
-      });
-      const { uploadURL } = response;
+      const response = await apiRequest("POST", "/api/objects/upload");
+      const data = await response.json() as { uploadURL: string };
+      const { uploadURL } = data;
       return { method: "PUT" as const, url: uploadURL };
     } catch (error) {
       toast({
@@ -164,13 +155,10 @@ export default function PhotoProgressPage() {
 
       try {
         // Set ACL policy for the photo
-        await apiRequest("/api/objects/set-acl", {
-          method: "PUT",
-          body: JSON.stringify({ photoURL }),
-        });
+        await apiRequest("PUT", "/api/objects/set-acl", { photoURL });
 
         // Update form with the photo URL
-        form.setValue("photoUrl", photoURL);
+        form.setValue("photoUrl", photoURL || "");
         
         toast({
           title: "Success",
@@ -187,9 +175,10 @@ export default function PhotoProgressPage() {
     }
   };
 
+  const photos = (photoProgress as PhotoProgress[]) || [];
   const filteredPhotos = selectedBodyPart === "all" 
-    ? photoProgress 
-    : photoProgress.filter((photo: PhotoProgress) => photo.bodyPart === selectedBodyPart);
+    ? photos 
+    : photos.filter((photo: PhotoProgress) => photo.bodyPart === selectedBodyPart);
 
   const startEdit = (photo: PhotoProgress) => {
     setEditingPhoto(photo);
@@ -267,7 +256,17 @@ export default function PhotoProgressPage() {
               </DialogHeader>
 
               <Form {...addForm}>
-                <form onSubmit={addForm.handleSubmit((data) => addMutation.mutate(data))} className="space-y-6">
+                <form onSubmit={addForm.handleSubmit((data) => {
+                  if (!data.photoUrl) {
+                    toast({
+                      title: "Error",
+                      description: "Please upload a photo before submitting",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  addMutation.mutate(data);
+                })} className="space-y-6">
                   <div className="space-y-4">
                     <FormField
                       control={addForm.control}
@@ -297,6 +296,7 @@ export default function PhotoProgressPage() {
                             <Textarea 
                               placeholder="Add notes about your progress, workout routine, etc." 
                               {...field}
+                              value={field.value || ""}
                               data-testid="textarea-photo-description"
                             />
                           </FormControl>
@@ -312,7 +312,7 @@ export default function PhotoProgressPage() {
                         <FormItem>
                           <FormLabel>Body Part</FormLabel>
                           <FormControl>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
                               <SelectTrigger data-testid="select-photo-body-part">
                                 <SelectValue placeholder="Select body part" />
                               </SelectTrigger>
@@ -548,6 +548,7 @@ export default function PhotoProgressPage() {
                             <Textarea 
                               placeholder="Add notes about your progress, workout routine, etc." 
                               {...field}
+                              value={field.value || ""}
                               data-testid="textarea-edit-description"
                             />
                           </FormControl>
@@ -563,7 +564,7 @@ export default function PhotoProgressPage() {
                         <FormItem>
                           <FormLabel>Body Part</FormLabel>
                           <FormControl>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
                               <SelectTrigger data-testid="select-edit-body-part">
                                 <SelectValue placeholder="Select body part" />
                               </SelectTrigger>
