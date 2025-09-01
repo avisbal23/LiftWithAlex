@@ -226,88 +226,12 @@ export class MemStorage implements IStorage {
   }
 
   private seedBloodData() {
-    // Add initial blood lab data from your provided JSON
-    
-    // February 2023 Lab Results
-    const feb2023Id = randomUUID();
-    const feb2023Entry: BloodEntry = {
-      id: feb2023Id,
-      asOf: new Date("2023-02-10"),
-      source: "labcorp_pdf",
-      
-      // Hormone Balance
-      totalTestosterone: 349,
-      totalTestosteroneUnit: "ng/dL",
-      freeTestosterone: 10.7,
-      freeTestosteroneUnit: "pg/mL",
-      shbg: 29.9,
-      shbgUnit: "nmol/L",
-      estradiol: 29.6,
-      estradiolUnit: "pg/mL",
-      estrogensTotal: 66,
-      estrogensTotalUnit: "pg/mL",
-      dheasulfate: 255.0,
-      dheasulfateUnit: "ug/dL",
-      cortisolAm: 13.4,
-      cortisolAmUnit: "ug/dL",
-      psa: 1.4,
-      psaUnit: "ng/mL",
-      testosteroneEstrogenRatio: null,
-      
-      // Thyroid
-      tsh: 3.86,
-      tshUnit: "uIU/mL",
-      freeT3: 3.3,
-      freeT3Unit: "pg/mL",
-      freeT4: 1.64,
-      freeT4Unit: "ng/dL",
-      tpoAb: 9,
-      tpoAbUnit: "IU/mL",
-      
-      // Vitamin/Inflammation/Glucose
-      vitaminD25oh: 63.1,
-      vitaminD25ohUnit: "ng/mL",
-      crpHs: 0.39,
-      crpHsUnit: "mg/L",
-      insulin: 3.1,
-      insulinUnit: "uIU/mL",
-      hba1c: 5.2,
-      hba1cUnit: "%",
-      
-      // Lipids
-      cholesterolTotal: 177,
-      cholesterolTotalUnit: "mg/dL",
-      triglycerides: 60,
-      triglyceridesUnit: "mg/dL",
-      hdl: 55,
-      hdlUnit: "mg/dL",
-      ldlCalc: 110,
-      ldlCalcUnit: "mg/dL",
-      ldlCalcFlag: "high",
-      vldlCalc: 12,
-      vldlCalcUnit: "mg/dL",
-      apob: null,
-      apobUnit: "mg/dL",
-      apobFlag: null,
-      ldlApobRatio: null,
-      tgHdlRatio: null,
-      
-      // Proteins/Misc
-      albumin: 4.7,
-      albuminUnit: "g/dL",
-      ferritin: null,
-      ferritinUnit: "ng/mL",
-      
-      createdAt: new Date(),
-    };
-    this.bloodEntries.set(feb2023Id, feb2023Entry);
-
-    // Recent Lab Results
-    const recentId = randomUUID();
-    const recentEntry: BloodEntry = {
-      id: recentId,
-      asOf: new Date(), // recent
-      source: "user_screenshots",
+    // August 2025 Lab Results (from Rhythm Health CSV)
+    const aug2025Id = randomUUID();
+    const aug2025Entry: BloodEntry = {
+      id: aug2025Id,
+      asOf: new Date("2025-08-16"),
+      source: "rhythm_health_csv",
       
       // Hormone Balance
       totalTestosterone: 390,
@@ -326,7 +250,7 @@ export class MemStorage implements IStorage {
       cortisolAmUnit: "ug/dL",
       psa: null,
       psaUnit: "ng/mL",
-      testosteroneEstrogenRatio: 24.37,
+      testosteroneEstrogenRatio: 1.6, // Triglycerides/HDL Ratio from CSV
       
       // Thyroid
       tsh: 3.0,
@@ -374,7 +298,7 @@ export class MemStorage implements IStorage {
       
       createdAt: new Date(),
     };
-    this.bloodEntries.set(recentId, recentEntry);
+    this.bloodEntries.set(aug2025Id, aug2025Entry);
   }
 
   async getUser(id: string): Promise<User | undefined> {
