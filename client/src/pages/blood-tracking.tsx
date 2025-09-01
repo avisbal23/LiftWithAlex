@@ -9,14 +9,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Droplets, Plus, TrendingUp, TrendingDown, Calendar, Upload, AlertTriangle, CheckCircle } from "lucide-react";
+import { Droplets, Plus, TrendingUp, TrendingDown, Calendar, Upload, Download, AlertTriangle, CheckCircle, FileText } from "lucide-react";
 import { type BloodEntry } from "@shared/schema";
 
 export default function BloodTracking() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [importData, setImportData] = useState("");
+  const [csvImportData, setCsvImportData] = useState("");
   const [isImporting, setIsImporting] = useState(false);
+  const [importFormat, setImportFormat] = useState<"json" | "csv">("csv");
 
   const { data: bloodEntries = [] } = useQuery<BloodEntry[]>({
     queryKey: ["/api/blood-entries"],
@@ -32,11 +34,168 @@ export default function BloodTracking() {
     },
   });
 
+  const parseCsvData = (csvText: string) => {
+    const lines = csvText.trim().split('\n');
+    if (lines.length < 2) throw new Error("CSV must have at least header and one data row");
+    
+    const headers = lines[0].split(',');
+    const expectedHeaders = ['marker', 'value', 'unit', 'reference_range', 'status', 'time'];
+    
+    if (!expectedHeaders.every(header => headers.includes(header))) {
+      throw new Error(`CSV must include headers: ${expectedHeaders.join(', ')}`);
+    }
+    
+    const rows = lines.slice(1).map(line => {
+      const values = line.split(',');
+      const row: any = {};
+      headers.forEach((header, index) => {
+        row[header] = values[index]?.trim();
+      });
+      return row;
+    });
+    
+    // Group by time to create blood entries
+    const entriesByTime: Record<string, any> = {};
+    
+    rows.forEach(row => {
+      const time = row.time;
+      if (!entriesByTime[time]) {
+        entriesByTime[time] = {
+          asOf: new Date(time),
+          source: "csv_import",
+          // Initialize all fields to null
+          totalTestosterone: null, totalTestosteroneUnit: "ng/dL",
+          freeTestosterone: null, freeTestosteroneUnit: "pg/mL",
+          shbg: null, shbgUnit: "nmol/L",
+          estradiol: null, estradiolUnit: "pg/mL",
+          estrogensTotal: null, estrogensTotalUnit: "pg/mL",
+          dheasulfate: null, dheasulfateUnit: "ug/dL",
+          cortisolAm: null, cortisolAmUnit: "ug/dL",
+          psa: null, psaUnit: "ng/mL",
+          testosteroneEstrogenRatio: null,
+          tsh: null, tshUnit: "uIU/mL",
+          freeT3: null, freeT3Unit: "pg/mL",
+          freeT4: null, freeT4Unit: "ng/dL",
+          tpoAb: null, tpoAbUnit: "IU/mL",
+          vitaminD25oh: null, vitaminD25ohUnit: "ng/mL",
+          crpHs: null, crpHsUnit: "mg/L",
+          insulin: null, insulinUnit: "uIU/mL",
+          hba1c: null, hba1cUnit: "%",
+          cholesterolTotal: null, cholesterolTotalUnit: "mg/dL",
+          triglycerides: null, triglyceridesUnit: "mg/dL",
+          hdl: null, hdlUnit: "mg/dL",
+          ldlCalc: null, ldlCalcUnit: "mg/dL", ldlCalcFlag: null,
+          vldlCalc: null, vldlCalcUnit: "mg/dL",
+          apob: null, apobUnit: "mg/dL", apobFlag: null,
+          ldlApobRatio: null, tgHdlRatio: null,
+          albumin: null, albuminUnit: "g/dL",
+          ferritin: null, ferritinUnit: "ng/mL",
+        };
+      }
+      
+      const entry = entriesByTime[time];
+      const marker = row.marker;
+      const value = parseFloat(row.value);
+      const unit = row.unit;
+      const status = row.status;
+      
+      // Map CSV markers to database fields
+      const markerMap: Record<string, { field: string; unitField: string; flagField?: string }> = {
+        "SHBG": { field: "shbg", unitField: "shbgUnit" },
+        "Estrogen": { field: "estrogensTotal", unitField: "estrogensTotalUnit" },
+        "Ferritin": { field: "ferritin", unitField: "ferritinUnit" },
+        "Total Testosterone": { field: "totalTestosterone", unitField: "totalTestosteroneUnit" },
+        "Vitamin D": { field: "vitaminD25oh", unitField: "vitaminD25ohUnit" },
+        "Free Testosterone": { field: "freeTestosterone", unitField: "freeTestosteroneUnit" },
+        "Albumin": { field: "albumin", unitField: "albuminUnit" },
+        "CRP (C-Reactive Protein)": { field: "crpHs", unitField: "crpHsUnit" },
+        "HDL Cholesterol": { field: "hdl", unitField: "hdlUnit" },
+        "Triglycerides": { field: "triglycerides", unitField: "triglyceridesUnit" },
+        "LDL Cholesterol": { field: "ldlCalc", unitField: "ldlCalcUnit", flagField: "ldlCalcFlag" },
+        "ApoB": { field: "apob", unitField: "apobUnit", flagField: "apobFlag" },
+        "Free T3": { field: "freeT3", unitField: "freeT3Unit" },
+        "Thyroid Stimulating Hormone": { field: "tsh", unitField: "tshUnit" },
+        "LDL/ApoB Ratio": { field: "ldlApobRatio", unitField: null },
+        "Triglycerides/HDL Ratio": { field: "tgHdlRatio", unitField: null },
+      };
+      
+      const mapping = markerMap[marker];
+      if (mapping) {
+        entry[mapping.field] = isNaN(value) ? null : value;
+        if (mapping.unitField) entry[mapping.unitField] = unit;
+        if (mapping.flagField && status === 'outOfRange') {
+          entry[mapping.flagField] = 'high'; // Could be enhanced to detect high vs low
+        }
+      }
+    });
+    
+    return Object.values(entriesByTime);
+  };
+
+  const exportToCsv = () => {
+    if (bloodEntries.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No blood entries to export",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const csvRows = ['marker,value,unit,reference_range,status,time'];
+    
+    bloodEntries.forEach(entry => {
+      const time = new Date(entry.asOf).toISOString().split('T')[0];
+      
+      const markers = [
+        { marker: "SHBG", value: entry.shbg, unit: entry.shbgUnit, refRange: "13.3 - 89.5" },
+        { marker: "Estrogen", value: entry.estrogensTotal, unit: entry.estrogensTotalUnit, refRange: "15 - 32" },
+        { marker: "Ferritin", value: entry.ferritin, unit: entry.ferritinUnit, refRange: "30 - 350" },
+        { marker: "Total Testosterone", value: entry.totalTestosterone, unit: entry.totalTestosteroneUnit, refRange: "250 - 900" },
+        { marker: "Vitamin D", value: entry.vitaminD25oh, unit: entry.vitaminD25ohUnit, refRange: "30 - 80" },
+        { marker: "Free Testosterone", value: entry.freeTestosterone, unit: entry.freeTestosteroneUnit, refRange: "46 - 224" },
+        { marker: "Albumin", value: entry.albumin, unit: entry.albuminUnit, refRange: "3.5 - 5" },
+        { marker: "CRP (C-Reactive Protein)", value: entry.crpHs, unit: entry.crpHsUnit, refRange: "0 - 3.0" },
+        { marker: "HDL Cholesterol", value: entry.hdl, unit: entry.hdlUnit, refRange: "40 - 120" },
+        { marker: "Triglycerides", value: entry.triglycerides, unit: entry.triglyceridesUnit, refRange: "0 - 149" },
+        { marker: "LDL Cholesterol", value: entry.ldlCalc, unit: entry.ldlCalcUnit, refRange: "40 - 150", flag: entry.ldlCalcFlag },
+        { marker: "ApoB", value: entry.apob, unit: entry.apobUnit, refRange: "0 - 90", flag: entry.apobFlag },
+        { marker: "Free T3", value: entry.freeT3, unit: entry.freeT3Unit, refRange: "2 - 4.4" },
+        { marker: "Thyroid Stimulating Hormone", value: entry.tsh, unit: entry.tshUnit, refRange: "0.45 - 4.5" },
+        { marker: "LDL/ApoB Ratio", value: entry.ldlApobRatio, unit: "pct", refRange: "1.2 - 1.4" },
+        { marker: "Triglycerides/HDL Ratio", value: entry.tgHdlRatio, unit: "mg/dL", refRange: "1.25 - 2.5" },
+      ];
+      
+      markers.forEach(({ marker, value, unit, refRange, flag }) => {
+        if (value !== null && value !== undefined) {
+          const status = flag === 'high' ? 'outOfRange' : 'average';
+          csvRows.push(`${marker},${value},${unit || ''},${refRange},${status},${time}`);
+        }
+      });
+    });
+    
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `bloodwork-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Export Successful",
+      description: `Blood entries exported as CSV`,
+    });
+  };
+
   const importBloodData = async () => {
-    if (!importData.trim()) {
+    const dataToImport = importFormat === "csv" ? csvImportData : importData;
+    
+    if (!dataToImport.trim()) {
       toast({
         title: "Error",
-        description: "Please paste your blood data JSON",
+        description: `Please paste your ${importFormat.toUpperCase()} data`,
         variant: "destructive",
       });
       return;
@@ -44,96 +203,111 @@ export default function BloodTracking() {
 
     setIsImporting(true);
     try {
-      const data = JSON.parse(importData);
+      let bloodEntries: any[] = [];
       
-      if (!data.datasets || !Array.isArray(data.datasets)) {
-        throw new Error("Invalid format - missing datasets array");
+      if (importFormat === "csv") {
+        bloodEntries = parseCsvData(csvImportData);
+      } else {
+        // Original JSON parsing logic
+        const data = JSON.parse(importData);
+        
+        if (!data.datasets || !Array.isArray(data.datasets)) {
+          throw new Error("Invalid format - missing datasets array");
+        }
+
+        bloodEntries = data.datasets.map((dataset: any) => {
+          const asOfDate = dataset.as_of === "recent" ? new Date() : new Date(dataset.as_of);
+          const panels = dataset.panels;
+          
+          return {
+            asOf: asOfDate,
+            source: dataset.source,
+            
+            // Hormone Balance
+            totalTestosterone: panels.hormone_balance?.total_testosterone?.value || null,
+            totalTestosteroneUnit: panels.hormone_balance?.total_testosterone?.unit || "ng/dL",
+            freeTestosterone: panels.hormone_balance?.free_testosterone?.value || null,
+            freeTestosteroneUnit: panels.hormone_balance?.free_testosterone?.unit || "pg/mL",
+            shbg: panels.hormone_balance?.shbg?.value || null,
+            shbgUnit: panels.hormone_balance?.shbg?.unit || "nmol/L",
+            estradiol: panels.hormone_balance?.estradiol?.value || null,
+            estradiolUnit: panels.hormone_balance?.estradiol?.unit || "pg/mL",
+            estrogensTotal: panels.hormone_balance?.estrogens_total?.value || null,
+            estrogensTotalUnit: panels.hormone_balance?.estrogens_total?.unit || "pg/mL",
+            dheasulfate: panels.hormone_balance?.dhea_sulfate?.value || null,
+            dheasulfateUnit: panels.hormone_balance?.dhea_sulfate?.unit || "ug/dL",
+            cortisolAm: panels.hormone_balance?.cortisol_am?.value || null,
+            cortisolAmUnit: panels.hormone_balance?.cortisol_am?.unit || "ug/dL",
+            psa: panels.hormone_balance?.psa?.value || null,
+            psaUnit: panels.hormone_balance?.psa?.unit || "ng/mL",
+            testosteroneEstrogenRatio: panels.hormone_balance?.testosterone_estrogen_ratio?.value || null,
+            
+            // Thyroid
+            tsh: panels.thyroid?.tsh?.value || null,
+            tshUnit: panels.thyroid?.tsh?.unit || "uIU/mL",
+            freeT3: panels.thyroid?.free_t3?.value || null,
+            freeT3Unit: panels.thyroid?.free_t3?.unit || "pg/mL",
+            freeT4: panels.thyroid?.free_t4?.value || null,
+            freeT4Unit: panels.thyroid?.free_t4?.unit || "ng/dL",
+            tpoAb: panels.thyroid?.tpo_ab?.value || null,
+            tpoAbUnit: panels.thyroid?.tpo_ab?.unit || "IU/mL",
+            
+            // Vitamin/Inflammation/Glucose
+            vitaminD25oh: panels.vitamin_inflammation_glucose?.vitamin_d_25oh?.value || null,
+            vitaminD25ohUnit: panels.vitamin_inflammation_glucose?.vitamin_d_25oh?.unit || "ng/mL",
+            crpHs: panels.vitamin_inflammation_glucose?.crp_hs?.value || null,
+            crpHsUnit: panels.vitamin_inflammation_glucose?.crp_hs?.unit || "mg/L",
+            insulin: panels.vitamin_inflammation_glucose?.insulin?.value || null,
+            insulinUnit: panels.vitamin_inflammation_glucose?.insulin?.unit || "uIU/mL",
+            hba1c: panels.vitamin_inflammation_glucose?.hba1c?.value || null,
+            hba1cUnit: panels.vitamin_inflammation_glucose?.hba1c?.unit || "%",
+            
+            // Lipids
+            cholesterolTotal: panels.lipids?.cholesterol_total?.value || null,
+            cholesterolTotalUnit: panels.lipids?.cholesterol_total?.unit || "mg/dL",
+            triglycerides: panels.lipids?.triglycerides?.value || null,
+            triglyceridesUnit: panels.lipids?.triglycerides?.unit || "mg/dL",
+            hdl: panels.lipids?.hdl?.value || null,
+            hdlUnit: panels.lipids?.hdl?.unit || "mg/dL",
+            ldlCalc: panels.lipids?.ldl_calc?.value || null,
+            ldlCalcUnit: panels.lipids?.ldl_calc?.unit || "mg/dL",
+            ldlCalcFlag: panels.lipids?.ldl_calc?.flag || null,
+            vldlCalc: panels.lipids?.vldl_calc?.value || null,
+            vldlCalcUnit: panels.lipids?.vldl_calc?.unit || "mg/dL",
+            apob: panels.lipids?.apob?.value || null,
+            apobUnit: panels.lipids?.apob?.unit || "mg/dL",
+            apobFlag: panels.lipids?.apob?.flag || null,
+            ldlApobRatio: panels.lipids?.ldl_apob_ratio?.value || null,
+            tgHdlRatio: panels.lipids?.tg_hdl_ratio?.value || null,
+            
+            // Proteins/Misc
+            albumin: panels.proteins_misc?.albumin?.value || null,
+            albuminUnit: panels.proteins_misc?.albumin?.unit || "g/dL",
+            ferritin: panels.proteins_misc?.ferritin?.value || null,
+            ferritinUnit: panels.proteins_misc?.ferritin?.unit || "ng/mL",
+          };
+        });
       }
 
-      for (const dataset of data.datasets) {
-        const asOfDate = dataset.as_of === "recent" ? new Date() : new Date(dataset.as_of);
-        const panels = dataset.panels;
-        
-        const bloodEntry = {
-          asOf: asOfDate,
-          source: dataset.source,
-          
-          // Hormone Balance
-          totalTestosterone: panels.hormone_balance?.total_testosterone?.value || null,
-          totalTestosteroneUnit: panels.hormone_balance?.total_testosterone?.unit || "ng/dL",
-          freeTestosterone: panels.hormone_balance?.free_testosterone?.value || null,
-          freeTestosteroneUnit: panels.hormone_balance?.free_testosterone?.unit || "pg/mL",
-          shbg: panels.hormone_balance?.shbg?.value || null,
-          shbgUnit: panels.hormone_balance?.shbg?.unit || "nmol/L",
-          estradiol: panels.hormone_balance?.estradiol?.value || null,
-          estradiolUnit: panels.hormone_balance?.estradiol?.unit || "pg/mL",
-          estrogensTotal: panels.hormone_balance?.estrogens_total?.value || null,
-          estrogensTotalUnit: panels.hormone_balance?.estrogens_total?.unit || "pg/mL",
-          dheasulfate: panels.hormone_balance?.dhea_sulfate?.value || null,
-          dheasulfateUnit: panels.hormone_balance?.dhea_sulfate?.unit || "ug/dL",
-          cortisolAm: panels.hormone_balance?.cortisol_am?.value || null,
-          cortisolAmUnit: panels.hormone_balance?.cortisol_am?.unit || "ug/dL",
-          psa: panels.hormone_balance?.psa?.value || null,
-          psaUnit: panels.hormone_balance?.psa?.unit || "ng/mL",
-          testosteroneEstrogenRatio: panels.hormone_balance?.testosterone_estrogen_ratio?.value || null,
-          
-          // Thyroid
-          tsh: panels.thyroid?.tsh?.value || null,
-          tshUnit: panels.thyroid?.tsh?.unit || "uIU/mL",
-          freeT3: panels.thyroid?.free_t3?.value || null,
-          freeT3Unit: panels.thyroid?.free_t3?.unit || "pg/mL",
-          freeT4: panels.thyroid?.free_t4?.value || null,
-          freeT4Unit: panels.thyroid?.free_t4?.unit || "ng/dL",
-          tpoAb: panels.thyroid?.tpo_ab?.value || null,
-          tpoAbUnit: panels.thyroid?.tpo_ab?.unit || "IU/mL",
-          
-          // Vitamin/Inflammation/Glucose
-          vitaminD25oh: panels.vitamin_inflammation_glucose?.vitamin_d_25oh?.value || null,
-          vitaminD25ohUnit: panels.vitamin_inflammation_glucose?.vitamin_d_25oh?.unit || "ng/mL",
-          crpHs: panels.vitamin_inflammation_glucose?.crp_hs?.value || null,
-          crpHsUnit: panels.vitamin_inflammation_glucose?.crp_hs?.unit || "mg/L",
-          insulin: panels.vitamin_inflammation_glucose?.insulin?.value || null,
-          insulinUnit: panels.vitamin_inflammation_glucose?.insulin?.unit || "uIU/mL",
-          hba1c: panels.vitamin_inflammation_glucose?.hba1c?.value || null,
-          hba1cUnit: panels.vitamin_inflammation_glucose?.hba1c?.unit || "%",
-          
-          // Lipids
-          cholesterolTotal: panels.lipids?.cholesterol_total?.value || null,
-          cholesterolTotalUnit: panels.lipids?.cholesterol_total?.unit || "mg/dL",
-          triglycerides: panels.lipids?.triglycerides?.value || null,
-          triglyceridesUnit: panels.lipids?.triglycerides?.unit || "mg/dL",
-          hdl: panels.lipids?.hdl?.value || null,
-          hdlUnit: panels.lipids?.hdl?.unit || "mg/dL",
-          ldlCalc: panels.lipids?.ldl_calc?.value || null,
-          ldlCalcUnit: panels.lipids?.ldl_calc?.unit || "mg/dL",
-          ldlCalcFlag: panels.lipids?.ldl_calc?.flag || null,
-          vldlCalc: panels.lipids?.vldl_calc?.value || null,
-          vldlCalcUnit: panels.lipids?.vldl_calc?.unit || "mg/dL",
-          apob: panels.lipids?.apob?.value || null,
-          apobUnit: panels.lipids?.apob?.unit || "mg/dL",
-          apobFlag: panels.lipids?.apob?.flag || null,
-          ldlApobRatio: panels.lipids?.ldl_apob_ratio?.value || null,
-          tgHdlRatio: panels.lipids?.tg_hdl_ratio?.value || null,
-          
-          // Proteins/Misc
-          albumin: panels.proteins_misc?.albumin?.value || null,
-          albuminUnit: panels.proteins_misc?.albumin?.unit || "g/dL",
-          ferritin: panels.proteins_misc?.ferritin?.value || null,
-          ferritinUnit: panels.proteins_misc?.ferritin?.unit || "ng/mL",
-        };
-
+      // Import all entries
+      for (const bloodEntry of bloodEntries) {
         await importMutation.mutateAsync(bloodEntry);
       }
 
       toast({
         title: "Import Successful",
-        description: `${data.datasets.length} blood test(s) imported successfully`,
+        description: `${bloodEntries.length} blood test(s) imported successfully`,
       });
-      setImportData("");
+      
+      if (importFormat === "csv") {
+        setCsvImportData("");
+      } else {
+        setImportData("");
+      }
     } catch (error) {
       toast({
         title: "Import Failed", 
-        description: error instanceof Error ? error.message : "Invalid JSON format",
+        description: error instanceof Error ? error.message : `Invalid ${importFormat.toUpperCase()} format`,
         variant: "destructive",
       });
     } finally {
@@ -218,38 +392,85 @@ export default function BloodTracking() {
             </p>
           </div>
           
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button data-testid="button-import-blood">
-                <Upload className="w-4 h-4 mr-2" />
-                Import Lab Results
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Import Blood Lab Data</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="blood-import">Lab Results JSON Data</Label>
-                  <Textarea
-                    id="blood-import"
-                    placeholder="Paste your lab results JSON here..."
-                    value={importData}
-                    onChange={(e) => setImportData(e.target.value)}
-                    className="min-h-[200px] font-mono text-sm"
-                  />
-                </div>
-                <Button 
-                  onClick={importBloodData}
-                  disabled={isImporting || !importData.trim()}
-                  className="w-full"
-                >
-                  {isImporting ? "Importing..." : "Import Lab Results"}
+          <div className="flex gap-2">
+            <Button onClick={exportToCsv} variant="outline" data-testid="button-export-csv">
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
+            </Button>
+            
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button data-testid="button-import-blood">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Import Lab Results
                 </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Import Blood Lab Data</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <Button
+                      variant={importFormat === "csv" ? "default" : "outline"}
+                      onClick={() => setImportFormat("csv")}
+                      className="flex-1"
+                      data-testid="button-csv-format"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      CSV Format
+                    </Button>
+                    <Button
+                      variant={importFormat === "json" ? "default" : "outline"}
+                      onClick={() => setImportFormat("json")}
+                      className="flex-1"
+                      data-testid="button-json-format"
+                    >
+                      JSON Format
+                    </Button>
+                  </div>
+                  
+                  {importFormat === "csv" ? (
+                    <div>
+                      <Label htmlFor="csv-import">Rhythm Health CSV Export</Label>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Paste CSV data from your bloodwork provider (format: marker,value,unit,reference_range,status,time)
+                      </p>
+                      <Textarea
+                        id="csv-import"
+                        placeholder={`marker,value,unit,reference_range,status,time\nSHBG,27.4,nmol/L,13.3 - 89.5,average,2025-08-16\nTotal Testosterone,390,ng/dL,250 - 900,average,2025-08-16\n...`}
+                        value={csvImportData}
+                        onChange={(e) => setCsvImportData(e.target.value)}
+                        className="min-h-[200px] font-mono text-sm"
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <Label htmlFor="json-import">Lab Results JSON Data</Label>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Paste JSON data in the original format
+                      </p>
+                      <Textarea
+                        id="json-import"
+                        placeholder="Paste your lab results JSON here..."
+                        value={importData}
+                        onChange={(e) => setImportData(e.target.value)}
+                        className="min-h-[200px] font-mono text-sm"
+                      />
+                    </div>
+                  )}
+                  
+                  <Button 
+                    onClick={importBloodData}
+                    disabled={isImporting || (importFormat === "csv" ? !csvImportData.trim() : !importData.trim())}
+                    className="w-full"
+                  >
+                    {isImporting ? "Importing..." : `Import ${importFormat.toUpperCase()} Lab Results`}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {bloodEntries.length === 0 ? (
@@ -269,22 +490,57 @@ export default function BloodTracking() {
                   <DialogTitle>Import Blood Lab Data</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="blood-import-empty">Lab Results JSON Data</Label>
-                    <Textarea
-                      id="blood-import-empty"
-                      placeholder="Paste your lab results JSON here..."
-                      value={importData}
-                      onChange={(e) => setImportData(e.target.value)}
-                      className="min-h-[200px] font-mono text-sm"
-                    />
+                  <div className="flex gap-2">
+                    <Button
+                      variant={importFormat === "csv" ? "default" : "outline"}
+                      onClick={() => setImportFormat("csv")}
+                      className="flex-1"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      CSV Format
+                    </Button>
+                    <Button
+                      variant={importFormat === "json" ? "default" : "outline"}
+                      onClick={() => setImportFormat("json")}
+                      className="flex-1"
+                    >
+                      JSON Format
+                    </Button>
                   </div>
+                  
+                  {importFormat === "csv" ? (
+                    <div>
+                      <Label htmlFor="csv-import-empty">Rhythm Health CSV Export</Label>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Paste CSV data from your bloodwork provider
+                      </p>
+                      <Textarea
+                        id="csv-import-empty"
+                        placeholder={`marker,value,unit,reference_range,status,time\nSHBG,27.4,nmol/L,13.3 - 89.5,average,2025-08-16\n...`}
+                        value={csvImportData}
+                        onChange={(e) => setCsvImportData(e.target.value)}
+                        className="min-h-[200px] font-mono text-sm"
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <Label htmlFor="json-import-empty">Lab Results JSON Data</Label>
+                      <Textarea
+                        id="json-import-empty"
+                        placeholder="Paste your lab results JSON here..."
+                        value={importData}
+                        onChange={(e) => setImportData(e.target.value)}
+                        className="min-h-[200px] font-mono text-sm"
+                      />
+                    </div>
+                  )}
+                  
                   <Button 
                     onClick={importBloodData}
-                    disabled={isImporting || !importData.trim()}
+                    disabled={isImporting || (importFormat === "csv" ? !csvImportData.trim() : !importData.trim())}
                     className="w-full"
                   >
-                    {isImporting ? "Importing..." : "Import Lab Results"}
+                    {isImporting ? "Importing..." : `Import ${importFormat.toUpperCase()} Lab Results`}
                   </Button>
                 </div>
               </DialogContent>
