@@ -9,6 +9,7 @@ import { Trash2, Edit2, MessageCircle, Heart, Share } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Thought, InsertThought, UpdateThought } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
+import Navigation from "@/components/layout/navigation";
 
 export default function ThoughtsPage() {
   const [newThought, setNewThought] = useState("");
@@ -131,7 +132,9 @@ export default function ThoughtsPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
+      <>
+        <Navigation />
+        <div className="container mx-auto p-6">
         <div className="max-w-2xl mx-auto">
           <div className="animate-pulse space-y-4">
             <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded w-1/2"></div>
@@ -143,13 +146,16 @@ export default function ThoughtsPage() {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="max-w-2xl mx-auto">
+    <>
+      <Navigation />
+      <div className="container mx-auto p-6">
+        <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -307,7 +313,8 @@ export default function ThoughtsPage() {
             ))
           )}
         </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
