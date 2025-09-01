@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Eye } from "lucide-react";
+import { Plus, Trash2, Eye, ChevronDown } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { type Exercise, type InsertExercise, type UpdateExercise } from "@shared/schema";
@@ -21,6 +21,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
   const queryClient = useQueryClient();
   const [selectedNotes, setSelectedNotes] = useState<{ exercise: string; notes: string } | null>(null);
   const [editingNotes, setEditingNotes] = useState<string>("");
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
 
   const { data: exercises = [], isLoading } = useQuery<Exercise[]>({
     queryKey: ["/api/exercises", category],
@@ -80,6 +81,18 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
   };
 
   const isCardio = category === "cardio";
+
+  const toggleCardExpansion = (exerciseId: string) => {
+    setExpandedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(exerciseId)) {
+        newSet.delete(exerciseId);
+      } else {
+        newSet.add(exerciseId);
+      }
+      return newSet;
+    });
+  };
 
   const deleteExercise = (id: string) => {
     if (confirm("Are you sure you want to delete this exercise?")) {
@@ -372,224 +385,252 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
 
           {/* Mobile Card View */}
           <div className="md:hidden space-y-4">
-            {exercises.map((exercise) => (
-              <Card key={exercise.id} className="bg-card" data-testid={`card-exercise-${exercise.id}`}>
-                <CardContent className="p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <Input
-                        type="text"
-                        value={exercise.name}
-                        onChange={(e) => updateExercise(exercise.id, "name", e.target.value)}
-                        className="font-semibold text-base border-none bg-transparent p-0 text-foreground focus:bg-background hover:bg-accent transition-colors"
-                        data-testid={`input-exercise-name-mobile-${exercise.id}`}
-                      />
-                    </div>
-                    <div className="flex space-x-2">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedNotes({ exercise: exercise.name, notes: exercise.notes });
-                              setEditingNotes(exercise.notes);
-                            }}
-                            className="text-muted-foreground hover:text-foreground"
-                            data-testid={`button-view-notes-mobile-${exercise.id}`}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-[95vw] mx-4">
-                          <DialogHeader>
-                            <DialogTitle>Exercise Details</DialogTitle>
-                          </DialogHeader>
-                          <Card>
-                            <CardHeader>
-                              <div className="flex items-center justify-between">
-                                <CardTitle className="text-lg">{exercise.name}</CardTitle>
-                                <Badge variant="secondary" className="capitalize">
-                                  {category}
-                                </Badge>
-                              </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                              {isCardio ? (
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div className="space-y-2">
-                                    <div className="text-sm font-medium text-muted-foreground">Duration</div>
-                                    <div className="text-xl font-bold text-primary">
-                                      {exercise.duration || "—"}
-                                    </div>
-                                  </div>
-                                  <div className="space-y-2">
-                                    <div className="text-sm font-medium text-muted-foreground">Distance</div>
-                                    <div className="text-xl font-bold text-primary">
-                                      {exercise.distance || "—"}
-                                    </div>
-                                  </div>
-                                  <div className="space-y-2">
-                                    <div className="text-sm font-medium text-muted-foreground">Pace</div>
-                                    <div className="text-xl font-bold text-primary">
-                                      {exercise.pace || "—"}
-                                    </div>
-                                  </div>
-                                  <div className="space-y-2">
-                                    <div className="text-sm font-medium text-muted-foreground">Calories</div>
-                                    <div className="text-xl font-bold text-primary">
-                                      {exercise.calories || "—"}
-                                    </div>
-                                  </div>
-                                  <div className="space-y-2">
-                                    <div className="text-sm font-medium text-muted-foreground">RPE</div>
-                                    <div className="text-xl font-bold text-primary">
-                                      {exercise.rpe || "—"} <span className="text-sm font-normal text-muted-foreground">/10</span>
-                                    </div>
-                                  </div>
+            {exercises.map((exercise) => {
+              const isExpanded = expandedCards.has(exercise.id);
+              const keyMetric = isCardio ? exercise.duration : `${exercise.weight} lbs`;
+              
+              return (
+                <Card key={exercise.id} className="bg-card" data-testid={`card-exercise-${exercise.id}`}>
+                  <CardContent className="p-4">
+                    {/* Collapsed Header - Always Visible */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2">
+                          <Input
+                            type="text"
+                            value={exercise.name}
+                            onChange={(e) => updateExercise(exercise.id, "name", e.target.value)}
+                            className="font-semibold text-base border-none bg-transparent p-0 text-foreground focus:bg-background hover:bg-accent transition-colors flex-1"
+                            data-testid={`input-exercise-name-mobile-${exercise.id}`}
+                          />
+                          <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                            {keyMetric}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-1 ml-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedNotes({ exercise: exercise.name, notes: exercise.notes });
+                                setEditingNotes(exercise.notes);
+                              }}
+                              className="text-muted-foreground hover:text-foreground p-2"
+                              data-testid={`button-view-notes-mobile-${exercise.id}`}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-[95vw] mx-4">
+                            <DialogHeader>
+                              <DialogTitle>Exercise Details</DialogTitle>
+                            </DialogHeader>
+                            <Card>
+                              <CardHeader>
+                                <div className="flex items-center justify-between">
+                                  <CardTitle className="text-lg">{exercise.name}</CardTitle>
+                                  <Badge variant="secondary" className="capitalize">
+                                    {category}
+                                  </Badge>
                                 </div>
-                              ) : (
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div className="space-y-2">
-                                    <div className="text-sm font-medium text-muted-foreground">Weight</div>
-                                    <div className="text-xl font-bold text-primary">
-                                      {exercise.weight} <span className="text-sm font-normal text-muted-foreground">lbs</span>
+                              </CardHeader>
+                              <CardContent className="space-y-4">
+                                {isCardio ? (
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <div className="text-sm font-medium text-muted-foreground">Duration</div>
+                                      <div className="text-xl font-bold text-primary">
+                                        {exercise.duration || "—"}
+                                      </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <div className="text-sm font-medium text-muted-foreground">Distance</div>
+                                      <div className="text-xl font-bold text-primary">
+                                        {exercise.distance || "—"}
+                                      </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <div className="text-sm font-medium text-muted-foreground">Pace</div>
+                                      <div className="text-xl font-bold text-primary">
+                                        {exercise.pace || "—"}
+                                      </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <div className="text-sm font-medium text-muted-foreground">Calories</div>
+                                      <div className="text-xl font-bold text-primary">
+                                        {exercise.calories || "—"}
+                                      </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <div className="text-sm font-medium text-muted-foreground">RPE</div>
+                                      <div className="text-xl font-bold text-primary">
+                                        {exercise.rpe || "—"} <span className="text-sm font-normal text-muted-foreground">/10</span>
+                                      </div>
                                     </div>
                                   </div>
-                                  <div className="space-y-2">
-                                    <div className="text-sm font-medium text-muted-foreground">Reps</div>
-                                    <div className="text-xl font-bold text-primary">
-                                      {exercise.reps || "—"}
+                                ) : (
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <div className="text-sm font-medium text-muted-foreground">Weight</div>
+                                      <div className="text-xl font-bold text-primary">
+                                        {exercise.weight} <span className="text-sm font-normal text-muted-foreground">lbs</span>
+                                      </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <div className="text-sm font-medium text-muted-foreground">Reps</div>
+                                      <div className="text-xl font-bold text-primary">
+                                        {exercise.reps || "—"}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              )}
-                              {exercise.notes && (
-                                <div className="space-y-2">
-                                  <div className="text-sm font-medium text-muted-foreground">Notes & Instructions</div>
-                                  <div className="p-3 bg-muted rounded-lg">
-                                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                                      {exercise.notes}
-                                    </p>
+                                )}
+                                {exercise.notes && (
+                                  <div className="space-y-2">
+                                    <div className="text-sm font-medium text-muted-foreground">Notes & Instructions</div>
+                                    <div className="p-3 bg-muted rounded-lg">
+                                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                                        {exercise.notes}
+                                      </p>
+                                    </div>
                                   </div>
-                                </div>
-                              )}
-                            </CardContent>
-                          </Card>
-                        </DialogContent>
-                      </Dialog>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteExercise(exercise.id)}
-                        disabled={deleteMutation.isPending}
-                        className="text-destructive hover:text-destructive/80"
-                        data-testid={`button-delete-mobile-${exercise.id}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {isCardio ? (
-                    <div className="grid grid-cols-2 gap-3 space-y-3">
-                      <div className="space-y-1 col-span-2">
-                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Duration</label>
-                        <Input
-                          type="text"
-                          value={exercise.duration || ""}
-                          onChange={(e) => updateExercise(exercise.id, "duration", e.target.value)}
-                          placeholder="28:32"
-                          className="text-base font-semibold"
-                          data-testid={`input-duration-mobile-${exercise.id}`}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Distance</label>
-                        <Input
-                          type="text"
-                          value={exercise.distance || ""}
-                          onChange={(e) => updateExercise(exercise.id, "distance", e.target.value)}
-                          placeholder="3.1 miles"
-                          className="text-base font-semibold"
-                          data-testid={`input-distance-mobile-${exercise.id}`}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pace</label>
-                        <Input
-                          type="text"
-                          value={exercise.pace || ""}
-                          onChange={(e) => updateExercise(exercise.id, "pace", e.target.value)}
-                          placeholder="9:10/mile"
-                          className="text-base font-semibold"
-                          data-testid={`input-pace-mobile-${exercise.id}`}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Calories</label>
-                        <Input
-                          type="number"
-                          value={exercise.calories || 0}
-                          onChange={(e) => updateExercise(exercise.id, "calories", parseInt(e.target.value) || 0)}
-                          placeholder="320"
-                          className="text-base font-semibold"
-                          data-testid={`input-calories-mobile-${exercise.id}`}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">RPE (1-10)</label>
-                        <Input
-                          type="number"
-                          value={exercise.rpe || 0}
-                          onChange={(e) => updateExercise(exercise.id, "rpe", parseInt(e.target.value) || 0)}
-                          placeholder="8"
-                          min="1"
-                          max="10"
-                          className="text-base font-semibold"
-                          data-testid={`input-rpe-mobile-${exercise.id}`}
-                        />
+                                )}
+                              </CardContent>
+                            </Card>
+                          </DialogContent>
+                        </Dialog>
+                        
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleCardExpansion(exercise.id)}
+                          className="text-muted-foreground hover:text-foreground p-2"
+                          data-testid={`button-expand-${exercise.id}`}
+                        >
+                          <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                        </Button>
+                        
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteExercise(exercise.id)}
+                          disabled={deleteMutation.isPending}
+                          className="text-destructive hover:text-destructive/80 p-2"
+                          data-testid={`button-delete-mobile-${exercise.id}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Weight (lbs)</label>
-                        <Input
-                          type="number"
-                          value={exercise.weight}
-                          onChange={(e) => updateExercise(exercise.id, "weight", parseInt(e.target.value) || 0)}
-                          className="text-base font-semibold"
-                          data-testid={`input-weight-mobile-${exercise.id}`}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Reps</label>
-                        <Input
-                          type="number"
-                          value={exercise.reps}
-                          onChange={(e) => updateExercise(exercise.id, "reps", parseInt(e.target.value) || 0)}
-                          className="text-base font-semibold"
-                          data-testid={`input-reps-mobile-${exercise.id}`}
-                        />
-                      </div>
-                    </div>
-                  )}
+                    
+                    {/* Expandable Content */}
+                    {isExpanded && (
+                      <div className="space-y-4 border-t border-border pt-4">
+                        {isCardio ? (
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1 col-span-2">
+                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Duration</label>
+                              <Input
+                                type="text"
+                                value={exercise.duration || ""}
+                                onChange={(e) => updateExercise(exercise.id, "duration", e.target.value)}
+                                placeholder="28:32"
+                                className="text-base font-semibold"
+                                data-testid={`input-duration-mobile-${exercise.id}`}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Distance</label>
+                              <Input
+                                type="text"
+                                value={exercise.distance || ""}
+                                onChange={(e) => updateExercise(exercise.id, "distance", e.target.value)}
+                                placeholder="3.1 miles"
+                                className="text-base font-semibold"
+                                data-testid={`input-distance-mobile-${exercise.id}`}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pace</label>
+                              <Input
+                                type="text"
+                                value={exercise.pace || ""}
+                                onChange={(e) => updateExercise(exercise.id, "pace", e.target.value)}
+                                placeholder="9:10/mile"
+                                className="text-base font-semibold"
+                                data-testid={`input-pace-mobile-${exercise.id}`}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Calories</label>
+                              <Input
+                                type="number"
+                                value={exercise.calories || 0}
+                                onChange={(e) => updateExercise(exercise.id, "calories", parseInt(e.target.value) || 0)}
+                                placeholder="320"
+                                className="text-base font-semibold"
+                                data-testid={`input-calories-mobile-${exercise.id}`}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">RPE (1-10)</label>
+                              <Input
+                                type="number"
+                                value={exercise.rpe || 0}
+                                onChange={(e) => updateExercise(exercise.id, "rpe", parseInt(e.target.value) || 0)}
+                                placeholder="8"
+                                min="1"
+                                max="10"
+                                className="text-base font-semibold"
+                                data-testid={`input-rpe-mobile-${exercise.id}`}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Weight (lbs)</label>
+                              <Input
+                                type="number"
+                                value={exercise.weight}
+                                onChange={(e) => updateExercise(exercise.id, "weight", parseInt(e.target.value) || 0)}
+                                className="text-base font-semibold"
+                                data-testid={`input-weight-mobile-${exercise.id}`}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Reps</label>
+                              <Input
+                                type="number"
+                                value={exercise.reps}
+                                onChange={(e) => updateExercise(exercise.id, "reps", parseInt(e.target.value) || 0)}
+                                className="text-base font-semibold"
+                                data-testid={`input-reps-mobile-${exercise.id}`}
+                              />
+                            </div>
+                          </div>
+                        )}
 
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Notes</label>
-                    <Input
-                      type="text"
-                      value={exercise.notes}
-                      onChange={(e) => updateExercise(exercise.id, "notes", e.target.value)}
-                      placeholder="Add notes..."
-                      className="text-sm"
-                      data-testid={`input-notes-mobile-${exercise.id}`}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Notes</label>
+                          <Input
+                            type="text"
+                            value={exercise.notes}
+                            onChange={(e) => updateExercise(exercise.id, "notes", e.target.value)}
+                            placeholder="Add notes..."
+                            className="text-sm"
+                            data-testid={`input-notes-mobile-${exercise.id}`}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       )}
