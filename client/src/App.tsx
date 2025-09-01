@@ -31,8 +31,8 @@ function Router() {
       <Route path="/legs2" component={Legs2} />
       <Route path="/cardio" component={Cardio} />
       <Route path="/weight" component={WeightTracking} />
-      <Route path="/blood" component={BloodTracking} />
-      <Route path="/photos" component={PhotoProgress} />
+      <Route path="/blood-tracking" component={BloodTracking} />
+      <Route path="/photo-progress" component={PhotoProgress} />
       <Route path="/thoughts" component={Thoughts} />
       <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
