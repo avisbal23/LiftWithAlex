@@ -31,6 +31,16 @@ export const workoutLogs = pgTable("workout_logs", {
   completedAt: timestamp("completed_at").defaultNow(),
 });
 
+export const weightEntries = pgTable("weight_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  weight: integer("weight").notNull(), // Weight in pounds (or could be decimal for more precision)
+  date: timestamp("date").notNull(),
+  notes: text("notes").default(""),
+  bodyFat: integer("body_fat"), // Optional body fat percentage
+  muscle: integer("muscle"), // Optional muscle mass
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -48,6 +58,13 @@ export const insertWorkoutLogSchema = createInsertSchema(workoutLogs).omit({
   completedAt: true,
 });
 
+export const insertWeightEntrySchema = createInsertSchema(weightEntries).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const updateWeightEntrySchema = insertWeightEntrySchema.partial();
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Exercise = typeof exercises.$inferSelect;
@@ -55,3 +72,6 @@ export type InsertExercise = z.infer<typeof insertExerciseSchema>;
 export type UpdateExercise = z.infer<typeof updateExerciseSchema>;
 export type WorkoutLog = typeof workoutLogs.$inferSelect;
 export type InsertWorkoutLog = z.infer<typeof insertWorkoutLogSchema>;
+export type WeightEntry = typeof weightEntries.$inferSelect;
+export type InsertWeightEntry = z.infer<typeof insertWeightEntrySchema>;
+export type UpdateWeightEntry = z.infer<typeof updateWeightEntrySchema>;
