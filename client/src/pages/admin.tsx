@@ -31,28 +31,6 @@ export default function Admin() {
     queryKey: ["/api/quotes"],
   });
 
-  const clearAllDataMutation = useMutation({
-    mutationFn: async () => {
-      await apiRequest("/api/admin/clear-all", {
-        method: "POST",
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-      toast({
-        title: "Success",
-        description: "All your data has been cleared. You now have a fresh start!",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to clear data",
-        variant: "destructive",
-      });
-    },
-  });
-
   const downloadWorkoutTemplate = () => {
     const csvHeaders = 'name,category,weight,reps,notes,duration,distance,pace,calories,rpe,createdAt';
     const sampleRows = [
@@ -648,33 +626,6 @@ Example:
                 <p className="text-xs text-muted-foreground">
                   ⚠️ This will replace ALL existing quotes data
                 </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Start from Scratch */}
-          <Card className="border-red-200 dark:border-red-800">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
-                <Database className="w-5 h-5" />
-                Start from Scratch
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 bg-red-50 dark:bg-red-950/20 rounded-lg">
-                <p className="text-sm text-red-800 dark:text-red-200 mb-4">
-                  <strong>⚠️ WARNING:</strong> This will permanently delete ALL of your data including exercises, workout logs, weight entries, blood entries, photo progress, thoughts, and quotes. This action cannot be undone.
-                </p>
-                <Button
-                  onClick={() => clearAllDataMutation.mutate()}
-                  disabled={clearAllDataMutation.isPending}
-                  variant="destructive"
-                  className="flex items-center gap-2"
-                  data-testid="button-clear-all-data"
-                >
-                  <Database className="w-4 h-4" />
-                  {clearAllDataMutation.isPending ? "Clearing..." : "Clear All My Data"}
-                </Button>
               </div>
             </CardContent>
           </Card>

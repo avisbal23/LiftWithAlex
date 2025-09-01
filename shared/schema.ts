@@ -3,32 +3,14 @@ import { pgTable, text, varchar, integer, timestamp, real } from "drizzle-orm/pg
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Session storage table.
-// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
-export const sessions = pgTable(
-  "sessions",
-  {
-    sid: varchar("sid").primaryKey(),
-    sess: text("sess").notNull(), // Changed from jsonb to text for compatibility
-    expire: timestamp("expire").notNull(),
-  }
-);
-
-// User storage table.
-// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey(),
-  email: varchar("email").unique(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
-  profileImageUrl: varchar("profile_image_url"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
 });
 
 export const exercises = pgTable("exercises", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id),
   name: text("name").notNull(),
   weight: integer("weight").default(0),
   reps: integer("reps").default(0),
@@ -45,14 +27,12 @@ export const exercises = pgTable("exercises", {
 
 export const workoutLogs = pgTable("workout_logs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id),
   category: text("category").notNull(), // 'push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'cardio'
   completedAt: timestamp("completed_at").defaultNow(),
 });
 
 export const weightEntries = pgTable("weight_entries", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id),
   date: timestamp("date").notNull(),
   time: text("time"), // Time portion like "11:52:37 AM"
   weight: real("weight").notNull(), // Weight(lb)
@@ -79,7 +59,6 @@ export const weightEntries = pgTable("weight_entries", {
 
 export const bloodEntries = pgTable("blood_entries", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id),
   asOf: timestamp("as_of").notNull(),
   source: text("source").notNull(), // 'labcorp_pdf', 'user_screenshots', etc.
   
@@ -151,7 +130,6 @@ export const bloodEntries = pgTable("blood_entries", {
 
 export const photoProgress = pgTable("photo_progress", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id),
   title: text("title").notNull(),
   description: text("description").default(""),
   photoUrl: text("photo_url").notNull(), // Object storage path like /objects/uploads/uuid
@@ -163,8 +141,6 @@ export const photoProgress = pgTable("photo_progress", {
 
 export const thoughts = pgTable("thoughts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id),
-  title: text("title").notNull(),
   content: text("content").notNull(),
   mood: text("mood").default("neutral"), // 'happy', 'sad', 'excited', 'frustrated', 'grateful', 'motivated', 'contemplative', 'neutral'
   tags: text("tags").array().default(sql`ARRAY[]::text[]`), // Array of tag strings
@@ -173,7 +149,6 @@ export const thoughts = pgTable("thoughts", {
 
 export const quotes = pgTable("quotes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id),
   text: text("text").notNull(),
   author: text("author").notNull(),
   category: text("category").default("motivational"), // 'motivational', 'fitness', 'mindset', 'success', etc.
@@ -181,12 +156,13 @@ export const quotes = pgTable("quotes", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export type UpsertUser = typeof users.$inferInsert;
-export type User = typeof users.$inferSelect;
+export const insertUserSchema = createInsertSchema(users).pick({
+  username: true,
+  password: true,
+});
 
 export const insertExerciseSchema = createInsertSchema(exercises).omit({
   id: true,
-  userId: true,
   createdAt: true,
 });
 
@@ -194,13 +170,11 @@ export const updateExerciseSchema = insertExerciseSchema.partial();
 
 export const insertWorkoutLogSchema = createInsertSchema(workoutLogs).omit({
   id: true,
-  userId: true,
   completedAt: true,
 });
 
 export const insertWeightEntrySchema = createInsertSchema(weightEntries).omit({
   id: true,
-  userId: true,
   createdAt: true,
 });
 
@@ -208,7 +182,6 @@ export const updateWeightEntrySchema = insertWeightEntrySchema.partial();
 
 export const insertBloodEntrySchema = createInsertSchema(bloodEntries).omit({
   id: true,
-  userId: true,
   createdAt: true,
 });
 
@@ -216,7 +189,6 @@ export const updateBloodEntrySchema = insertBloodEntrySchema.partial();
 
 export const insertPhotoProgressSchema = createInsertSchema(photoProgress).omit({
   id: true,
-  userId: true,
   createdAt: true,
 });
 
@@ -224,7 +196,6 @@ export const updatePhotoProgressSchema = insertPhotoProgressSchema.partial();
 
 export const insertThoughtSchema = createInsertSchema(thoughts).omit({
   id: true,
-  userId: true,
   createdAt: true,
 });
 
@@ -232,12 +203,12 @@ export const updateThoughtSchema = insertThoughtSchema.partial();
 
 export const insertQuoteSchema = createInsertSchema(quotes).omit({
   id: true,
-  userId: true,
   createdAt: true,
 });
 
 export const updateQuoteSchema = insertQuoteSchema.partial();
 
+export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Exercise = typeof exercises.$inferSelect;
 export type InsertExercise = z.infer<typeof insertExerciseSchema>;

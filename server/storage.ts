@@ -1,4 +1,4 @@
-import { type User, type UpsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote } from "@shared/schema";
 import { exercises, workoutLogs, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
@@ -6,48 +6,48 @@ import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
-  upsertUser(user: UpsertUser): Promise<User>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
   
-  getExercisesByCategory(category: string, userId?: string): Promise<Exercise[]>;
-  createExercise(exercise: InsertExercise, userId: string): Promise<Exercise>;
-  updateExercise(id: string, exercise: UpdateExercise, userId: string): Promise<Exercise | undefined>;
-  deleteExercise(id: string, userId: string): Promise<boolean>;
-  getAllExercises(userId?: string): Promise<Exercise[]>;
+  getExercisesByCategory(category: string): Promise<Exercise[]>;
+  createExercise(exercise: InsertExercise): Promise<Exercise>;
+  updateExercise(id: string, exercise: UpdateExercise): Promise<Exercise | undefined>;
+  deleteExercise(id: string): Promise<boolean>;
+  getAllExercises(): Promise<Exercise[]>;
   
-  createWorkoutLog(log: InsertWorkoutLog, userId: string): Promise<WorkoutLog>;
-  getLatestWorkoutLog(userId?: string): Promise<WorkoutLog | undefined>;
-  getAllWorkoutLogs(userId?: string): Promise<WorkoutLog[]>;
+  createWorkoutLog(log: InsertWorkoutLog): Promise<WorkoutLog>;
+  getLatestWorkoutLog(): Promise<WorkoutLog | undefined>;
+  getAllWorkoutLogs(): Promise<WorkoutLog[]>;
   
-  createWeightEntry(entry: InsertWeightEntry, userId: string): Promise<WeightEntry>;
-  updateWeightEntry(id: string, entry: UpdateWeightEntry, userId: string): Promise<WeightEntry | undefined>;
-  deleteWeightEntry(id: string, userId: string): Promise<boolean>;
-  getAllWeightEntries(userId?: string): Promise<WeightEntry[]>;
-  getWeightEntriesInDateRange(startDate: Date, endDate: Date, userId?: string): Promise<WeightEntry[]>;
+  createWeightEntry(entry: InsertWeightEntry): Promise<WeightEntry>;
+  updateWeightEntry(id: string, entry: UpdateWeightEntry): Promise<WeightEntry | undefined>;
+  deleteWeightEntry(id: string): Promise<boolean>;
+  getAllWeightEntries(): Promise<WeightEntry[]>;
+  getWeightEntriesInDateRange(startDate: Date, endDate: Date): Promise<WeightEntry[]>;
   
-  createBloodEntry(entry: InsertBloodEntry, userId: string): Promise<BloodEntry>;
-  updateBloodEntry(id: string, entry: UpdateBloodEntry, userId: string): Promise<BloodEntry | undefined>;
-  deleteBloodEntry(id: string, userId: string): Promise<boolean>;
-  getAllBloodEntries(userId?: string): Promise<BloodEntry[]>;
+  createBloodEntry(entry: InsertBloodEntry): Promise<BloodEntry>;
+  updateBloodEntry(id: string, entry: UpdateBloodEntry): Promise<BloodEntry | undefined>;
+  deleteBloodEntry(id: string): Promise<boolean>;
+  getAllBloodEntries(): Promise<BloodEntry[]>;
   
-  createPhotoProgress(entry: InsertPhotoProgress, userId: string): Promise<PhotoProgress>;
-  updatePhotoProgress(id: string, entry: UpdatePhotoProgress, userId: string): Promise<PhotoProgress | undefined>;
-  deletePhotoProgress(id: string, userId: string): Promise<boolean>;
-  getAllPhotoProgress(userId?: string): Promise<PhotoProgress[]>;
-  getPhotoProgressByBodyPart(bodyPart: string, userId?: string): Promise<PhotoProgress[]>;
+  createPhotoProgress(entry: InsertPhotoProgress): Promise<PhotoProgress>;
+  updatePhotoProgress(id: string, entry: UpdatePhotoProgress): Promise<PhotoProgress | undefined>;
+  deletePhotoProgress(id: string): Promise<boolean>;
+  getAllPhotoProgress(): Promise<PhotoProgress[]>;
+  getPhotoProgressByBodyPart(bodyPart: string): Promise<PhotoProgress[]>;
   
-  createThought(entry: InsertThought, userId: string): Promise<Thought>;
-  updateThought(id: string, entry: UpdateThought, userId: string): Promise<Thought | undefined>;
-  deleteThought(id: string, userId: string): Promise<boolean>;
-  getAllThoughts(userId?: string): Promise<Thought[]>;
+  createThought(entry: InsertThought): Promise<Thought>;
+  updateThought(id: string, entry: UpdateThought): Promise<Thought | undefined>;
+  deleteThought(id: string): Promise<boolean>;
+  getAllThoughts(): Promise<Thought[]>;
   
-  createQuote(entry: InsertQuote, userId: string): Promise<Quote>;
-  updateQuote(id: string, entry: UpdateQuote, userId: string): Promise<Quote | undefined>;
-  deleteQuote(id: string, userId: string): Promise<boolean>;
-  getAllQuotes(userId?: string): Promise<Quote[]>;
-  getActiveQuotes(userId?: string): Promise<Quote[]>;
-  getRandomQuote(userId?: string): Promise<Quote | undefined>;
-  clearAllQuotes(userId?: string): Promise<void>;
-  clearAllUserData(userId: string): Promise<void>;
+  createQuote(entry: InsertQuote): Promise<Quote>;
+  updateQuote(id: string, entry: UpdateQuote): Promise<Quote | undefined>;
+  deleteQuote(id: string): Promise<boolean>;
+  getAllQuotes(): Promise<Quote[]>;
+  getActiveQuotes(): Promise<Quote[]>;
+  getRandomQuote(): Promise<Quote | undefined>;
+  clearAllQuotes(): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -866,61 +866,18 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
-  async upsertUser(userData: UpsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          ...userData,
-          updatedAt: new Date(),
-        },
-      })
-      .returning();
-    return user;
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
-  async clearAllUserData(userId: string): Promise<void> {
-    await db.delete(exercises).where(eq(exercises.userId, userId));
-    await db.delete(workoutLogs).where(eq(workoutLogs.userId, userId));
-    await db.delete(weightEntries).where(eq(weightEntries.userId, userId));
-    await db.delete(bloodEntries).where(eq(bloodEntries.userId, userId));
-    await db.delete(photoProgress).where(eq(photoProgress.userId, userId));
-    await db.delete(thoughts).where(eq(thoughts.userId, userId));
-    await db.delete(quotes).where(eq(quotes.userId, userId));
-  }
-
-  async seedDemoData(userId: string): Promise<void> {
-    // Add demo exercises
-    const demoExercises = [
-      { name: "Bench Press", category: "push", userId },
-      { name: "Squats", category: "legs", userId },
-      { name: "Pull-ups", category: "pull", userId },
-    ];
-    
-    for (const exercise of demoExercises) {
-      await db.insert(exercises).values(exercise).onConflictDoNothing();
-    }
-
-    // Add demo quotes
-    const demoQuotes = [
-      { text: "The only bad workout is the one that didn't happen.", author: "Unknown", isActive: 1, userId },
-      { text: "Your body can do it. It's your mind you have to convince.", author: "Unknown", isActive: 1, userId },
-    ];
-    
-    for (const quote of demoQuotes) {
-      await db.insert(quotes).values(quote).onConflictDoNothing();
-    }
+  async createUser(user: InsertUser): Promise<User> {
+    const [newUser] = await db.insert(users).values(user).returning();
+    return newUser;
   }
 
   // Exercise operations
-  async getExercisesByCategory(category: string, userId?: string): Promise<Exercise[]> {
-    if (userId) {
-      return await db.select().from(exercises)
-        .where(and(eq(exercises.category, category), eq(exercises.userId, userId)))
-        .orderBy(desc(exercises.createdAt));
-    }
+  async getExercisesByCategory(category: string): Promise<Exercise[]> {
     return await db.select().from(exercises).where(eq(exercises.category, category)).orderBy(desc(exercises.createdAt));
   }
 
