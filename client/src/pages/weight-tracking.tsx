@@ -279,11 +279,8 @@ export default function WeightTracking() {
                 <h3 className="font-semibold text-orange-900 dark:text-orange-100 mb-1">
                   💡 Import Data from RENPHO App
                 </h3>
-                <p className="text-sm text-orange-800 dark:text-orange-200 mb-2">
-                  You can directly import your weight and body composition data from the RENPHO app. Export your data from RENPHO and use the import feature below to automatically sync your measurements.
-                </p>
-                <p className="text-xs text-orange-700 dark:text-orange-300">
-                  Supports RENPHO CSV export format with all body composition metrics.
+                <p className="text-sm text-orange-800 dark:text-orange-200">
+                  Export from RENPHO app and import to sync all your weight and body metrics.
                 </p>
               </div>
             </div>

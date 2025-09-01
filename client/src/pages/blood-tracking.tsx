@@ -660,7 +660,7 @@ export default function BloodTracking() {
           <div className="text-center py-12">
             <div className="text-6xl mb-4">🩸</div>
             <h2 className="text-xl font-semibold text-foreground mb-2">No lab results yet</h2>
-            <p className="text-muted-foreground mb-4">Import your blood lab data to start tracking</p>
+            <p className="text-muted-foreground mb-4">Import lab data to start tracking</p>
             <Dialog>
               <DialogTrigger asChild>
                 <Button>
