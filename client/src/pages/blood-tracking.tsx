@@ -561,12 +561,6 @@ export default function BloodTracking() {
                 <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
                   💡 Import Data from Rhythm Health
                 </h3>
-                <p className="text-sm text-blue-800 dark:text-blue-200 mb-2">
-                  You can directly import your blood lab results from Rhythm Health. Export your data from their platform and use the import feature below to automatically populate your health tracking.
-                </p>
-                <p className="text-xs text-blue-700 dark:text-blue-300">
-                  Supports both CSV and JSON formats from Rhythm Health exports.
-                </p>
               </div>
             </div>
           </div>
