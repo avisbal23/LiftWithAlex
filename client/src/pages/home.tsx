@@ -438,11 +438,12 @@ function PRCard({ pr, isEditing, onEdit, onSave, onDelete, onCancel }: {
 
   if (isEditing) {
     return (
-      <Card className="border-primary flex flex-col shadow-2xl dark:shadow-white/30 shadow-black/20 scale-110 z-10 relative bg-background">
-        <CardContent className="p-6 space-y-4">
-          <div className="text-center mb-4">
-            <h3 className="text-lg font-semibold text-foreground">Edit PR Record</h3>
-          </div>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 dark:bg-black/40 backdrop-blur-sm p-4">
+        <Card className="border-primary flex flex-col shadow-2xl dark:shadow-white/30 shadow-black/20 bg-background w-full max-w-md">
+          <CardContent className="p-6 space-y-4">
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-semibold text-foreground">Edit PR Record</h3>
+            </div>
           
           <div className="space-y-3">
             <div>
@@ -528,6 +529,7 @@ function PRCard({ pr, isEditing, onEdit, onSave, onDelete, onCancel }: {
           </div>
         </CardContent>
       </Card>
+      </div>
     );
   }
 
