@@ -333,13 +333,13 @@ export default function Home() {
               <Link to="/blood-tracking">
                 <Badge className="bg-red-500/10 text-red-600 border-red-200 hover:bg-red-500/20 transition-colors px-4 py-2 text-sm cursor-pointer flex items-center gap-1">
                   <Activity className="w-3 h-3" />
-                  Blood Labs
+                  Blood
                 </Badge>
               </Link>
               <Link to="/photo-progress">
                 <Badge className="bg-indigo-500/10 text-indigo-600 border-indigo-200 hover:bg-indigo-500/20 transition-colors px-4 py-2 text-sm cursor-pointer flex items-center gap-1">
                   <Camera className="w-3 h-3" />
-                  Photo Progress
+                  Photos
                 </Badge>
               </Link>
             </div>
