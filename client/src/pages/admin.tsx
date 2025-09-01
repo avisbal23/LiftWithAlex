@@ -27,48 +27,65 @@ export default function Admin() {
   });
 
   const exportWorkouts = () => {
-    const workoutData = {
-      version: "1.0",
-      exportedAt: new Date().toISOString(),
-      exercises: exercises
-    };
+    if (exercises.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No exercises to export",
+        variant: "destructive",
+      });
+      return;
+    }
     
-    const dataStr = JSON.stringify(workoutData, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const csvHeaders = 'name,category,weight,reps,notes,duration,distance,pace,calories,rpe,createdAt';
+    const csvRows = exercises.map(exercise => {
+      const createdAt = new Date(exercise.createdAt).toISOString();
+      return `"${exercise.name}","${exercise.category}",${exercise.weight || 0},${exercise.reps || 0},"${(exercise.notes || '').replace(/"/g, '""')}","${exercise.duration || ''}","${exercise.distance || ''}","${exercise.pace || ''}",${exercise.calories || 0},${exercise.rpe || 0},"${createdAt}"`;
+    });
     
-    const exportFileDefaultName = `visbal-gym-workouts-${new Date().toISOString().split('T')[0]}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
+    const csvContent = [csvHeaders, ...csvRows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `visbal-gym-workouts-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    window.URL.revokeObjectURL(url);
     
     toast({
       title: "Workouts Exported",
-      description: `${exercises.length} exercises exported successfully`,
+      description: `${exercises.length} exercises exported to CSV`,
     });
   };
 
   const exportWeights = () => {
-    const weightData = {
-      version: "1.0", 
-      exportedAt: new Date().toISOString(),
-      weightEntries: weightEntries
-    };
+    if (weightEntries.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No weight entries to export",
+        variant: "destructive",
+      });
+      return;
+    }
     
-    const dataStr = JSON.stringify(weightData, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const csvHeaders = 'Date,Time,Weight(lb),Body Fat(%),Fat-Free Mass(lb),Muscle Mass(lb),BMI,Subcutaneous Fat(%),Skeletal Muscle(%),Body Water(%),Visceral Fat,Bone Mass(lb),Protein (%),BMR(kcal),Metabolic Age';
+    const csvRows = weightEntries.map(entry => {
+      const date = new Date(entry.date).toLocaleDateString('en-US', { month: '1-2', day: '1-2', year: '2-digit' }).replace(/\//g, '/');
+      const time = entry.time || '12:00:00 PM';
+      return `${date},${time},${entry.weight || 0},${entry.bodyFat || 0},${entry.fatFreeMass || 0},${entry.muscleMass || 0},${entry.bmi || 0},${entry.subcutaneousFat || 0},${entry.skeletalMuscle || 0},${entry.bodyWater || 0},${entry.visceralFat || 0},${entry.boneMass || 0},${entry.protein || 0},${entry.bmr || 0},${entry.metabolicAge || 0}`;
+    });
     
-    const exportFileDefaultName = `visbal-gym-weights-${new Date().toISOString().split('T')[0]}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
+    const csvContent = [csvHeaders, ...csvRows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `visbal-gym-weights-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    window.URL.revokeObjectURL(url);
     
     toast({
       title: "Weight Data Exported",
-      description: `${weightEntries.length} weight entries exported successfully`,
+      description: `${weightEntries.length} weight entries exported to CSV`,
     });
   };
 
@@ -76,7 +93,7 @@ export default function Admin() {
     if (!workoutImportData.trim()) {
       toast({
         title: "Error",
-        description: "Please paste workout data to import",
+        description: "Please paste workout CSV data to import",
         variant: "destructive",
       });
       return;
@@ -84,11 +101,30 @@ export default function Admin() {
 
     setIsImporting(true);
     try {
-      const data = JSON.parse(workoutImportData);
-      
-      if (!data.exercises || !Array.isArray(data.exercises)) {
-        throw new Error("Invalid format - missing exercises array");
+      const lines = workoutImportData.trim().split('\n');
+      if (lines.length < 2) {
+        throw new Error("CSV must have at least header and one data row");
       }
+      
+      const headers = lines[0].split(',').map(h => h.trim());
+      const expectedHeaders = ['name', 'category', 'weight', 'reps', 'notes', 'duration', 'distance', 'pace', 'calories', 'rpe'];
+      
+      if (!expectedHeaders.every(header => headers.includes(header))) {
+        throw new Error(`CSV must include headers: ${expectedHeaders.join(', ')}`);
+      }
+      
+      const rows = lines.slice(1).map(line => {
+        const values = line.match(/([^,"]+|"[^"]*")/g) || [];
+        const row: any = {};
+        headers.forEach((header, index) => {
+          let value = values[index]?.trim() || '';
+          if (value.startsWith('"') && value.endsWith('"')) {
+            value = value.slice(1, -1).replace(/""/g, '"');
+          }
+          row[header] = value;
+        });
+        return row;
+      });
 
       // Clear existing exercises first
       const deletePromises = exercises.map(exercise => 
@@ -99,20 +135,20 @@ export default function Admin() {
       await Promise.all(deletePromises);
 
       // Import new exercises
-      const importPromises = data.exercises.map((exercise: any) => 
+      const importPromises = rows.map((row: any) => 
         apiRequest("/api/exercises", {
           method: "POST",
           body: JSON.stringify({
-            name: exercise.name,
-            weight: exercise.weight || 0,
-            reps: exercise.reps || 0,
-            notes: exercise.notes || "",
-            category: exercise.category,
-            duration: exercise.duration || "",
-            distance: exercise.distance || "",
-            pace: exercise.pace || "",
-            calories: exercise.calories || 0,
-            rpe: exercise.rpe || 0
+            name: row.name || '',
+            weight: parseFloat(row.weight) || 0,
+            reps: parseInt(row.reps) || 0,
+            notes: row.notes || "",
+            category: row.category || 'push',
+            duration: row.duration || "",
+            distance: row.distance || "",
+            pace: row.pace || "",
+            calories: parseInt(row.calories) || 0,
+            rpe: parseInt(row.rpe) || 0
           }),
         })
       );
@@ -123,13 +159,13 @@ export default function Admin() {
       
       toast({
         title: "Import Successful",
-        description: `${data.exercises.length} exercises imported successfully`,
+        description: `${rows.length} exercises imported from CSV`,
       });
       setWorkoutImportData("");
     } catch (error) {
       toast({
         title: "Import Failed",
-        description: error instanceof Error ? error.message : "Invalid JSON format",
+        description: error instanceof Error ? error.message : "Invalid CSV format",
         variant: "destructive",
       });
     } finally {
@@ -141,7 +177,7 @@ export default function Admin() {
     if (!weightImportData.trim()) {
       toast({
         title: "Error", 
-        description: "Please paste weight data to import",
+        description: "Please paste weight CSV data to import",
         variant: "destructive",
       });
       return;
@@ -149,11 +185,26 @@ export default function Admin() {
 
     setIsImporting(true);
     try {
-      const data = JSON.parse(weightImportData);
-      
-      if (!data.weightEntries || !Array.isArray(data.weightEntries)) {
-        throw new Error("Invalid format - missing weightEntries array");
+      const lines = weightImportData.trim().split('\n');
+      if (lines.length < 2) {
+        throw new Error("CSV must have at least header and one data row");
       }
+      
+      const headers = lines[0].split(',').map(h => h.trim());
+      const expectedHeaders = ['Date', 'Time', 'Weight(lb)', 'Body Fat(%)', 'Muscle Mass(lb)', 'BMI'];
+      
+      if (!expectedHeaders.every(header => headers.includes(header))) {
+        throw new Error(`CSV must include headers: ${expectedHeaders.join(', ')}`);
+      }
+      
+      const rows = lines.slice(1).map(line => {
+        const values = line.split(',');
+        const row: any = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index]?.trim();
+        });
+        return row;
+      });
 
       // Clear existing weight entries first
       const deletePromises = weightEntries.map(entry => 
@@ -164,10 +215,26 @@ export default function Admin() {
       await Promise.all(deletePromises);
 
       // Import new weight entries
-      const importPromises = data.weightEntries.map((entry: any) => 
+      const importPromises = rows.map((row: any) => 
         apiRequest("/api/weight-entries", {
           method: "POST",
-          body: JSON.stringify(entry),
+          body: JSON.stringify({
+            date: row['Date'] || '',
+            time: row['Time'] || '',
+            weight: parseFloat(row['Weight(lb)']) || 0,
+            bodyFat: parseFloat(row['Body Fat(%)']) || 0,
+            fatFreeMass: parseFloat(row['Fat-Free Mass(lb)']) || 0,
+            muscleMass: parseFloat(row['Muscle Mass(lb)']) || 0,
+            bmi: parseFloat(row['BMI']) || 0,
+            subcutaneousFat: parseFloat(row['Subcutaneous Fat(%)']) || 0,
+            skeletalMuscle: parseFloat(row['Skeletal Muscle(%)']) || 0,
+            bodyWater: parseFloat(row['Body Water(%)']) || 0,
+            visceralFat: parseInt(row['Visceral Fat']) || 0,
+            boneMass: parseFloat(row['Bone Mass(lb)']) || 0,
+            protein: parseFloat(row['Protein (%)']) || 0,
+            bmr: parseInt(row['BMR(kcal)']) || 0,
+            metabolicAge: parseInt(row['Metabolic Age']) || 0
+          }),
         })
       );
       await Promise.all(importPromises);
@@ -177,13 +244,13 @@ export default function Admin() {
       
       toast({
         title: "Import Successful",
-        description: `${data.weightEntries.length} weight entries imported successfully`,
+        description: `${rows.length} weight entries imported from CSV`,
       });
       setWeightImportData("");
     } catch (error) {
       toast({
         title: "Import Failed",
-        description: error instanceof Error ? error.message : "Invalid JSON format",
+        description: error instanceof Error ? error.message : "Invalid CSV format",
         variant: "destructive",
       });
     } finally {
@@ -232,7 +299,7 @@ export default function Admin() {
                 <Label htmlFor="workout-import">Import Workout Data</Label>
                 <Textarea
                   id="workout-import"
-                  placeholder="Paste your workout export JSON here..."
+                  placeholder="Paste your workout export CSV here...\nFormat: name,category,weight,reps,notes,duration,distance,pace,calories,rpe"
                   value={workoutImportData}
                   onChange={(e) => setWorkoutImportData(e.target.value)}
                   className="min-h-[100px] font-mono text-sm"
@@ -281,7 +348,7 @@ export default function Admin() {
                 <Label htmlFor="weight-import">Import Weight Data</Label>
                 <Textarea
                   id="weight-import"
-                  placeholder="Paste your weight export JSON here..."
+                  placeholder="Paste your weight export CSV here...\nFormat: Date,Time,Weight(lb),Body Fat(%),Fat-Free Mass(lb),Muscle Mass(lb),BMI,..."
                   value={weightImportData}
                   onChange={(e) => setWeightImportData(e.target.value)}
                   className="min-h-[100px] font-mono text-sm"
@@ -308,52 +375,38 @@ export default function Admin() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="w-5 h-5" />
-                Export/Import Format
+                CSV Export/Import Format
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4 text-sm">
                 <div>
-                  <h4 className="font-medium mb-2">Workout Export Format:</h4>
+                  <h4 className="font-medium mb-2">Workout CSV Format:</h4>
                   <pre className="bg-muted p-2 rounded text-xs overflow-x-auto">
-{`{
-  "version": "1.0",
-  "exportedAt": "2025-01-24T...",
-  "exercises": [
-    {
-      "name": "Flat Dumbbell Press",
-      "weight": 80,
-      "reps": 6,
-      "notes": "80, 75 lbs | 5–7 reps",
-      "category": "push",
-      "duration": "",
-      "distance": "",
-      "pace": "",
-      "calories": 0,
-      "rpe": 0
-    }
-  ]
-}`}
+{`name,category,weight,reps,notes,duration,distance,pace,calories,rpe,createdAt
+"Flat Dumbbell Press","push",80,6,"80, 75 lbs | 5–7 reps","","","",0,0,"2025-01-24T12:00:00.000Z"
+"Incline Dumbbell Press","push",70,10,"Good form","","","",0,0,"2025-01-24T12:05:00.000Z"
+"Cardio Run","cardio",0,0,"Morning run","30:00","3.5 miles","8:34/mi",350,7,"2025-01-24T07:00:00.000Z"`}
                   </pre>
                 </div>
                 
                 <div>
-                  <h4 className="font-medium mb-2">Weight Export Format:</h4>
+                  <h4 className="font-medium mb-2">Weight CSV Format (RENPHO Compatible):</h4>
                   <pre className="bg-muted p-2 rounded text-xs overflow-x-auto">
-{`{
-  "version": "1.0",
-  "exportedAt": "2025-01-24T...", 
-  "weightEntries": [
-    {
-      "date": "2025-01-24T...",
-      "weight": 175.2,
-      "bodyFat": 15.8,
-      "muscleMass": 147.1,
-      "bmi": 24.2
-    }
-  ]
-}`}
+{`Date,Time,Weight(lb),Body Fat(%),Fat-Free Mass(lb),Muscle Mass(lb),BMI,Subcutaneous Fat(%),Skeletal Muscle(%),Body Water(%),Visceral Fat,Bone Mass(lb),Protein (%),BMR(kcal),Metabolic Age
+8/24/25,11:52:37 AM,166.4,15.0,141.4,134.2,26.8,12.4,54.9,61.4,9,7.2,19.4,1769,31
+8/21/25,7:47:06 AM,167.4,15.1,142.0,135.0,27.0,12.5,54.8,61.3,10,7.0,19.4,1747,31`}
                   </pre>
+                </div>
+                
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg dark:bg-blue-950">
+                  <h5 className="font-medium text-blue-900 dark:text-blue-100 mb-1">💡 CSV Tips:</h5>
+                  <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
+                    <li>• Export directly imports into Excel, Google Sheets, or other CSV apps</li>
+                    <li>• Weight CSV is compatible with RENPHO app export format</li>
+                    <li>• Text fields with commas are automatically quoted</li>
+                    <li>• All imports will replace existing data</li>
+                  </ul>
                 </div>
               </div>
             </CardContent>
