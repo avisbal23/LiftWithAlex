@@ -1,5 +1,8 @@
 import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote } from "@shared/schema";
+import { exercises, workoutLogs, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -659,4 +662,372 @@ export class MemStorage implements IStorage {
 
 }
 
-export const storage = new MemStorage();
+// Database Storage Implementation
+export class DatabaseStorage implements IStorage {
+  constructor() {
+    // Seed database with sample data on first startup
+    this.seedDataIfEmpty();
+  }
+
+  private async seedDataIfEmpty() {
+    try {
+      // Check if we already have exercises (indicating the database has been seeded)
+      const existingExercises = await db.select().from(exercises).limit(1);
+      if (existingExercises.length > 0) {
+        return; // Already seeded
+      }
+
+      await this.seedSampleData();
+      console.log('Database seeded with sample data');
+    } catch (error) {
+      console.error('Error seeding database:', error);
+    }
+  }
+
+  private async seedSampleData() {
+    // Push Day 1 exercises
+    const pushExercises = [
+      { name: "Flat Dumbbell Press", weight: 80, reps: 6, notes: "80, 75 lbs | 5–7 reps", category: "push", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Incline Dumbbell Press", weight: 70, reps: 6, notes: "70, 65 lbs | 5–7 reps", category: "push", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Seated Cable Press", weight: 8, reps: 9, notes: "8,7 down | 8–10 reps", category: "push", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Pec Deck", weight: 125, reps: 0, notes: "125 lbs | reps not logged | Seat height 4", category: "push", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Dumbbell Shoulder Press", weight: 65, reps: 6, notes: "65 lbs | 6 reps", category: "push", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Dumbbell Lateral Raises", weight: 25, reps: 0, notes: "25 lbs | To failure", category: "push", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+    ];
+
+    // Push Day 2 exercises
+    const push2Exercises = [
+      { name: "Flat Dumbbell Press", weight: 80, reps: 6, notes: "80, 75 lbs | 5–7 reps", category: "push2", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Incline Dumbbell Press", weight: 70, reps: 6, notes: "70, 65 lbs | 5–7 reps", category: "push2", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Seated Cable Press", weight: 8, reps: 9, notes: "8,7 down | 8–10 reps", category: "push2", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Downward Cable Press", weight: 33, reps: 0, notes: "33 lbs | reps not logged", category: "push2", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Tricep Extensions (Cable, Single/Double)", weight: 35, reps: 0, notes: "35 lbs | reps not logged", category: "push2", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Shrugs (DB/KB)", weight: 25, reps: 0, notes: "25 lbs | To failure", category: "push2", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+    ];
+
+    // Pull Day 1 exercises
+    const pullExercises = [
+      { name: "Pull-Ups (Assisted)", weight: 20, reps: 0, notes: "20 lbs assist | To failure", category: "pull", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Seated Low Rows (Close Grip)", weight: 70, reps: 0, notes: "~70 lbs (est.) | reps not logged", category: "pull", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "EZ Bar Preacher Curl", weight: 50, reps: 7, notes: "50 lbs | 6–8 reps", category: "pull", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Tricep Extensions (Cable, Single/Double)", weight: 35, reps: 0, notes: "35 lbs | reps not logged", category: "pull", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Seated Lat Pulldowns (Wide)", weight: 130, reps: 7, notes: "130 lbs | 6–8 reps", category: "pull", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Incline Dumbbell Curls", weight: 25, reps: 0, notes: "25 lbs | reps not logged", category: "pull", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+    ];
+
+    // Pull Day 2 exercises
+    const pull2Exercises = [
+      { name: "Seated Lat Pulldowns (Wide)", weight: 130, reps: 7, notes: "130 lbs | 6–8 reps", category: "pull2", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Diverging Lat Pulldown", weight: 80, reps: 0, notes: "80 lbs, 60 lbs | reps not logged", category: "pull2", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Standing Dumbbell Curls", weight: 25, reps: 0, notes: "25 lbs | To failure", category: "pull2", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Downward Cable Press", weight: 33, reps: 0, notes: "33 lbs | reps not logged", category: "pull2", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Pull-Ups (Assisted)", weight: 20, reps: 0, notes: "20 lbs assist | To failure", category: "pull2", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Cable X Front Crosses", weight: 6, reps: 0, notes: "6 down | reps not logged", category: "pull2", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+    ];
+
+    // Leg Day 1 exercises
+    const legExercises = [
+      { name: "Barbell Squats", weight: 135, reps: 0, notes: "~135 lbs (est.) | reps not logged", category: "legs", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Trap Bar Deadlifts", weight: 135, reps: 0, notes: "~135 lbs (est.) | reps not logged", category: "legs", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Kettlebell Lunges", weight: 35, reps: 30, notes: "35 lbs each | 30 reps (15 each side)", category: "legs", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Calf Extensions", weight: 100, reps: 0, notes: "~100 lbs (est.) | reps not logged", category: "legs", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Leg Press", weight: 180, reps: 0, notes: "~180 lbs (est.) | reps not logged", category: "legs", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Hip Thrusts", weight: 95, reps: 0, notes: "~95 lbs (est.) | reps not logged", category: "legs", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+    ];
+
+    // Leg Day 2 exercises
+    const legs2Exercises = [
+      { name: "Leg Press", weight: 180, reps: 0, notes: "~180 lbs (est.) | reps not logged", category: "legs2", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Barbell Squats", weight: 135, reps: 0, notes: "~135 lbs (est.) | reps not logged", category: "legs2", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Kettlebell Lunges", weight: 35, reps: 30, notes: "35 lbs each | 30 reps (15 each side)", category: "legs2", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Calf Extensions", weight: 100, reps: 0, notes: "~100 lbs (est.) | reps not logged", category: "legs2", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Quad Extensions", weight: 100, reps: 10, notes: "100 lbs | 10 reps (slow downs)", category: "legs2", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+      { name: "Hamstring Curls", weight: 70, reps: 0, notes: "~70 lbs (est.) | reps not logged", category: "legs2", duration: "", distance: "", pace: "", calories: 0, rpe: 0 },
+    ];
+
+    // Cardio exercises
+    const cardioExercises = [
+      { name: "Walk 1", weight: 0, reps: 0, duration: "30:00", distance: "2.0 miles", pace: "15:00/mile", calories: 150, rpe: 3, notes: "Easy morning walk", category: "cardio" },
+      { name: "Run 1", weight: 0, reps: 0, duration: "25:00", distance: "3.0 miles", pace: "8:20/mile", calories: 300, rpe: 7, notes: "Steady pace run", category: "cardio" },
+      { name: "1 mile", weight: 0, reps: 0, duration: "8:15", distance: "1.0 mile", pace: "8:15/mile", calories: 100, rpe: 8, notes: "Time trial", category: "cardio" },
+      { name: "5K", weight: 0, reps: 0, duration: "28:32", distance: "3.1 miles", pace: "9:10/mile", calories: 320, rpe: 8, notes: "Official 5K race pace", category: "cardio" },
+      { name: "10K", weight: 0, reps: 0, duration: "58:45", distance: "6.2 miles", pace: "9:28/mile", calories: 650, rpe: 9, notes: "Long distance run", category: "cardio" },
+      { name: "10 min rowing", weight: 0, reps: 0, duration: "10:00", distance: "2200m", pace: "2:16/500m", calories: 120, rpe: 7, notes: "Steady rowing session", category: "cardio" },
+      { name: "10 min stair stepper", weight: 0, reps: 0, duration: "10:00", distance: "0.8 miles", pace: "12:30/mile", calories: 110, rpe: 6, notes: "Consistent stepping pace", category: "cardio" },
+    ];
+
+    // Insert all exercises
+    const allExercises = [...pushExercises, ...push2Exercises, ...pullExercises, ...pull2Exercises, ...legExercises, ...legs2Exercises, ...cardioExercises];
+    await db.insert(exercises).values(allExercises);
+
+    // Sample weight data
+    const weightSampleData = [
+      { 
+        date: new Date('2025-08-24'), time: '11:52:37 AM', weight: 166.4, bodyFat: 15.0, 
+        fatFreeMass: 141.4, muscleMass: 134.2, bmi: 26.8, subcutaneousFat: 12.4, 
+        skeletalMuscle: 54.9, bodyWater: 61.4, visceralFat: 9, boneMass: 7.2, 
+        protein: 19.4, bmr: 1769, metabolicAge: 31, remarks: '--',
+        optimalWeight: null, targetToOptimalWeight: null, targetToOptimalFatMass: null, 
+        targetToOptimalMuscleMass: null, bodyType: null
+      },
+      { 
+        date: new Date('2025-08-21'), time: '7:47:06 AM', weight: 167.4, bodyFat: 15.1, 
+        fatFreeMass: 142.0, muscleMass: 135.0, bmi: 27.0, subcutaneousFat: 12.5, 
+        skeletalMuscle: 54.8, bodyWater: 61.3, visceralFat: 10, boneMass: 7.0, 
+        protein: 19.4, bmr: 1747, metabolicAge: 31, remarks: '--',
+        optimalWeight: null, targetToOptimalWeight: null, targetToOptimalFatMass: null, 
+        targetToOptimalMuscleMass: null, bodyType: null
+      },
+      { 
+        date: new Date('2025-04-29'), time: '6:18:04 AM', weight: 160.4, bodyFat: 12.2, 
+        fatFreeMass: 140.8, muscleMass: 133.7, bmi: 25.9, subcutaneousFat: 10.1, 
+        skeletalMuscle: 56.0, bodyWater: 63.2, visceralFat: 8, boneMass: 7.1, 
+        protein: 19.7, bmr: 1719, metabolicAge: 27, remarks: '--',
+        optimalWeight: null, targetToOptimalWeight: null, targetToOptimalFatMass: null, 
+        targetToOptimalMuscleMass: null, bodyType: null
+      }
+    ];
+    await db.insert(weightEntries).values(weightSampleData);
+
+    // Sample blood data
+    const bloodSampleData = {
+      asOf: new Date('2024-08-15'),
+      source: 'labcorp_pdf',
+      totalTestosterone: 650.0,
+      freeTestosterone: 18.5,
+      estradiol: 25.0,
+      dheasulfate: 350.0,
+      vitaminD25oh: 45.0,
+      cholesterolTotal: 180.0,
+      hdl: 55.0,
+      ldlCalc: 110.0,
+      triglycerides: 75.0
+    };
+    await db.insert(bloodEntries).values([bloodSampleData]);
+
+    // Sample thought
+    const thoughtSample = {
+      title: "First Workout Complete",
+      content: "Completed my first push day at the gym today. Feeling motivated and ready to build this habit!",
+      mood: "motivated",
+      tags: ["workout", "motivation", "push-day"]
+    };
+    await db.insert(thoughts).values([thoughtSample]);
+
+    // Sample workout log
+    const workoutLogSample = {
+      category: "push"
+    };
+    await db.insert(workoutLogs).values([workoutLogSample]);
+  }
+  // User operations
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const [newUser] = await db.insert(users).values(user).returning();
+    return newUser;
+  }
+
+  // Exercise operations
+  async getExercisesByCategory(category: string): Promise<Exercise[]> {
+    return await db.select().from(exercises).where(eq(exercises.category, category)).orderBy(desc(exercises.createdAt));
+  }
+
+  async createExercise(exercise: InsertExercise): Promise<Exercise> {
+    const [newExercise] = await db.insert(exercises).values(exercise).returning();
+    return newExercise;
+  }
+
+  async updateExercise(id: string, exercise: UpdateExercise): Promise<Exercise | undefined> {
+    const [updated] = await db.update(exercises)
+      .set(exercise)
+      .where(eq(exercises.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteExercise(id: string): Promise<boolean> {
+    const result = await db.delete(exercises).where(eq(exercises.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getAllExercises(): Promise<Exercise[]> {
+    return await db.select().from(exercises).orderBy(desc(exercises.createdAt));
+  }
+
+  // Workout log operations
+  async createWorkoutLog(log: InsertWorkoutLog): Promise<WorkoutLog> {
+    const [newLog] = await db.insert(workoutLogs).values(log).returning();
+    return newLog;
+  }
+
+  async getLatestWorkoutLog(): Promise<WorkoutLog | undefined> {
+    const [latest] = await db.select().from(workoutLogs)
+      .orderBy(desc(workoutLogs.completedAt))
+      .limit(1);
+    return latest || undefined;
+  }
+
+  async getAllWorkoutLogs(): Promise<WorkoutLog[]> {
+    return await db.select().from(workoutLogs).orderBy(desc(workoutLogs.completedAt));
+  }
+
+  // Weight entry operations
+  async createWeightEntry(entry: InsertWeightEntry): Promise<WeightEntry> {
+    const [newEntry] = await db.insert(weightEntries).values(entry).returning();
+    return newEntry;
+  }
+
+  async updateWeightEntry(id: string, entry: UpdateWeightEntry): Promise<WeightEntry | undefined> {
+    const [updated] = await db.update(weightEntries)
+      .set(entry)
+      .where(eq(weightEntries.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteWeightEntry(id: string): Promise<boolean> {
+    const result = await db.delete(weightEntries).where(eq(weightEntries.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getAllWeightEntries(): Promise<WeightEntry[]> {
+    return await db.select().from(weightEntries).orderBy(desc(weightEntries.date));
+  }
+
+  async getWeightEntriesInDateRange(startDate: Date, endDate: Date): Promise<WeightEntry[]> {
+    return await db.select().from(weightEntries)
+      .where(and(
+        gte(weightEntries.date, startDate),
+        lte(weightEntries.date, endDate)
+      ))
+      .orderBy(desc(weightEntries.date));
+  }
+
+  // Blood entry operations
+  async createBloodEntry(entry: InsertBloodEntry): Promise<BloodEntry> {
+    const [newEntry] = await db.insert(bloodEntries).values(entry).returning();
+    return newEntry;
+  }
+
+  async updateBloodEntry(id: string, entry: UpdateBloodEntry): Promise<BloodEntry | undefined> {
+    const [updated] = await db.update(bloodEntries)
+      .set(entry)
+      .where(eq(bloodEntries.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteBloodEntry(id: string): Promise<boolean> {
+    const result = await db.delete(bloodEntries).where(eq(bloodEntries.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getAllBloodEntries(): Promise<BloodEntry[]> {
+    return await db.select().from(bloodEntries).orderBy(desc(bloodEntries.asOf));
+  }
+
+  // Photo progress operations
+  async createPhotoProgress(entry: InsertPhotoProgress): Promise<PhotoProgress> {
+    const [newEntry] = await db.insert(photoProgress).values(entry).returning();
+    return newEntry;
+  }
+
+  async updatePhotoProgress(id: string, entry: UpdatePhotoProgress): Promise<PhotoProgress | undefined> {
+    const [updated] = await db.update(photoProgress)
+      .set(entry)
+      .where(eq(photoProgress.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deletePhotoProgress(id: string): Promise<boolean> {
+    const result = await db.delete(photoProgress).where(eq(photoProgress.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getAllPhotoProgress(): Promise<PhotoProgress[]> {
+    return await db.select().from(photoProgress).orderBy(desc(photoProgress.createdAt));
+  }
+
+  async getPhotoProgressByBodyPart(bodyPart: string): Promise<PhotoProgress[]> {
+    return await db.select().from(photoProgress)
+      .where(eq(photoProgress.bodyPart, bodyPart))
+      .orderBy(desc(photoProgress.createdAt));
+  }
+
+  // Thought operations
+  async createThought(entry: InsertThought): Promise<Thought> {
+    const [newEntry] = await db.insert(thoughts).values(entry).returning();
+    return newEntry;
+  }
+
+  async updateThought(id: string, entry: UpdateThought): Promise<Thought | undefined> {
+    const [updated] = await db.update(thoughts)
+      .set(entry)
+      .where(eq(thoughts.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteThought(id: string): Promise<boolean> {
+    const result = await db.delete(thoughts).where(eq(thoughts.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getAllThoughts(): Promise<Thought[]> {
+    return await db.select().from(thoughts).orderBy(desc(thoughts.createdAt));
+  }
+
+  // Quote operations
+  async createQuote(entry: InsertQuote): Promise<Quote> {
+    const [newEntry] = await db.insert(quotes).values(entry).returning();
+    return newEntry;
+  }
+
+  async updateQuote(id: string, entry: UpdateQuote): Promise<Quote | undefined> {
+    const [updated] = await db.update(quotes)
+      .set(entry)
+      .where(eq(quotes.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteQuote(id: string): Promise<boolean> {
+    const result = await db.delete(quotes).where(eq(quotes.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getAllQuotes(): Promise<Quote[]> {
+    return await db.select().from(quotes).orderBy(desc(quotes.createdAt));
+  }
+
+  async getActiveQuotes(): Promise<Quote[]> {
+    return await db.select().from(quotes)
+      .where(eq(quotes.isActive, 1))
+      .orderBy(desc(quotes.createdAt));
+  }
+
+  async getRandomQuote(): Promise<Quote | undefined> {
+    const [randomQuote] = await db.select().from(quotes)
+      .where(eq(quotes.isActive, 1))
+      .orderBy(sql`RANDOM()`)
+      .limit(1);
+    return randomQuote || undefined;
+  }
+
+  async clearAllQuotes(): Promise<void> {
+    await db.delete(quotes);
+  }
+}
+
+// Create a single instance that will be shared across the app
+export const storage = new DatabaseStorage();
