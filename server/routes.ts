@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
-import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema } from "@shared/schema";
+import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -452,6 +452,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete thought" });
+    }
+  });
+
+  // Quotes routes
+  // Get all quotes
+  app.get("/api/quotes", async (req, res) => {
+    try {
+      const quotes = await storage.getAllQuotes();
+      res.json(quotes);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch quotes" });
+    }
+  });
+
+  // Get active quotes
+  app.get("/api/quotes/active", async (req, res) => {
+    try {
+      const quotes = await storage.getActiveQuotes();
+      res.json(quotes);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch active quotes" });
+    }
+  });
+
+  // Get random quote
+  app.get("/api/quotes/random", async (req, res) => {
+    try {
+      const quote = await storage.getRandomQuote();
+      if (!quote) {
+        return res.status(404).json({ message: "No active quotes found" });
+      }
+      res.json(quote);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch random quote" });
+    }
+  });
+
+  // Create new quote
+  app.post("/api/quotes", async (req, res) => {
+    try {
+      const validatedData = insertQuoteSchema.parse(req.body);
+      const quote = await storage.createQuote(validatedData);
+      res.status(201).json(quote);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create quote" });
+      }
+    }
+  });
+
+  // Update quote
+  app.patch("/api/quotes/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const validatedData = updateQuoteSchema.parse(req.body);
+      const quote = await storage.updateQuote(id, validatedData);
+      
+      if (!quote) {
+        return res.status(404).json({ message: "Quote not found" });
+      }
+      
+      res.json(quote);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update quote" });
+      }
+    }
+  });
+
+  // Delete quote
+  app.delete("/api/quotes/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const deleted = await storage.deleteQuote(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Quote not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete quote" });
     }
   });
 

@@ -147,6 +147,15 @@ export const thoughts = pgTable("thoughts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const quotes = pgTable("quotes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  text: text("text").notNull(),
+  author: text("author").notNull(),
+  category: text("category").default("motivational"), // 'motivational', 'fitness', 'mindset', 'success', etc.
+  isActive: integer("is_active").default(1), // 1 for active, 0 for inactive
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -192,6 +201,13 @@ export const insertThoughtSchema = createInsertSchema(thoughts).omit({
 
 export const updateThoughtSchema = insertThoughtSchema.partial();
 
+export const insertQuoteSchema = createInsertSchema(quotes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const updateQuoteSchema = insertQuoteSchema.partial();
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Exercise = typeof exercises.$inferSelect;
@@ -211,3 +227,6 @@ export type UpdatePhotoProgress = z.infer<typeof updatePhotoProgressSchema>;
 export type Thought = typeof thoughts.$inferSelect;
 export type InsertThought = z.infer<typeof insertThoughtSchema>;
 export type UpdateThought = z.infer<typeof updateThoughtSchema>;
+export type Quote = typeof quotes.$inferSelect;
+export type InsertQuote = z.infer<typeof insertQuoteSchema>;
+export type UpdateQuote = z.infer<typeof updateQuoteSchema>;

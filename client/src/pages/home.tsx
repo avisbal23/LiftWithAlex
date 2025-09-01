@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { type WorkoutLog } from "@shared/schema";
+import { type WorkoutLog, type Quote } from "@shared/schema";
 import Navigation from "@/components/layout/navigation";
 import { Link } from "wouter";
 import { Trophy, Calendar, Edit3, Save, X, Scale, Settings, MessageCircle, Trash2 } from "lucide-react";
@@ -90,6 +90,10 @@ export default function Home() {
 
   const { data: latestWorkoutLog } = useQuery<WorkoutLog | null>({
     queryKey: ["/api/workout-logs/latest"],
+  });
+
+  const { data: randomQuote } = useQuery<Quote | null>({
+    queryKey: ["/api/quotes/random"],
   });
 
   const getNextWorkoutDay = () => {
@@ -208,6 +212,24 @@ export default function Home() {
           <h1 className="text-4xl font-bold text-foreground mb-4" data-testid="heading-welcome">
             Visbal Gym Tracker 💪🏼
           </h1>
+          
+          {/* Random Quote */}
+          {randomQuote && (
+            <div className="bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-lg p-4 mb-6 max-w-2xl mx-auto">
+              <blockquote className="text-lg font-medium text-foreground italic mb-2">
+                "{randomQuote.text}"
+              </blockquote>
+              <cite className="text-sm text-muted-foreground">
+                — {randomQuote.author}
+                {randomQuote.category && (
+                  <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                    {randomQuote.category}
+                  </span>
+                )}
+              </cite>
+            </div>
+          )}
+          
           <p className="text-lg text-muted-foreground mb-4">
             Track your workouts, beat your personal records
           </p>

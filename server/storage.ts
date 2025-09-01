@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -37,6 +37,13 @@ export interface IStorage {
   updateThought(id: string, entry: UpdateThought): Promise<Thought | undefined>;
   deleteThought(id: string): Promise<boolean>;
   getAllThoughts(): Promise<Thought[]>;
+  
+  createQuote(entry: InsertQuote): Promise<Quote>;
+  updateQuote(id: string, entry: UpdateQuote): Promise<Quote | undefined>;
+  deleteQuote(id: string): Promise<boolean>;
+  getAllQuotes(): Promise<Quote[]>;
+  getActiveQuotes(): Promise<Quote[]>;
+  getRandomQuote(): Promise<Quote | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -47,6 +54,7 @@ export class MemStorage implements IStorage {
   private bloodEntries: Map<string, BloodEntry>;
   private photoProgress: Map<string, PhotoProgress>;
   private thoughts: Map<string, Thought>;
+  private quotes: Map<string, Quote>;
 
   constructor() {
     this.users = new Map();
@@ -56,10 +64,12 @@ export class MemStorage implements IStorage {
     this.bloodEntries = new Map();
     this.photoProgress = new Map();
     this.thoughts = new Map();
+    this.quotes = new Map();
     
     // Add some initial sample data
     this.seedData();
     this.seedBloodData();
+    this.seedQuotes();
   }
 
   private seedData() {
@@ -582,6 +592,92 @@ export class MemStorage implements IStorage {
         const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
         return dateB.getTime() - dateA.getTime(); // Most recent first
       });
+  }
+
+  // Quotes Methods
+  async createQuote(entry: InsertQuote): Promise<Quote> {
+    const id = randomUUID();
+    const now = new Date();
+    const quote: Quote = {
+      id,
+      ...entry,
+      createdAt: now,
+    };
+    this.quotes.set(id, quote);
+    return quote;
+  }
+
+  async updateQuote(id: string, updateEntry: UpdateQuote): Promise<Quote | undefined> {
+    const existing = this.quotes.get(id);
+    if (!existing) {
+      return undefined;
+    }
+    
+    const updated: Quote = {
+      ...existing,
+      ...updateEntry,
+    };
+    this.quotes.set(id, updated);
+    return updated;
+  }
+
+  async deleteQuote(id: string): Promise<boolean> {
+    return this.quotes.delete(id);
+  }
+
+  async getAllQuotes(): Promise<Quote[]> {
+    return Array.from(this.quotes.values())
+      .sort((a, b) => {
+        const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+        const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+        return dateB.getTime() - dateA.getTime(); // Most recent first
+      });
+  }
+
+  async getActiveQuotes(): Promise<Quote[]> {
+    return Array.from(this.quotes.values())
+      .filter(quote => quote.isActive === 1)
+      .sort((a, b) => {
+        const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+        const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+        return dateB.getTime() - dateA.getTime();
+      });
+  }
+
+  async getRandomQuote(): Promise<Quote | undefined> {
+    const activeQuotes = await this.getActiveQuotes();
+    if (activeQuotes.length === 0) {
+      return undefined;
+    }
+    const randomIndex = Math.floor(Math.random() * activeQuotes.length);
+    return activeQuotes[randomIndex];
+  }
+
+  private seedQuotes() {
+    const sampleQuotes = [
+      { text: "The only way to do great work is to love what you do.", author: "Steve Jobs", category: "motivational", isActive: 1 },
+      { text: "Success isn't always about greatness. It's about consistency.", author: "Dwayne Johnson", category: "fitness", isActive: 1 },
+      { text: "Discipline is choosing between what you want now and what you want most.", author: "Abraham Lincoln", category: "mindset", isActive: 1 },
+      { text: "The groundwork for all happiness is good health.", author: "Leigh Hunt", category: "fitness", isActive: 1 },
+      { text: "Don't watch the clock; do what it does. Keep going.", author: "Sam Levenson", category: "motivational", isActive: 1 },
+      { text: "You are never too old to set another goal or dream a new dream.", author: "C.S. Lewis", category: "success", isActive: 1 },
+      { text: "Strength does not come from physical capacity. It comes from indomitable will.", author: "Mahatma Gandhi", category: "fitness", isActive: 1 },
+      { text: "The only impossible journey is the one you never begin.", author: "Tony Robbins", category: "motivational", isActive: 1 }
+    ];
+
+    sampleQuotes.forEach(quote => {
+      const id = randomUUID();
+      const now = new Date();
+      const quoteEntry: Quote = {
+        id,
+        text: quote.text,
+        author: quote.author,
+        category: quote.category,
+        isActive: quote.isActive,
+        createdAt: now,
+      };
+      this.quotes.set(id, quoteEntry);
+    });
   }
 }
 

@@ -8,14 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Upload, Database, FileText, Activity, Droplets, FileDown } from "lucide-react";
-import { type Exercise, type WeightEntry } from "@shared/schema";
+import { Download, Upload, Database, FileText, Activity, Droplets, FileDown, MessageSquare } from "lucide-react";
+import { type Exercise, type WeightEntry, type Quote } from "@shared/schema";
 
 export default function Admin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [workoutImportData, setWorkoutImportData] = useState("");
   const [weightImportData, setWeightImportData] = useState("");
+  const [quotesImportData, setQuotesImportData] = useState("");
   const [isImporting, setIsImporting] = useState(false);
 
   const { data: exercises = [] } = useQuery<Exercise[]>({
@@ -24,6 +25,10 @@ export default function Admin() {
 
   const { data: weightEntries = [] } = useQuery<WeightEntry[]>({
     queryKey: ["/api/weight-entries"],
+  });
+
+  const { data: quotes = [] } = useQuery<Quote[]>({
+    queryKey: ["/api/quotes"],
   });
 
   const downloadWorkoutTemplate = () => {
@@ -304,6 +309,139 @@ export default function Admin() {
     }
   };
 
+  const downloadQuotesTemplate = () => {
+    const csvHeaders = 'text,author,category,isActive';
+    const sampleRows = [
+      '"The only way to do great work is to love what you do.","Steve Jobs","motivational",1',
+      '"Success isn\'t always about greatness. It\'s about consistency.","Dwayne Johnson","fitness",1',
+      '"Discipline is choosing between what you want now and what you want most.","Abraham Lincoln","mindset",1'
+    ];
+    
+    const csvContent = [csvHeaders, ...sampleRows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'quotes-import-template.csv';
+    link.click();
+    window.URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Template Downloaded",
+      description: "Quotes import template CSV file downloaded",
+    });
+  };
+
+  const exportQuotes = () => {
+    if (quotes.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No quotes to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const csvHeaders = 'text,author,category,isActive,createdAt';
+    const csvRows = quotes.map(quote => {
+      return `"${quote.text.replace(/"/g, '""')}","${quote.author.replace(/"/g, '""')}","${quote.category || ''}",${quote.isActive},"${quote.createdAt}"`;
+    });
+    
+    const csvContent = [csvHeaders, ...csvRows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `quotes-export-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Export Successful",
+      description: `${quotes.length} quotes exported to CSV`,
+    });
+  };
+
+  const importQuotes = async () => {
+    if (!quotesImportData.trim()) {
+      toast({
+        title: "Error", 
+        description: "Please paste quotes CSV data to import",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const lines = quotesImportData.trim().split('\n');
+      if (lines.length < 2) {
+        throw new Error("CSV must have at least header and one data row");
+      }
+      
+      const headers = lines[0].split(',').map(h => h.trim());
+      const expectedHeaders = ['text', 'author', 'category', 'isActive'];
+      
+      if (!expectedHeaders.every(header => headers.includes(header))) {
+        throw new Error(`CSV must include headers: ${expectedHeaders.join(', ')}`);
+      }
+      
+      const rows = lines.slice(1).map(line => {
+        // Handle quoted CSV values
+        const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+        const row: any = {};
+        headers.forEach((header, index) => {
+          let value = values[index]?.trim() || '';
+          // Remove surrounding quotes
+          if (value.startsWith('"') && value.endsWith('"')) {
+            value = value.slice(1, -1).replace(/""/g, '"');
+          }
+          row[header] = value;
+        });
+        return row;
+      });
+
+      // Clear existing quotes first
+      const deletePromises = quotes.map(quote => 
+        apiRequest(`/api/quotes/${quote.id}`, {
+          method: "DELETE",
+        })
+      );
+      await Promise.all(deletePromises);
+
+      // Import new quotes
+      const importPromises = rows.map((row: any) => 
+        apiRequest("/api/quotes", {
+          method: "POST",
+          body: JSON.stringify({
+            text: row.text || '',
+            author: row.author || '',
+            category: row.category || 'motivational',
+            isActive: parseInt(row.isActive) || 1
+          }),
+        })
+      );
+      await Promise.all(importPromises);
+
+      // Refresh data
+      queryClient.invalidateQueries({ queryKey: ["/api/quotes"] });
+      
+      toast({
+        title: "Import Successful",
+        description: `${rows.length} quotes imported from CSV`,
+      });
+      setQuotesImportData("");
+    } catch (error) {
+      toast({
+        title: "Import Failed",
+        description: error instanceof Error ? error.message : "Invalid CSV format",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   return (
     <>
       <Navigation />
@@ -434,6 +572,66 @@ export default function Admin() {
             </CardContent>
           </Card>
 
+          {/* Quotes Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" />
+                Quotes Management
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                <Button 
+                  onClick={exportQuotes}
+                  className="flex items-center gap-2"
+                  data-testid="button-export-quotes"
+                >
+                  <Download className="w-4 h-4" />
+                  Export Quotes
+                </Button>
+                <Button 
+                  onClick={downloadQuotesTemplate}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                  data-testid="button-download-quotes-template"
+                >
+                  <FileDown className="w-4 h-4" />
+                  Download Template
+                </Button>
+                <span className="text-sm text-muted-foreground flex items-center">
+                  ({quotes.length} quotes)
+                </span>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="quotes-import">Import Quotes Data</Label>
+                <Textarea
+                  id="quotes-import"
+                  placeholder={`Paste your quotes CSV here...
+Format: text,author,category,isActive
+"Quote text","Author Name","category",1`}
+                  value={quotesImportData}
+                  onChange={(e) => setQuotesImportData(e.target.value)}
+                  className="min-h-[100px] font-mono text-sm"
+                />
+                <Button 
+                  onClick={importQuotes}
+                  disabled={isImporting || !quotesImportData.trim()}
+                  className="flex items-center gap-2"
+                  variant="outline"
+                  data-testid="button-import-quotes"
+                >
+                  <Upload className="w-4 h-4" />
+                  {isImporting ? "Importing..." : "Import Quotes"}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  ⚠️ This will replace ALL existing quotes data
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Data Information */}
           <Card>
             <CardHeader>
@@ -460,6 +658,16 @@ export default function Admin() {
 {`Date,Time,Weight(lb),Body Fat(%),Fat-Free Mass(lb),Muscle Mass(lb),BMI,Subcutaneous Fat(%),Skeletal Muscle(%),Body Water(%),Visceral Fat,Bone Mass(lb),Protein (%),BMR(kcal),Metabolic Age
 8/24/25,11:52:37 AM,166.4,15.0,141.4,134.2,26.8,12.4,54.9,61.4,9,7.2,19.4,1769,31
 8/21/25,7:47:06 AM,167.4,15.1,142.0,135.0,27.0,12.5,54.8,61.3,10,7.0,19.4,1747,31`}
+                  </pre>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium mb-2">Quotes CSV Format:</h4>
+                  <pre className="bg-muted p-2 rounded text-xs overflow-x-auto">
+{`text,author,category,isActive
+"The only way to do great work is to love what you do.","Steve Jobs","motivational",1
+"Success isn't always about greatness. It's about consistency.","Dwayne Johnson","fitness",1
+"Discipline is choosing between what you want now and what you want most.","Abraham Lincoln","mindset",0`}
                   </pre>
                 </div>
                 
