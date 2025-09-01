@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { type WorkoutLog } from "@shared/schema";
 import Navigation from "@/components/layout/navigation";
 import { Link } from "wouter";
-import { Trophy, Calendar, Edit3, Save, X, Scale, Settings, MessageCircle } from "lucide-react";
+import { Trophy, Calendar, Edit3, Save, X, Scale, Settings, MessageCircle, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -438,67 +438,92 @@ function PRCard({ pr, isEditing, onEdit, onSave, onDelete, onCancel }: {
 
   if (isEditing) {
     return (
-      <Card className="border-primary aspect-square flex flex-col shadow-lg dark:shadow-white/20 shadow-black/10">
-        <CardContent className="flex-1 p-4 space-y-3">
-          <Input
-            value={editData.exercise}
-            onChange={(e) => setEditData(prev => ({ ...prev, exercise: e.target.value }))}
-            className="text-sm font-medium"
-            placeholder="Exercise name"
-          />
+      <Card className="border-primary flex flex-col shadow-2xl dark:shadow-white/30 shadow-black/20 scale-110 z-10 relative bg-background">
+        <CardContent className="p-6 space-y-4">
+          <div className="text-center mb-4">
+            <h3 className="text-lg font-semibold text-foreground">Edit PR Record</h3>
+          </div>
           
-          <select
-            value={editData.category}
-            onChange={(e) => setEditData(prev => ({ ...prev, category: e.target.value }))}
-            className="w-full px-2 py-2 text-sm border border-border rounded bg-background"
-          >
-            <option value="Push">Push</option>
-            <option value="Pull">Pull</option>
-            <option value="Legs">Legs</option>
-            <option value="Cardio">Cardio</option>
-          </select>
-          
-          {editData.category === "Cardio" ? (
-            <Input
-              value={editData.time || ""}
-              onChange={(e) => setEditData(prev => ({ ...prev, time: e.target.value }))}
-              placeholder="Time (e.g., 22:30)"
-              className="text-sm"
-            />
-          ) : (
-            <div className="space-y-2">
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="exercise" className="text-sm font-medium text-foreground">Exercise Name</Label>
               <Input
-                value={editData.weight || ""}
-                onChange={(e) => setEditData(prev => ({ ...prev, weight: e.target.value }))}
-                placeholder="Weight (lbs)"
-                className="text-sm"
-              />
-              <Input
-                value={editData.reps || ""}
-                onChange={(e) => setEditData(prev => ({ ...prev, reps: e.target.value }))}
-                placeholder="Reps"
-                className="text-sm"
+                id="exercise"
+                value={editData.exercise}
+                onChange={(e) => setEditData(prev => ({ ...prev, exercise: e.target.value }))}
+                className="mt-1"
+                placeholder="Enter exercise name"
               />
             </div>
-          )}
+            
+            <div>
+              <Label htmlFor="category" className="text-sm font-medium text-foreground">Category</Label>
+              <select
+                id="category"
+                value={editData.category}
+                onChange={(e) => setEditData(prev => ({ ...prev, category: e.target.value }))}
+                className="w-full px-3 py-2 mt-1 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="Push">Push</option>
+                <option value="Pull">Pull</option>
+                <option value="Legs">Legs</option>
+                <option value="Cardio">Cardio</option>
+              </select>
+            </div>
+            
+            {editData.category === "Cardio" ? (
+              <div>
+                <Label htmlFor="time" className="text-sm font-medium text-foreground">Best Time</Label>
+                <Input
+                  id="time"
+                  value={editData.time || ""}
+                  onChange={(e) => setEditData(prev => ({ ...prev, time: e.target.value }))}
+                  placeholder="e.g., 22:30"
+                  className="mt-1"
+                />
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="weight" className="text-sm font-medium text-foreground">Weight (lbs)</Label>
+                  <Input
+                    id="weight"
+                    value={editData.weight || ""}
+                    onChange={(e) => setEditData(prev => ({ ...prev, weight: e.target.value }))}
+                    placeholder="Weight"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="reps" className="text-sm font-medium text-foreground">Max Reps</Label>
+                  <Input
+                    id="reps"
+                    value={editData.reps || ""}
+                    onChange={(e) => setEditData(prev => ({ ...prev, reps: e.target.value }))}
+                    placeholder="Reps"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
           
-          <div className="flex gap-2 mt-auto">
-            <Button size="sm" onClick={handleSave} className="flex-1">
-              <Save className="w-3 h-3 mr-1" />
-              Save
+          <div className="flex gap-2 pt-4 border-t border-border">
+            <Button onClick={handleSave} className="flex-1">
+              <Save className="w-4 h-4 mr-2" />
+              Save Changes
             </Button>
-            <Button size="sm" variant="outline" onClick={onCancel} className="flex-1">
-              <X className="w-3 h-3 mr-1" />
+            <Button variant="outline" onClick={onCancel} className="flex-1">
+              <X className="w-4 h-4 mr-2" />
               Cancel
             </Button>
             <Button
-              size="sm"
               variant="destructive"
               onClick={onDelete}
-              className="px-3"
+              className="px-4"
               data-testid={`button-delete-pr-${pr.id}`}
             >
-              <X className="w-3 h-3" />
+              <Trash2 className="w-4 h-4" />
             </Button>
           </div>
         </CardContent>
