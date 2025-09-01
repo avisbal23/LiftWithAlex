@@ -219,13 +219,28 @@ export default function Home() {
           
           {/* Random Quote */}
           {randomQuote && (
-            <div className="bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-lg p-4 mb-6 max-w-2xl mx-auto">
-              <blockquote className="text-lg font-medium text-foreground italic mb-2">
-                "{randomQuote.text}"
-              </blockquote>
-              <cite className="text-sm text-muted-foreground">
-                — {randomQuote.author}
-              </cite>
+            <div className="relative mb-6 max-w-2xl mx-auto" data-testid="random-quote">
+              {/* Glass Container */}
+              <div className="backdrop-blur-md bg-white/10 dark:bg-black/10 border border-white/20 dark:border-white/10 rounded-2xl p-6 shadow-2xl shadow-primary/20">
+                {/* Inner glow effect */}
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-50"></div>
+                
+                {/* Content */}
+                <div className="relative z-10">
+                  <blockquote className="text-lg font-medium text-foreground italic mb-3 leading-relaxed">
+                    "{randomQuote.text}"
+                  </blockquote>
+                  <cite className="text-sm text-muted-foreground font-medium">
+                    — {randomQuote.author}
+                  </cite>
+                </div>
+                
+                {/* Decorative elements */}
+                <div className="absolute top-2 left-2 w-1 h-1 bg-primary/30 rounded-full"></div>
+                <div className="absolute top-2 right-2 w-1 h-1 bg-primary/30 rounded-full"></div>
+                <div className="absolute bottom-2 left-2 w-1 h-1 bg-primary/30 rounded-full"></div>
+                <div className="absolute bottom-2 right-2 w-1 h-1 bg-primary/30 rounded-full"></div>
+              </div>
             </div>
           )}
           

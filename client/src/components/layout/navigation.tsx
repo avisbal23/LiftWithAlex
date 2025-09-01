@@ -58,22 +58,38 @@ export default function Navigation() {
   }, [location]);
 
   return (
-    <nav className="bg-card border-b border-border">
+    <nav className="bg-card border-b border-border shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div ref={navRef} className="flex space-x-6 overflow-x-auto scrollbar-hide">
+        <div ref={navRef} className="flex space-x-3 overflow-x-auto scrollbar-hide py-3">
           {tabs.map((tab) => (
             <Link
               key={tab.path}
               to={tab.path}
               className={cn(
-                "py-4 px-2 text-sm font-medium transition-colors hover:text-primary whitespace-nowrap flex-shrink-0",
+                "relative px-4 py-2 text-sm font-medium whitespace-nowrap flex-shrink-0 rounded-lg transition-all duration-200 ease-in-out transform",
                 location === tab.path
-                  ? "border-b-2 border-primary text-primary"
-                  : "text-muted-foreground"
+                  ? "bg-gradient-to-b from-primary to-primary/80 text-white shadow-lg shadow-primary/30 -translate-y-0.5 scale-105"
+                  : "bg-gradient-to-b from-muted to-muted/70 text-muted-foreground hover:from-primary/20 hover:to-primary/10 hover:text-primary hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/20 active:translate-y-0 active:shadow-sm"
               )}
               data-testid={`link-${tab.name.toLowerCase().replace(' ', '-')}`}
             >
-              {tab.name}
+              {/* 3D Effect - Top highlight */}
+              <div className={cn(
+                "absolute inset-x-0 top-0 h-px rounded-t-lg",
+                location === tab.path
+                  ? "bg-white/30"
+                  : "bg-white/20 dark:bg-white/10"
+              )}></div>
+              
+              {/* 3D Effect - Bottom shadow */}
+              <div className={cn(
+                "absolute inset-x-0 bottom-0 h-px rounded-b-lg",
+                location === tab.path
+                  ? "bg-black/20"
+                  : "bg-black/10 dark:bg-black/20"
+              )}></div>
+              
+              <span className="relative z-10">{tab.name}</span>
             </Link>
           ))}
         </div>
