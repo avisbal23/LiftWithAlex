@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Droplets, Plus, TrendingUp, TrendingDown, Calendar, Upload, Download, AlertTriangle, CheckCircle, FileText } from "lucide-react";
+import { Droplets, Plus, TrendingUp, TrendingDown, Calendar, Upload, Download, AlertTriangle, CheckCircle, FileText, RotateCcw } from "lucide-react";
 import { type BloodEntry } from "@shared/schema";
 
 export default function BloodTracking() {
@@ -19,6 +19,7 @@ export default function BloodTracking() {
   const [csvImportData, setCsvImportData] = useState("");
   const [isImporting, setIsImporting] = useState(false);
   const [importFormat, setImportFormat] = useState<"json" | "csv">("csv");
+  const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
 
   const { data: bloodEntries = [] } = useQuery<BloodEntry[]>({
     queryKey: ["/api/blood-entries"],
@@ -330,6 +331,13 @@ export default function BloodTracking() {
     return change;
   };
 
+  const toggleCardFlip = (cardId: string) => {
+    setFlippedCards(prev => ({
+      ...prev,
+      [cardId]: !prev[cardId]
+    }));
+  };
+
   const renderValueWithFlag = (value: number | null, unit: string | null, flag: string | null = null) => {
     if (!value) return <span className="text-muted-foreground">—</span>;
     
@@ -345,30 +353,113 @@ export default function BloodTracking() {
     );
   };
 
-  const renderPanelCard = (title: string, icon: React.ReactNode, values: Array<{ label: string; value: number | null; unit: string | null; flag?: string | null; change?: number | null }>) => {
+  const getCardExplanation = (title: string) => {
+    switch (title) {
+      case "Hormones":
+        return {
+          description: "Hormones regulate metabolism, growth, and reproduction. Key markers include testosterone for muscle development and energy, and SHBG which controls hormone availability.",
+          keyPoints: [
+            "Total Testosterone: Primary male hormone for muscle, energy, and mood",
+            "Free Testosterone: The active, bioavailable portion",
+            "SHBG: Protein that binds and regulates hormone availability",
+            "Estrogens: Balance testosterone for optimal health"
+          ]
+        };
+      case "Thyroid":
+        return {
+          description: "Thyroid hormones control metabolism, energy production, and body temperature. TSH from the pituitary gland signals thyroid hormone production.",
+          keyPoints: [
+            "TSH: Signal from brain to produce thyroid hormones (lower = more active thyroid)",
+            "Free T3: Most active thyroid hormone, controls metabolism",
+            "Free T4: Storage form that converts to T3 when needed",
+            "Optimal thyroid function boosts energy and metabolism"
+          ]
+        };
+      case "Lipids":
+        return {
+          description: "Lipid profile shows cardiovascular health and heart disease risk. Balance between protective HDL and potentially harmful LDL cholesterol.",
+          keyPoints: [
+            "LDL: 'Bad' cholesterol that can build up in arteries",
+            "HDL: 'Good' cholesterol that removes LDL from arteries",
+            "Triglycerides: Blood fats that increase with excess carbs",
+            "ApoB: Better predictor of heart disease than LDL alone"
+          ]
+        };
+      case "Health Markers":
+        return {
+          description: "General health indicators covering inflammation, blood sugar control, and essential nutrients that affect overall wellness and disease risk.",
+          keyPoints: [
+            "Vitamin D: Essential for bone health, immune function, and mood",
+            "CRP (hs): Measures inflammation in the body",
+            "HbA1c: 3-month average blood sugar control",
+            "Ferritin: Iron storage affecting energy and performance"
+          ]
+        };
+      default:
+        return {
+          description: "Health markers and lab values",
+          keyPoints: []
+        };
+    }
+  };
+
+  const renderPanelCard = (title: string, icon: React.ReactNode, values: Array<{ label: string; value: number | null; unit: string | null; flag?: string | null; change?: number | null }>, entryId: string) => {
+    const cardId = `${entryId}-${title}`;
+    const isFlipped = flippedCards[cardId];
+    const explanation = getCardExplanation(title);
+
     return (
-      <Card>
+      <Card className="relative overflow-hidden">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            {icon}
-            {title}
+          <CardTitle className="flex items-center justify-between text-lg">
+            <div className="flex items-center gap-2">
+              {icon}
+              {title}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => toggleCardFlip(cardId)}
+              className="h-8 w-8 p-0 hover:bg-muted/50"
+              data-testid={`button-flip-${title.toLowerCase().replace(' ', '-')}`}
+            >
+              <RotateCcw className={`w-4 h-4 transition-transform duration-300 ${isFlipped ? 'rotate-180' : ''}`} />
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {values.map(({ label, value, unit, flag, change }) => (
-            <div key={label} className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">{label}</span>
-              <div className="flex items-center gap-2">
-                {renderValueWithFlag(value, unit, flag)}
-                {change && (
-                  <div className={`flex items-center text-xs ${change > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {change > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                    {Math.abs(change).toFixed(1)}%
+          {!isFlipped ? (
+            // Front side - show values
+            values.map(({ label, value, unit, flag, change }) => (
+              <div key={label} className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">{label}</span>
+                <div className="flex items-center gap-2">
+                  {renderValueWithFlag(value, unit, flag)}
+                  {change && (
+                    <div className={`flex items-center text-xs ${change > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {change > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                      {Math.abs(change).toFixed(1)}%
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            // Back side - show explanation
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {explanation.description}
+              </p>
+              <div className="space-y-2">
+                {explanation.keyPoints.map((point, index) => (
+                  <div key={index} className="text-xs text-muted-foreground flex items-start gap-2">
+                    <span className="text-primary">•</span>
+                    <span>{point}</span>
                   </div>
-                )}
+                ))}
               </div>
             </div>
-          ))}
+          )}
         </CardContent>
       </Card>
     );
@@ -589,7 +680,8 @@ export default function BloodTracking() {
                         unit: entry.estrogensTotalUnit,
                         change: previous ? getValueChange(entry.estrogensTotal, previous.estrogensTotal) : null
                       },
-                    ]
+                    ],
+                    entry.id
                   )}
 
                   {/* Thyroid */}
@@ -615,7 +707,8 @@ export default function BloodTracking() {
                         unit: entry.freeT4Unit,
                         change: previous ? getValueChange(entry.freeT4, previous.freeT4) : null
                       },
-                    ]
+                    ],
+                    entry.id
                   )}
 
                   {/* Lipids */}
@@ -649,7 +742,8 @@ export default function BloodTracking() {
                         flag: entry.apobFlag,
                         change: previous ? getValueChange(entry.apob, previous.apob) : null
                       },
-                    ]
+                    ],
+                    entry.id
                   )}
 
                   {/* Vitamins & Health */}
@@ -681,7 +775,8 @@ export default function BloodTracking() {
                         unit: entry.ferritinUnit,
                         change: previous ? getValueChange(entry.ferritin, previous.ferritin) : null
                       },
-                    ]
+                    ],
+                    entry.id
                   )}
                 </div>
                 
