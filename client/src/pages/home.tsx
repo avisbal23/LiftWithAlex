@@ -213,10 +213,6 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-foreground mb-4" data-testid="heading-welcome">
-            Visbal Gym Tracker 💪🏼
-          </h1>
-          
           {/* Random Quote */}
           {randomQuote && (
             <div className="relative mb-6 max-w-2xl mx-auto" data-testid="random-quote">
