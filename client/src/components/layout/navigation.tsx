@@ -15,7 +15,6 @@ const tabs = [
   { name: "Blood", path: "/blood" },
   { name: "Photos", path: "/photos" },
   { name: "Thoughts", path: "/thoughts" },
-  { name: "Admin", path: "/admin" },
 ];
 
 export default function Navigation() {
@@ -24,7 +23,7 @@ export default function Navigation() {
 
   // Auto-scroll to keep selected tab visible, then reset scroll position
   useEffect(() => {
-    const rightSideTabs = ["/pull2", "/legs2", "/cardio", "/weight", "/blood", "/photos", "/thoughts", "/admin"];
+    const rightSideTabs = ["/pull2", "/legs2", "/cardio", "/weight", "/blood", "/photos", "/thoughts"];
     
     if (rightSideTabs.includes(location) && navRef.current) {
       const tabIndex = tabs.findIndex(tab => tab.path === location);

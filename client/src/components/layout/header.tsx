@@ -1,6 +1,7 @@
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import { Link } from "wouter";
 
 export default function Header() {
   const [isDark, setIsDark] = useState(false);
@@ -27,6 +28,16 @@ export default function Header() {
             <h1 className="text-xl font-semibold text-foreground" data-testid="app-title">Visbal Gym Tracker 💪🏼</h1>
           </div>
           <div className="flex items-center space-x-2">
+            <Link to="/admin">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                data-testid="button-admin"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Settings className="h-5 w-5" />
+              </Button>
+            </Link>
             <Button 
               variant="ghost" 
               size="icon" 
