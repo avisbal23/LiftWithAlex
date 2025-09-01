@@ -155,7 +155,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
             className="bg-primary/5 border-primary/20 hover:bg-primary/10 text-primary font-medium"
             data-testid={`button-today-is-${category}-day`}
           >
-            Today is {getCategoryDisplayName(category)}
+            Log {getCategoryDisplayName(category)} Workout
           </Button>
           <Button 
             onClick={addNewExercise} 
