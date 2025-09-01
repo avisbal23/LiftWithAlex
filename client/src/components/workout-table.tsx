@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Eye } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -213,38 +214,55 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                             <Eye className="w-4 h-4" />
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-lg">
+                        <DialogContent className="max-w-2xl">
                           <DialogHeader>
-                            <DialogTitle>Notes for {exercise.name}</DialogTitle>
+                            <DialogTitle>Exercise Details</DialogTitle>
                           </DialogHeader>
-                          <div className="space-y-4">
-                            <Textarea
-                              value={editingNotes}
-                              onChange={(e) => setEditingNotes(e.target.value)}
-                              placeholder="Add your workout notes here..."
-                              className="min-h-32 resize-none"
-                              data-testid={`textarea-notes-${exercise.id}`}
-                            />
-                            <div className="flex justify-end space-x-2">
-                              <Button
-                                variant="outline"
-                                onClick={() => setEditingNotes(exercise.notes)}
-                                data-testid={`button-cancel-notes-${exercise.id}`}
-                              >
-                                Cancel
-                              </Button>
-                              <Button
-                                onClick={() => {
-                                  updateExercise(exercise.id, "notes", editingNotes);
-                                  setSelectedNotes(null);
-                                }}
-                                disabled={updateMutation.isPending}
-                                data-testid={`button-save-notes-${exercise.id}`}
-                              >
-                                Save Notes
-                              </Button>
-                            </div>
-                          </div>
+                          <Card>
+                            <CardHeader>
+                              <div className="flex items-center justify-between">
+                                <CardTitle className="text-xl">{exercise.name}</CardTitle>
+                                <Badge variant="secondary" className="capitalize">
+                                  {category}
+                                </Badge>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <div className="text-sm font-medium text-muted-foreground">Weight</div>
+                                  <div className="text-2xl font-bold text-primary">
+                                    {exercise.weight} <span className="text-base font-normal text-muted-foreground">lbs</span>
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <div className="text-sm font-medium text-muted-foreground">Reps</div>
+                                  <div className="text-2xl font-bold text-primary">
+                                    {exercise.reps || "—"}
+                                  </div>
+                                </div>
+                              </div>
+                              {exercise.notes && (
+                                <div className="space-y-2">
+                                  <div className="text-sm font-medium text-muted-foreground">Notes & Instructions</div>
+                                  <div className="p-4 bg-muted rounded-lg">
+                                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                                      {exercise.notes}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                              <div className="text-xs text-muted-foreground pt-2 border-t">
+                                Last updated: {new Date(exercise.createdAt).toLocaleDateString("en-US", { 
+                                  month: "short", 
+                                  day: "numeric", 
+                                  year: "numeric",
+                                  hour: "numeric",
+                                  minute: "2-digit"
+                                })}
+                              </div>
+                            </CardContent>
+                          </Card>
                         </DialogContent>
                       </Dialog>
                     </td>
