@@ -294,6 +294,10 @@ export default function Home() {
                   Thoughts
                 </Badge>
               </Link>
+            </div>
+            
+            {/* Administration */}
+            <div className="flex flex-wrap justify-center gap-3">
               <Link to="/admin">
                 <Badge className="bg-gray-500/10 text-gray-600 border-gray-200 hover:bg-gray-500/20 transition-colors px-4 py-2 text-sm cursor-pointer flex items-center gap-1">
                   <Settings className="w-3 h-3" />
