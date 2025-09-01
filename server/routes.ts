@@ -541,6 +541,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk import quotes (clears existing and adds new)
+  app.post("/api/quotes/bulk-import", async (req, res) => {
+    try {
+      const { quotes } = req.body;
+      
+      if (!Array.isArray(quotes)) {
+        return res.status(400).json({ error: "Quotes must be an array" });
+      }
+
+      // Clear existing quotes and add new ones
+      await storage.clearAllQuotes();
+      
+      for (const quote of quotes) {
+        await storage.createQuote(quote);
+      }
+
+      res.status(200).json({ message: `Successfully imported ${quotes.length} quotes` });
+    } catch (error) {
+      console.error("Error bulk importing quotes:", error);
+      res.status(500).json({ error: "Failed to bulk import quotes" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

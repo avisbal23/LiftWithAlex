@@ -44,6 +44,7 @@ export interface IStorage {
   getAllQuotes(): Promise<Quote[]>;
   getActiveQuotes(): Promise<Quote[]>;
   getRandomQuote(): Promise<Quote | undefined>;
+  clearAllQuotes(): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -651,6 +652,10 @@ export class MemStorage implements IStorage {
     }
     const randomIndex = Math.floor(Math.random() * activeQuotes.length);
     return activeQuotes[randomIndex];
+  }
+
+  async clearAllQuotes(): Promise<void> {
+    this.quotes.clear();
   }
 
   private seedQuotes() {
