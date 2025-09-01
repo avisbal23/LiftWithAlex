@@ -251,6 +251,25 @@ export class MemStorage implements IStorage {
       };
       this.weightEntries.set(id, fullEntry);
     });
+
+    // Add sample quotes
+    const sampleQuotes = [
+      { text: "The iron never lies to you.", author: "Henry Rollins", isActive: 1 },
+      { text: "If you want something you've never had, you must be willing to do something you've never done.", author: "Thomas Jefferson", isActive: 1 },
+      { text: "Success isn't always about greatness. It's about consistency.", author: "Dwayne Johnson", isActive: 1 },
+      { text: "The only bad workout is the one that didn't happen.", author: "Unknown", isActive: 1 },
+      { text: "Strength does not come from physical capacity. It comes from an indomitable will.", author: "Mahatma Gandhi", isActive: 1 }
+    ];
+
+    sampleQuotes.forEach(quote => {
+      const id = randomUUID();
+      const fullQuote: Quote = {
+        ...quote,
+        id,
+        createdAt: new Date(),
+      };
+      this.quotes.set(id, fullQuote);
+    });
   }
 
   private seedBloodData() {

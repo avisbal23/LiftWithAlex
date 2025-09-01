@@ -685,13 +685,6 @@ function PRCard({ pr, isEditing, onEdit, onSave, onDelete, onCancel }: {
           ) : (
             // Back side - 3D Structured data view
             <div className="w-full space-y-4 text-center">
-              {/* 3D Category Badge */}
-              <div className="relative inline-block mb-3">
-                <div className="backdrop-blur-sm bg-white/20 dark:bg-gray-600/25 border border-white/30 dark:border-gray-500/40 rounded-full px-3 py-1 shadow-lg">
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/20 to-transparent dark:from-gray-400/20"></div>
-                  <span className="relative z-10 text-sm font-medium text-foreground">{pr.category}</span>
-                </div>
-              </div>
               
               <div className="space-y-3">
                 {/* Exercise Name */}
