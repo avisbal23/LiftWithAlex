@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
@@ -14,11 +15,32 @@ const tabs = [
 
 export default function Navigation() {
   const [location] = useLocation();
+  const navRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to keep selected tab visible for right-side tabs
+  useEffect(() => {
+    const rightSideTabs = ["/pull2", "/legs2", "/cardio"];
+    
+    if (rightSideTabs.includes(location) && navRef.current) {
+      const tabIndex = tabs.findIndex(tab => tab.path === location);
+      if (tabIndex !== -1) {
+        const tabElement = navRef.current.children[tabIndex] as HTMLElement;
+        if (tabElement) {
+          // Scroll to show the selected tab with some padding
+          tabElement.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+            inline: "center"
+          });
+        }
+      }
+    }
+  }, [location]);
 
   return (
     <nav className="bg-card border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex space-x-6 overflow-x-auto scrollbar-hide">
+        <div ref={navRef} className="flex space-x-6 overflow-x-auto scrollbar-hide">
           {tabs.map((tab) => (
             <Link
               key={tab.path}
