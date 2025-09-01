@@ -357,42 +357,42 @@ export default function BloodTracking() {
     switch (title) {
       case "Hormones":
         return {
-          description: "Hormones regulate metabolism, growth, and reproduction. Key markers include testosterone for muscle development and energy, and SHBG which controls hormone availability.",
+          description: "Critical hormones for muscle growth, strength, libido, and masculine vitality. These markers directly impact your ability to build muscle, maintain energy, and perform sexually.",
           keyPoints: [
-            "Total Testosterone: Primary male hormone for muscle, energy, and mood",
-            "Free Testosterone: The active, bioavailable portion",
-            "SHBG: Protein that binds and regulates hormone availability",
-            "Estrogens: Balance testosterone for optimal health"
+            "Total Testosterone: Drives muscle protein synthesis, strength gains, libido, and confidence",
+            "Free Testosterone: Bioavailable portion that enters muscle cells for growth and recovery",
+            "SHBG: Lower levels mean more free testosterone available for muscle building",
+            "Estrogens: Balance prevents muscle loss and supports bone strength for heavy lifting"
           ]
         };
       case "Thyroid":
         return {
-          description: "Thyroid hormones control metabolism, energy production, and body temperature. TSH from the pituitary gland signals thyroid hormone production.",
+          description: "Your metabolic engine that controls fat burning, energy for training, and mental sharpness. Optimal thyroid function maximizes muscle growth and athletic performance.",
           keyPoints: [
-            "TSH: Signal from brain to produce thyroid hormones (lower = more active thyroid)",
-            "Free T3: Most active thyroid hormone, controls metabolism",
-            "Free T4: Storage form that converts to T3 when needed",
-            "Optimal thyroid function boosts energy and metabolism"
+            "TSH: Lower optimal range supports aggressive fat loss and lean muscle retention",
+            "Free T3: Powers intense training sessions and accelerates muscle recovery",
+            "Free T4: Maintains steady energy for consistent gym performance and mental focus",
+            "Optimal thyroid = explosive workouts, faster recovery, sharper mind"
           ]
         };
       case "Lipids":
         return {
-          description: "Lipid profile shows cardiovascular health and heart disease risk. Balance between protective HDL and potentially harmful LDL cholesterol.",
+          description: "Cardiovascular markers that determine your capacity for intense training and long-term performance. Poor lipids limit blood flow to muscles and organs.",
           keyPoints: [
-            "LDL: 'Bad' cholesterol that can build up in arteries",
-            "HDL: 'Good' cholesterol that removes LDL from arteries",
-            "Triglycerides: Blood fats that increase with excess carbs",
-            "ApoB: Better predictor of heart disease than LDL alone"
+            "LDL: High levels reduce blood flow to muscles during training",
+            "HDL: Higher levels improve oxygen delivery and exercise capacity",
+            "Triglycerides: Lower levels support better insulin sensitivity and muscle building",
+            "ApoB: Key marker for maintaining peak cardiovascular performance under stress"
           ]
         };
       case "Health Markers":
         return {
-          description: "General health indicators covering inflammation, blood sugar control, and essential nutrients that affect overall wellness and disease risk.",
+          description: "Foundation markers for peak male performance - controlling inflammation, energy production, and nutrient status that fuel muscle growth and mental clarity.",
           keyPoints: [
-            "Vitamin D: Essential for bone health, immune function, and mood",
-            "CRP (hs): Measures inflammation in the body",
-            "HbA1c: 3-month average blood sugar control",
-            "Ferritin: Iron storage affecting energy and performance"
+            "Vitamin D: Boosts testosterone production, bone strength, and training recovery",
+            "CRP (hs): Low inflammation means faster muscle recovery and better sleep",
+            "HbA1c: Stable blood sugar optimizes muscle building and prevents energy crashes",
+            "Ferritin: Adequate iron ensures oxygen delivery for intense training and mental focus"
           ]
         };
       default:
