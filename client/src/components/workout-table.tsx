@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { OptimizedInput } from "@/components/optimized-input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -44,10 +45,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
       const response = await apiRequest("PATCH", `/api/exercises/${id}`, data);
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/exercises", category] });
-      queryClient.invalidateQueries({ queryKey: ["/api/exercises"] });
-    },
+    // Removed onSuccess cache invalidation to prevent re-renders
   });
 
   const deleteMutation = useMutation({
@@ -115,7 +113,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
     }
     timeoutRefs.current[timeoutKey] = setTimeout(() => {
       updateExercise(id, field, value);
-    }, 300);
+    }, 1000); // Increased to 1 second
   }, [updateExercise]);
 
   const isCardio = category === "cardio";
@@ -261,10 +259,10 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                       {isCardio ? (
                         <>
                           <td className="px-6 py-4">
-                            <Input
+                            <OptimizedInput
                               type="text"
                               value={exercise.duration || ""}
-                              onChange={(e) => debouncedUpdate(exercise.id, "duration", e.target.value)}
+                              onChange={(value) => updateExercise(exercise.id, "duration", value)}
                               placeholder="28:32"
                               className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
                               data-testid={`input-duration-${exercise.id}`}
@@ -316,19 +314,19 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                       ) : (
                         <>
                           <td className="px-6 py-4">
-                            <Input
+                            <OptimizedInput
                               type="number"
-                              value={exercise.weight}
-                              onChange={(e) => debouncedUpdate(exercise.id, "weight", parseInt(e.target.value) || 0)}
+                              value={exercise.weight || 0}
+                              onChange={(value) => updateExercise(exercise.id, "weight", value)}
                               className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
                               data-testid={`input-weight-${exercise.id}`}
                             />
                           </td>
                           <td className="px-6 py-4">
-                            <Input
+                            <OptimizedInput
                               type="number"
-                              value={exercise.reps}
-                              onChange={(e) => debouncedUpdate(exercise.id, "reps", parseInt(e.target.value) || 0)}
+                              value={exercise.reps || 0}
+                              onChange={(value) => updateExercise(exercise.id, "reps", value)}
                               className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-16"
                               data-testid={`input-reps-${exercise.id}`}
                             />
@@ -336,10 +334,10 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                         </>
                       )}
                       <td className="px-6 py-4">
-                        <Input
+                        <OptimizedInput
                           type="text"
-                          value={exercise.notes}
-                          onChange={(e) => debouncedUpdate(exercise.id, "notes", e.target.value)}
+                          value={exercise.notes || ""}
+                          onChange={(value) => updateExercise(exercise.id, "notes", value)}
                           placeholder="Add notes..."
                           className="border-none bg-transparent p-2 text-sm text-muted-foreground focus:bg-background hover:bg-accent transition-colors"
                           data-testid={`input-notes-${exercise.id}`}
