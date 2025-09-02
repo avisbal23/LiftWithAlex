@@ -24,6 +24,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
   const [editingNotes, setEditingNotes] = useState<string>("");
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const timeoutRefs = useRef<Record<string, NodeJS.Timeout>>({});
+  const [editingExercises, setEditingExercises] = useState<Record<string, Partial<Exercise>>>({});
 
   const { data: exercises = [], isLoading } = useQuery<Exercise[]>({
     queryKey: ["/api/exercises", category],
@@ -105,6 +106,31 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
       data: { [field]: value },
     });
   }, [updateMutation]);
+
+  const saveExercise = useCallback((exerciseId: string) => {
+    const changes = editingExercises[exerciseId];
+    if (changes && Object.keys(changes).length > 0) {
+      updateMutation.mutate({
+        id: exerciseId,
+        data: changes as UpdateExercise,
+      });
+      // Clear local changes after saving
+      setEditingExercises(prev => {
+        const newState = { ...prev };
+        delete newState[exerciseId];
+        return newState;
+      });
+      toast({
+        title: "Exercise saved",
+        description: "Your changes have been saved successfully.",
+      });
+    }
+  }, [editingExercises, updateMutation, toast]);
+
+  const hasChanges = useCallback((exerciseId: string) => {
+    const changes = editingExercises[exerciseId];
+    return changes && Object.keys(changes).length > 0;
+  }, [editingExercises]);
 
   const debouncedUpdate = useCallback((id: string, field: keyof UpdateExercise, value: string | number) => {
     const timeoutKey = `${id}-${field}`;
@@ -316,8 +342,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                           <td className="px-6 py-4">
                             <Input
                               type="number"
-                              value={exercise.weight || ""}
-                              onChange={(e) => updateExercise(exercise.id, "weight", parseInt(e.target.value) || 0)}
+                              value={editingExercises[exercise.id]?.weight ?? exercise.weight ?? ""}
+                              onChange={(e) => setEditingExercises(prev => ({ ...prev, [exercise.id]: { ...prev[exercise.id], weight: parseInt(e.target.value) || 0 } }))}
                               className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
                               data-testid={`input-weight-${exercise.id}`}
                             />
@@ -325,8 +351,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                           <td className="px-6 py-4">
                             <Input
                               type="number"
-                              value={exercise.reps || ""}
-                              onChange={(e) => updateExercise(exercise.id, "reps", parseInt(e.target.value) || 0)}
+                              value={editingExercises[exercise.id]?.reps ?? exercise.reps ?? ""}
+                              onChange={(e) => setEditingExercises(prev => ({ ...prev, [exercise.id]: { ...prev[exercise.id], reps: parseInt(e.target.value) || 0 } }))}
                               className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-16"
                               data-testid={`input-reps-${exercise.id}`}
                             />
@@ -336,8 +362,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                       <td className="px-6 py-4">
                         <Input
                           type="text"
-                          value={exercise.notes || ""}
-                          onChange={(e) => updateExercise(exercise.id, "notes", e.target.value)}
+                          value={editingExercises[exercise.id]?.notes ?? exercise.notes ?? ""}
+                          onChange={(e) => setEditingExercises(prev => ({ ...prev, [exercise.id]: { ...prev[exercise.id], notes: e.target.value } }))}
                           placeholder="Add notes..."
                           className="border-none bg-transparent p-2 text-sm text-muted-foreground focus:bg-background hover:bg-accent transition-colors"
                           data-testid={`input-notes-${exercise.id}`}
@@ -412,16 +438,29 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                         </Dialog>
                       </td>
                       <td className="px-6 py-4">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteExercise(exercise.id)}
-                          disabled={deleteMutation.isPending}
-                          className="text-destructive hover:text-destructive/80 p-1 rounded transition-colors"
-                          data-testid={`button-delete-${exercise.id}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <div className="flex gap-1 items-center">
+                          {hasChanges(exercise.id) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => saveExercise(exercise.id)}
+                              className="text-primary hover:text-primary-foreground hover:bg-primary px-2 py-1 text-xs transition-colors"
+                              data-testid={`button-save-${exercise.id}`}
+                            >
+                              Save
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteExercise(exercise.id)}
+                            disabled={deleteMutation.isPending}
+                            className="text-destructive hover:text-destructive/80 p-1 rounded transition-colors"
+                            data-testid={`button-delete-${exercise.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
