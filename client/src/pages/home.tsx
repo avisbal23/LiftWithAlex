@@ -453,6 +453,7 @@ export default function Home() {
                       value={newPR.exercise}
                       onChange={(e) => setNewPR(prev => ({ ...prev, exercise: e.target.value }))}
                       placeholder="Bench Press"
+                      data-testid="input-exercise-name"
                     />
                   </div>
                   
@@ -464,6 +465,7 @@ export default function Home() {
                         value={newPR.category}
                         onChange={(e) => setNewPR(prev => ({ ...prev, category: e.target.value }))}
                         className="w-full px-3 py-2 border border-border rounded-md bg-background"
+                        data-testid="select-category"
                       >
                         <option value="Push">Push</option>
                         <option value="Pull">Pull</option>
@@ -480,6 +482,7 @@ export default function Home() {
                           value={newPR.time}
                           onChange={(e) => setNewPR(prev => ({ ...prev, time: e.target.value }))}
                           placeholder="22:30"
+                          data-testid="input-time"
                         />
                       </div>
                     ) : (
@@ -491,6 +494,7 @@ export default function Home() {
                             value={newPR.weight}
                             onChange={(e) => setNewPR(prev => ({ ...prev, weight: e.target.value }))}
                             placeholder="225"
+                            data-testid="input-weight"
                           />
                         </div>
                       </>
@@ -505,11 +509,12 @@ export default function Home() {
                         value={newPR.reps}
                         onChange={(e) => setNewPR(prev => ({ ...prev, reps: e.target.value }))}
                         placeholder="8"
+                        data-testid="input-reps"
                       />
                     </div>
                   )}
                   
-                  <Button onClick={handleAddPR} className="w-full">
+                  <Button onClick={handleAddPR} className="w-full" data-testid="button-submit-pr">
                     Add Personal Record
                   </Button>
                 </div>
@@ -549,7 +554,7 @@ function PRCard({ pr, isEditing, onEdit, onSave, onDelete, onCancel }: {
   onDelete: () => void;
   onCancel: () => void;
 }) {
-  const [editData, setEditData] = useState(pr);
+  const [editData, setEditData] = useState(() => ({ ...pr }));
   const [isFlipped, setIsFlipped] = useState(false);
 
   const handleSave = () => {

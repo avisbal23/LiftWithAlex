@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -22,6 +22,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
   const [selectedNotes, setSelectedNotes] = useState<{ exercise: string; notes: string } | null>(null);
   const [editingNotes, setEditingNotes] = useState<string>("");
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const timeoutRefs = useRef<Record<string, NodeJS.Timeout>>({});
 
   const { data: exercises = [], isLoading } = useQuery<Exercise[]>({
     queryKey: ["/api/exercises", category],
@@ -100,12 +101,22 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
     });
   };
 
-  const updateExercise = (id: string, field: keyof UpdateExercise, value: string | number) => {
+  const updateExercise = useCallback((id: string, field: keyof UpdateExercise, value: string | number) => {
     updateMutation.mutate({
       id,
       data: { [field]: value },
     });
-  };
+  }, [updateMutation]);
+
+  const debouncedUpdate = useCallback((id: string, field: keyof UpdateExercise, value: string | number) => {
+    const timeoutKey = `${id}-${field}`;
+    if (timeoutRefs.current[timeoutKey]) {
+      clearTimeout(timeoutRefs.current[timeoutKey]);
+    }
+    timeoutRefs.current[timeoutKey] = setTimeout(() => {
+      updateExercise(id, field, value);
+    }, 300);
+  }, [updateExercise]);
 
   const isCardio = category === "cardio";
 
@@ -253,7 +264,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                             <Input
                               type="text"
                               value={exercise.duration || ""}
-                              onChange={(e) => updateExercise(exercise.id, "duration", e.target.value)}
+                              onChange={(e) => debouncedUpdate(exercise.id, "duration", e.target.value)}
                               placeholder="28:32"
                               className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
                               data-testid={`input-duration-${exercise.id}`}
@@ -263,7 +274,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                             <Input
                               type="text"
                               value={exercise.distance || ""}
-                              onChange={(e) => updateExercise(exercise.id, "distance", e.target.value)}
+                              onChange={(e) => debouncedUpdate(exercise.id, "distance", e.target.value)}
                               placeholder="3.1 miles"
                               className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-24"
                               data-testid={`input-distance-${exercise.id}`}
@@ -273,7 +284,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                             <Input
                               type="text"
                               value={exercise.pace || ""}
-                              onChange={(e) => updateExercise(exercise.id, "pace", e.target.value)}
+                              onChange={(e) => debouncedUpdate(exercise.id, "pace", e.target.value)}
                               placeholder="9:10/mile"
                               className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-24"
                               data-testid={`input-pace-${exercise.id}`}
@@ -283,7 +294,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                             <Input
                               type="number"
                               value={exercise.calories || 0}
-                              onChange={(e) => updateExercise(exercise.id, "calories", parseInt(e.target.value) || 0)}
+                              onChange={(e) => debouncedUpdate(exercise.id, "calories", parseInt(e.target.value) || 0)}
                               placeholder="320"
                               className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
                               data-testid={`input-calories-${exercise.id}`}
@@ -293,7 +304,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                             <Input
                               type="number"
                               value={exercise.rpe || 0}
-                              onChange={(e) => updateExercise(exercise.id, "rpe", parseInt(e.target.value) || 0)}
+                              onChange={(e) => debouncedUpdate(exercise.id, "rpe", parseInt(e.target.value) || 0)}
                               placeholder="8"
                               min="1"
                               max="10"
@@ -308,7 +319,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                             <Input
                               type="number"
                               value={exercise.weight}
-                              onChange={(e) => updateExercise(exercise.id, "weight", parseInt(e.target.value) || 0)}
+                              onChange={(e) => debouncedUpdate(exercise.id, "weight", parseInt(e.target.value) || 0)}
                               className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
                               data-testid={`input-weight-${exercise.id}`}
                             />
@@ -317,7 +328,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                             <Input
                               type="number"
                               value={exercise.reps}
-                              onChange={(e) => updateExercise(exercise.id, "reps", parseInt(e.target.value) || 0)}
+                              onChange={(e) => debouncedUpdate(exercise.id, "reps", parseInt(e.target.value) || 0)}
                               className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-16"
                               data-testid={`input-reps-${exercise.id}`}
                             />
@@ -328,7 +339,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                         <Input
                           type="text"
                           value={exercise.notes}
-                          onChange={(e) => updateExercise(exercise.id, "notes", e.target.value)}
+                          onChange={(e) => debouncedUpdate(exercise.id, "notes", e.target.value)}
                           placeholder="Add notes..."
                           className="border-none bg-transparent p-2 text-sm text-muted-foreground focus:bg-background hover:bg-accent transition-colors"
                           data-testid={`input-notes-${exercise.id}`}
@@ -574,7 +585,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               <Input
                                 type="text"
                                 value={exercise.duration || ""}
-                                onChange={(e) => updateExercise(exercise.id, "duration", e.target.value)}
+                                onChange={(e) => debouncedUpdate(exercise.id, "duration", e.target.value)}
                                 placeholder="28:32"
                                 className="text-base font-semibold"
                                 data-testid={`input-duration-mobile-${exercise.id}`}
@@ -585,7 +596,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               <Input
                                 type="text"
                                 value={exercise.distance || ""}
-                                onChange={(e) => updateExercise(exercise.id, "distance", e.target.value)}
+                                onChange={(e) => debouncedUpdate(exercise.id, "distance", e.target.value)}
                                 placeholder="3.1 miles"
                                 className="text-base font-semibold"
                                 data-testid={`input-distance-mobile-${exercise.id}`}
@@ -596,7 +607,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               <Input
                                 type="text"
                                 value={exercise.pace || ""}
-                                onChange={(e) => updateExercise(exercise.id, "pace", e.target.value)}
+                                onChange={(e) => debouncedUpdate(exercise.id, "pace", e.target.value)}
                                 placeholder="9:10/mile"
                                 className="text-base font-semibold"
                                 data-testid={`input-pace-mobile-${exercise.id}`}
@@ -607,7 +618,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               <Input
                                 type="number"
                                 value={exercise.calories || 0}
-                                onChange={(e) => updateExercise(exercise.id, "calories", parseInt(e.target.value) || 0)}
+                                onChange={(e) => debouncedUpdate(exercise.id, "calories", parseInt(e.target.value) || 0)}
                                 placeholder="320"
                                 className="text-base font-semibold"
                                 data-testid={`input-calories-mobile-${exercise.id}`}
@@ -618,7 +629,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               <Input
                                 type="number"
                                 value={exercise.rpe || 0}
-                                onChange={(e) => updateExercise(exercise.id, "rpe", parseInt(e.target.value) || 0)}
+                                onChange={(e) => debouncedUpdate(exercise.id, "rpe", parseInt(e.target.value) || 0)}
                                 placeholder="8"
                                 min="1"
                                 max="10"
@@ -634,7 +645,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               <Input
                                 type="number"
                                 value={exercise.weight}
-                                onChange={(e) => updateExercise(exercise.id, "weight", parseInt(e.target.value) || 0)}
+                                onChange={(e) => debouncedUpdate(exercise.id, "weight", parseInt(e.target.value) || 0)}
                                 className="text-base font-semibold"
                                 data-testid={`input-weight-mobile-${exercise.id}`}
                               />
@@ -644,7 +655,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               <Input
                                 type="number"
                                 value={exercise.reps}
-                                onChange={(e) => updateExercise(exercise.id, "reps", parseInt(e.target.value) || 0)}
+                                onChange={(e) => debouncedUpdate(exercise.id, "reps", parseInt(e.target.value) || 0)}
                                 className="text-base font-semibold"
                                 data-testid={`input-reps-mobile-${exercise.id}`}
                               />
@@ -657,7 +668,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                           <Input
                             type="text"
                             value={exercise.notes}
-                            onChange={(e) => updateExercise(exercise.id, "notes", e.target.value)}
+                            onChange={(e) => debouncedUpdate(exercise.id, "notes", e.target.value)}
                             placeholder="Add notes..."
                             className="text-sm"
                             data-testid={`input-notes-mobile-${exercise.id}`}
