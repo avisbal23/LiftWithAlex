@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { type WorkoutLog, type Quote } from "@shared/schema";
+import { type WorkoutLog, type Quote, type Exercise } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 import Navigation from "@/components/layout/navigation";
 import { Link } from "wouter";
 import { Trophy, Calendar, Edit3, Save, X, Scale, Settings, MessageCircle, Trash2, Activity, Camera } from "lucide-react";
@@ -78,8 +79,14 @@ const initialPRs = [
 ];
 
 export default function Home() {
-  const [prs, setPrs] = useState(initialPRs);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  
+  // Load actual exercises from database instead of static data
+  const { data: allExercises } = useQuery<Exercise[]>({
+    queryKey: ["/api/exercises"],
+  });
+  
   const [newPR, setNewPR] = useState({
     exercise: "",
     weight: "",
@@ -176,36 +183,75 @@ export default function Home() {
     setEditingId(id);
   };
 
+  const updateExerciseMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      return apiRequest("PATCH", `/api/exercises/${id}`, {
+        name: data.exercise,
+        weight: data.weight ? parseInt(data.weight) : null,
+        reps: data.reps ? parseInt(data.reps) : null,
+        duration: data.time || "",
+        category: data.category.toLowerCase(),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/exercises"] });
+      setEditingId(null);
+    },
+  });
+  
   const handleSave = (id: string, updatedData: any) => {
-    setPrs(prev => prev.map(pr => 
-      pr.id === id 
-        ? { ...pr, ...updatedData, color: getCategoryColor(updatedData.category) }
-        : pr
-    ));
-    setEditingId(null);
+    updateExerciseMutation.mutate({ id, data: updatedData });
   };
 
+  const deleteExerciseMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest("DELETE", `/api/exercises/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/exercises"] });
+    },
+  });
+  
   const handleDelete = (id: string) => {
-    setPrs(prev => prev.filter(pr => pr.id !== id));
+    deleteExerciseMutation.mutate(id);
   };
 
+  const addExerciseMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return apiRequest("POST", "/api/exercises", {
+        name: data.exercise,
+        weight: data.weight ? parseInt(data.weight) : null,
+        reps: data.reps ? parseInt(data.reps) : null,
+        duration: data.time || "",
+        category: data.category.toLowerCase(),
+        notes: "",
+        distance: "", 
+        pace: "",
+        calories: 0,
+        rpe: 0
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/exercises"] });
+      setNewPR({ exercise: "", weight: "", reps: "", time: "", category: "Push" });
+    },
+  });
+  
   const handleAddPR = () => {
     if (!newPR.exercise) return;
-    
-    const id = Math.random().toString(36).substr(2, 9);
-    const newRecord = {
-      id,
-      exercise: newPR.exercise,
-      weight: newPR.weight,
-      reps: newPR.reps,
-      time: newPR.time,
-      category: newPR.category,
-      color: getCategoryColor(newPR.category)
-    };
-    
-    setPrs(prev => [...prev, newRecord]);
-    setNewPR({ exercise: "", weight: "", reps: "", time: "", category: "Push" });
+    addExerciseMutation.mutate(newPR);
   };
+
+  // Convert exercises to PR format for display (after function definitions)
+  const prs = (allExercises || []).slice(0, 8).map((exercise) => ({
+    id: exercise.id,
+    exercise: exercise.name,
+    weight: exercise.weight?.toString() || "",
+    reps: exercise.reps?.toString() || "",
+    time: exercise.category === "cardio" ? (exercise.duration || "") : undefined,
+    category: exercise.category.charAt(0).toUpperCase() + exercise.category.slice(1),
+    color: getCategoryColor(exercise.category)
+  }));
 
   return (
     <>
