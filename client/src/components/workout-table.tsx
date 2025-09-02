@@ -259,10 +259,10 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                       {isCardio ? (
                         <>
                           <td className="px-6 py-4">
-                            <OptimizedInput
+                            <Input
                               type="text"
                               value={exercise.duration || ""}
-                              onChange={(value) => updateExercise(exercise.id, "duration", value)}
+                              onChange={(e) => updateExercise(exercise.id, "duration", e.target.value)}
                               placeholder="28:32"
                               className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
                               data-testid={`input-duration-${exercise.id}`}
@@ -314,19 +314,19 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                       ) : (
                         <>
                           <td className="px-6 py-4">
-                            <OptimizedInput
+                            <Input
                               type="number"
-                              value={exercise.weight || 0}
-                              onChange={(value) => updateExercise(exercise.id, "weight", value)}
+                              value={exercise.weight || ""}
+                              onChange={(e) => updateExercise(exercise.id, "weight", parseInt(e.target.value) || 0)}
                               className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
                               data-testid={`input-weight-${exercise.id}`}
                             />
                           </td>
                           <td className="px-6 py-4">
-                            <OptimizedInput
+                            <Input
                               type="number"
-                              value={exercise.reps || 0}
-                              onChange={(value) => updateExercise(exercise.id, "reps", value)}
+                              value={exercise.reps || ""}
+                              onChange={(e) => updateExercise(exercise.id, "reps", parseInt(e.target.value) || 0)}
                               className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-16"
                               data-testid={`input-reps-${exercise.id}`}
                             />
@@ -334,10 +334,10 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                         </>
                       )}
                       <td className="px-6 py-4">
-                        <OptimizedInput
+                        <Input
                           type="text"
                           value={exercise.notes || ""}
-                          onChange={(value) => updateExercise(exercise.id, "notes", value)}
+                          onChange={(e) => updateExercise(exercise.id, "notes", e.target.value)}
                           placeholder="Add notes..."
                           className="border-none bg-transparent p-2 text-sm text-muted-foreground focus:bg-background hover:bg-accent transition-colors"
                           data-testid={`input-notes-${exercise.id}`}
