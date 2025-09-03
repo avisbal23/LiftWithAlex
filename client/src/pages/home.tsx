@@ -810,32 +810,28 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
                       {/* Top Left - Category */}
                       <div className="flex items-center justify-center p-3">
                         <div className="text-center">
-                          <div className="text-xs font-medium text-foreground mb-1">{pr.category}</div>
-                          <div className="text-lg">📊</div>
+                          <div className="text-sm font-medium text-foreground">{pr.category}</div>
                         </div>
                       </div>
                       
                       {/* Top Right - Time */}
                       <div className="flex items-center justify-center p-3">
                         <div className="text-center">
-                          <div className="text-xs font-medium text-foreground mb-1">{pr.time}</div>
-                          <div className="text-lg">⏱️</div>
+                          <div className="text-sm font-medium text-foreground">{pr.time}</div>
                         </div>
                       </div>
                       
                       {/* Bottom Left - Empty */}
                       <div className="flex items-center justify-center p-3">
                         <div className="text-center opacity-30">
-                          <div className="text-xs font-medium text-foreground mb-1">Cardio</div>
-                          <div className="text-lg">💪</div>
+                          <div className="text-sm font-medium text-foreground">Cardio</div>
                         </div>
                       </div>
                       
                       {/* Bottom Right - Empty */}
                       <div className="flex items-center justify-center p-3">
                         <div className="text-center opacity-30">
-                          <div className="text-xs font-medium text-foreground mb-1">Endurance</div>
-                          <div className="text-lg">🔥</div>
+                          <div className="text-sm font-medium text-foreground">Endurance</div>
                         </div>
                       </div>
                     </>
@@ -844,24 +840,21 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
                       {/* Top Left - Category */}
                       <div className="flex items-center justify-center p-3">
                         <div className="text-center">
-                          <div className="text-xs font-medium text-foreground mb-1">{pr.category}</div>
-                          <div className="text-lg">📊</div>
+                          <div className="text-sm font-medium text-foreground">{pr.category}</div>
                         </div>
                       </div>
                       
                       {/* Top Right - Weight */}
                       <div className="flex items-center justify-center p-3">
                         <div className="text-center">
-                          <div className="text-xs font-medium text-foreground mb-1">{pr.weight} lbs</div>
-                          <div className="text-lg">⚖️</div>
+                          <div className="text-sm font-medium text-foreground">{pr.weight} lbs</div>
                         </div>
                       </div>
                       
                       {/* Bottom Left - Reps */}
                       <div className="flex items-center justify-center p-3">
                         <div className="text-center">
-                          <div className="text-xs font-medium text-foreground mb-1">{pr.reps} reps</div>
-                          <div className="text-lg">🔢</div>
+                          <div className="text-sm font-medium text-foreground">{pr.reps} reps</div>
                         </div>
                       </div>
                       
@@ -869,13 +862,11 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
                       <div className="flex items-center justify-center p-3">
                         {calculateBodyWeightPercentage() ? (
                           <div className="text-center">
-                            <div className="text-xs font-medium text-yellow-600 dark:text-yellow-400 mb-1">{calculateBodyWeightPercentage()}%</div>
-                            <div className="text-lg">📈</div>
+                            <div className="text-sm font-medium text-yellow-600 dark:text-yellow-400">{calculateBodyWeightPercentage()}%</div>
                           </div>
                         ) : (
                           <div className="text-center opacity-30">
-                            <div className="text-xs font-medium text-foreground mb-1">--%</div>
-                            <div className="text-lg">📈</div>
+                            <div className="text-sm font-medium text-foreground">--%</div>
                           </div>
                         )}
                       </div>
