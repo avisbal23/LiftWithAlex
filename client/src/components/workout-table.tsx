@@ -425,8 +425,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                           <td className="px-6 py-4">
                             <Input
                               type="number"
-                              value={editingExercises[exercise.id]?.weight ?? exercise.weight ?? ""}
-                              onChange={(e) => setEditingExercises(prev => ({ ...prev, [exercise.id]: { ...prev[exercise.id], weight: parseInt(e.target.value) || 0 } }))}
+                              value={exercise.weight || 0}
+                              onChange={(e) => debouncedUpdate(exercise.id, "weight", parseInt(e.target.value) || 0)}
                               className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
                               data-testid={`input-weight-${exercise.id}`}
                             />
@@ -434,8 +434,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                           <td className="px-6 py-4">
                             <Input
                               type="number"
-                              value={editingExercises[exercise.id]?.reps ?? exercise.reps ?? ""}
-                              onChange={(e) => setEditingExercises(prev => ({ ...prev, [exercise.id]: { ...prev[exercise.id], reps: parseInt(e.target.value) || 0 } }))}
+                              value={exercise.reps || 0}
+                              onChange={(e) => debouncedUpdate(exercise.id, "reps", parseInt(e.target.value) || 0)}
                               className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-16"
                               data-testid={`input-reps-${exercise.id}`}
                             />
@@ -445,8 +445,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                       <td className="px-6 py-4">
                         <Input
                           type="text"
-                          value={editingExercises[exercise.id]?.notes ?? exercise.notes ?? ""}
-                          onChange={(e) => setEditingExercises(prev => ({ ...prev, [exercise.id]: { ...prev[exercise.id], notes: e.target.value } }))}
+                          value={exercise.notes || ""}
+                          onChange={(e) => debouncedUpdate(exercise.id, "notes", e.target.value)}
                           placeholder="Add notes..."
                           className="border-none bg-transparent p-2 text-sm text-muted-foreground focus:bg-background hover:bg-accent transition-colors"
                           data-testid={`input-notes-${exercise.id}`}
@@ -522,17 +522,6 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex gap-1 items-center">
-                          {hasChanges(exercise.id) && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => saveExercise(exercise.id)}
-                              className="text-primary hover:text-primary-foreground hover:bg-primary px-2 py-1 text-xs transition-colors"
-                              data-testid={`button-save-${exercise.id}`}
-                            >
-                              Save
-                            </Button>
-                          )}
                           <Button
                             variant="ghost"
                             size="icon"
