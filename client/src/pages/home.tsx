@@ -775,42 +775,106 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
               )}
             </div>
           ) : (
-            // Back side - Icon-based compact grid
-            <div className="w-full p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="flex items-center space-x-2">
-                  <span className="text-lg">🏋️</span>
-                  <span className="font-medium text-foreground">{pr.exercise}</span>
+            // Back side - Compass-style layout
+            <div className="w-full p-6 space-y-6">
+              {/* Workout Title with Matching Emojis */}
+              <div className="text-center">
+                <div className="flex items-center justify-center space-x-3">
+                  <span className="text-xl">🏋️</span>
+                  <span className="text-lg font-bold text-foreground">{pr.exercise}</span>
+                  <span className="text-xl">🏋️</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-lg">📊</span>
-                  <span className="font-medium text-foreground">{pr.category}</span>
+              </div>
+              
+              {/* Compass-style Data Grid with T-shaped Dividers */}
+              <div className="relative">
+                {/* T-shaped Divider Lines */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  {/* Vertical line */}
+                  <div className="absolute w-px h-full bg-white/20 dark:bg-gray-400/20"></div>
+                  {/* Horizontal line */}
+                  <div className="absolute w-full h-px bg-white/20 dark:bg-gray-400/20"></div>
                 </div>
                 
-                {pr.category === "Cardio" ? (
-                  <div className="flex items-center space-x-2 col-span-2">
-                    <span className="text-lg">⏱️</span>
-                    <span className="font-medium text-foreground">{pr.time}</span>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-lg">⚖️</span>
-                      <span className="font-medium text-foreground">{pr.weight} lbs</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-lg">🔢</span>
-                      <span className="font-medium text-foreground">{pr.reps} reps</span>
-                    </div>
-                    
-                    {calculateBodyWeightPercentage() && (
-                      <div className="flex items-center space-x-2 col-span-2">
-                        <span className="text-lg">📈</span>
-                        <span className="font-medium text-yellow-600 dark:text-yellow-400">{calculateBodyWeightPercentage()}% BW</span>
+                {/* 4-Quadrant Grid */}
+                <div className="relative grid grid-cols-2 gap-0 h-24">
+                  {pr.category === "Cardio" ? (
+                    <>
+                      {/* Top Left - Category */}
+                      <div className="flex items-center justify-center p-3">
+                        <div className="text-center">
+                          <div className="text-lg mb-1">📊</div>
+                          <div className="text-xs font-medium text-foreground">{pr.category}</div>
+                        </div>
                       </div>
-                    )}
-                  </>
-                )}
+                      
+                      {/* Top Right - Time */}
+                      <div className="flex items-center justify-center p-3">
+                        <div className="text-center">
+                          <div className="text-lg mb-1">⏱️</div>
+                          <div className="text-xs font-medium text-foreground">{pr.time}</div>
+                        </div>
+                      </div>
+                      
+                      {/* Bottom Left - Empty */}
+                      <div className="flex items-center justify-center p-3">
+                        <div className="text-center opacity-30">
+                          <div className="text-lg mb-1">💪</div>
+                          <div className="text-xs font-medium text-foreground">Cardio</div>
+                        </div>
+                      </div>
+                      
+                      {/* Bottom Right - Empty */}
+                      <div className="flex items-center justify-center p-3">
+                        <div className="text-center opacity-30">
+                          <div className="text-lg mb-1">🔥</div>
+                          <div className="text-xs font-medium text-foreground">Endurance</div>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Top Left - Category */}
+                      <div className="flex items-center justify-center p-3">
+                        <div className="text-center">
+                          <div className="text-lg mb-1">📊</div>
+                          <div className="text-xs font-medium text-foreground">{pr.category}</div>
+                        </div>
+                      </div>
+                      
+                      {/* Top Right - Weight */}
+                      <div className="flex items-center justify-center p-3">
+                        <div className="text-center">
+                          <div className="text-lg mb-1">⚖️</div>
+                          <div className="text-xs font-medium text-foreground">{pr.weight} lbs</div>
+                        </div>
+                      </div>
+                      
+                      {/* Bottom Left - Reps */}
+                      <div className="flex items-center justify-center p-3">
+                        <div className="text-center">
+                          <div className="text-lg mb-1">🔢</div>
+                          <div className="text-xs font-medium text-foreground">{pr.reps} reps</div>
+                        </div>
+                      </div>
+                      
+                      {/* Bottom Right - Body Weight % */}
+                      <div className="flex items-center justify-center p-3">
+                        {calculateBodyWeightPercentage() ? (
+                          <div className="text-center">
+                            <div className="text-lg mb-1">📈</div>
+                            <div className="text-xs font-medium text-yellow-600 dark:text-yellow-400">{calculateBodyWeightPercentage()}%</div>
+                          </div>
+                        ) : (
+                          <div className="text-center opacity-30">
+                            <div className="text-lg mb-1">📈</div>
+                            <div className="text-xs font-medium text-foreground">--%</div>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           )}
