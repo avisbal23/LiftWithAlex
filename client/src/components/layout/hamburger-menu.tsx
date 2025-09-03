@@ -35,11 +35,11 @@ export default function HamburgerMenu() {
           variant="ghost" 
           size="icon"
           data-testid="button-hamburger-menu"
-          className="relative backdrop-blur-sm bg-white/10 dark:bg-gray-600/20 border border-white/20 dark:border-gray-500/30 rounded-lg text-white dark:text-gray-700 hover:bg-white/20 dark:hover:bg-gray-500/30 transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+          className="relative backdrop-blur-sm bg-white/10 dark:bg-gray-600/20 border border-white/20 dark:border-gray-500/30 rounded-lg text-white hover:bg-white/20 dark:hover:bg-gray-500/30 transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
         >
           {/* Button 3D Effect */}
           <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
-          <Menu className="h-5 w-5 relative z-10 drop-shadow-[0_0_3px_rgba(255,255,255,0.3)]" />
+          <Menu className="h-5 w-5 relative z-10 text-white drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]" />
         </Button>
       </DropdownMenuTrigger>
       
@@ -56,11 +56,11 @@ export default function HamburgerMenu() {
             <DropdownMenuItem key={item.path} asChild className="relative">
               <Link 
                 to={item.path}
-                className="flex items-center space-x-3 px-3 py-2 text-white dark:text-gray-800 hover:bg-white/10 dark:hover:bg-gray-500/20 transition-all duration-200 rounded-sm cursor-pointer"
+                className="flex items-center space-x-3 px-3 py-2 text-white hover:bg-white/10 dark:hover:bg-gray-500/20 transition-all duration-200 rounded-sm cursor-pointer"
                 data-testid={`link-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
               >
-                <item.icon className="h-4 w-4" />
-                <span>{item.name}</span>
+                <item.icon className="h-4 w-4 drop-shadow-[0_0_3px_rgba(255,255,255,0.2)]" />
+                <span className="drop-shadow-[0_0_3px_rgba(255,255,255,0.2)]">{item.name}</span>
               </Link>
             </DropdownMenuItem>
           ))}
@@ -69,11 +69,11 @@ export default function HamburgerMenu() {
           
           <DropdownMenuItem 
             onClick={handleLogout}
-            className="flex items-center space-x-3 px-3 py-2 text-white dark:text-gray-800 hover:bg-red-500/20 dark:hover:bg-red-500/30 transition-all duration-200 rounded-sm cursor-pointer"
+            className="flex items-center space-x-3 px-3 py-2 text-white hover:bg-red-500/20 dark:hover:bg-red-500/30 transition-all duration-200 rounded-sm cursor-pointer"
             data-testid="button-logout"
           >
-            <LogOut className="h-4 w-4" />
-            <span>Logout</span>
+            <LogOut className="h-4 w-4 drop-shadow-[0_0_3px_rgba(255,255,255,0.2)]" />
+            <span className="drop-shadow-[0_0_3px_rgba(255,255,255,0.2)]">Logout</span>
           </DropdownMenuItem>
         </div>
       </DropdownMenuContent>
