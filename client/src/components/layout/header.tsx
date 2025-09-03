@@ -34,15 +34,15 @@ export default function Header() {
               <h1 className="text-xl font-bold tracking-wide" data-testid="app-title">
                 <span className="relative inline-block">
                   {/* Outer glow effect */}
-                  <span className="absolute inset-0 text-white blur-md opacity-60">
+                  <span className="absolute inset-0 text-white blur-md opacity-30">
                     Visbal Gym Tracker
                   </span>
                   {/* Inner glow effect */}
-                  <span className="absolute inset-0 text-white blur-sm opacity-80">
+                  <span className="absolute inset-0 text-white blur-sm opacity-40">
                     Visbal Gym Tracker
                   </span>
                   {/* Main Text with subtle glow */}
-                  <span className="relative text-white font-extrabold drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]">
+                  <span className="relative text-white font-extrabold drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]">
                     Visbal Gym Tracker
                   </span>
                 </span>
@@ -60,7 +60,10 @@ export default function Header() {
               >
                 {/* Button 3D Effect */}
                 <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
-                {isDark ? <Sun className="h-5 w-5 relative z-10" /> : <Moon className="h-5 w-5 relative z-10" />}
+                {isDark ? 
+                  <Sun className="h-5 w-5 relative z-10 drop-shadow-[0_0_3px_rgba(255,255,255,0.3)]" /> : 
+                  <Moon className="h-5 w-5 relative z-10 drop-shadow-[0_0_3px_rgba(255,255,255,0.3)]" />
+                }
               </Button>
               
               <HamburgerMenu />

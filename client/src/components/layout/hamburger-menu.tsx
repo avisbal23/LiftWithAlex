@@ -39,7 +39,7 @@ export default function HamburgerMenu() {
         >
           {/* Button 3D Effect */}
           <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
-          <Menu className="h-5 w-5 relative z-10" />
+          <Menu className="h-5 w-5 relative z-10 drop-shadow-[0_0_3px_rgba(255,255,255,0.3)]" />
         </Button>
       </DropdownMenuTrigger>
       
