@@ -284,8 +284,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                       <td className="px-6 py-4">
                         <Input
                           type="number"
-                          value={exercise.order || 0}
-                          onChange={(e) => updateExercise(exercise.id, "order", parseInt(e.target.value) || 0)}
+                          value={editingExercises[exercise.id]?.order ?? exercise.order ?? 0}
+                          onChange={(e) => setEditingExercises(prev => ({ ...prev, [exercise.id]: { ...prev[exercise.id], order: parseInt(e.target.value) || 0 } }))}
                           className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-12 text-center"
                           data-testid={`input-order-${exercise.id}`}
                           min="1"
@@ -504,8 +504,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                             <span className="text-xs text-muted-foreground">#</span>
                             <Input
                               type="number"
-                              value={exercise.order || 0}
-                              onChange={(e) => updateExercise(exercise.id, "order", parseInt(e.target.value) || 0)}
+                              value={editingExercises[exercise.id]?.order ?? exercise.order ?? 0}
+                              onChange={(e) => setEditingExercises(prev => ({ ...prev, [exercise.id]: { ...prev[exercise.id], order: parseInt(e.target.value) || 0 } }))}
                               className="border-none bg-transparent p-0 text-xs text-muted-foreground focus:bg-background hover:bg-accent transition-colors w-8 text-center"
                               data-testid={`input-order-mobile-${exercise.id}`}
                               min="1"
@@ -654,8 +654,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Order</label>
                           <Input
                             type="number"
-                            value={exercise.order || 0}
-                            onChange={(e) => updateExercise(exercise.id, "order", parseInt(e.target.value) || 0)}
+                            value={editingExercises[exercise.id]?.order ?? exercise.order ?? 0}
+                            onChange={(e) => setEditingExercises(prev => ({ ...prev, [exercise.id]: { ...prev[exercise.id], order: parseInt(e.target.value) || 0 } }))}
                             className="text-sm h-8"
                             data-testid={`input-order-expanded-${exercise.id}`}
                             min="1"
