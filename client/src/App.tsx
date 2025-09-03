@@ -29,22 +29,25 @@ function Router() {
   }
 
   return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/push" component={Push} />
-      <Route path="/pull" component={Pull} />
-      <Route path="/legs" component={Legs} />
-      <Route path="/push2" component={Push2} />
-      <Route path="/pull2" component={Pull2} />
-      <Route path="/legs2" component={Legs2} />
-      <Route path="/cardio" component={Cardio} />
-      <Route path="/weight" component={WeightTracking} />
-      <Route path="/blood-tracking" component={BloodTracking} />
-      <Route path="/photo-progress" component={PhotoProgress} />
-      <Route path="/thoughts" component={Thoughts} />
-      <Route path="/admin" component={Admin} />
-      <Route component={NotFound} />
-    </Switch>
+    <div className="min-h-screen bg-background text-foreground">
+      <Header />
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/push" component={Push} />
+        <Route path="/pull" component={Pull} />
+        <Route path="/legs" component={Legs} />
+        <Route path="/push2" component={Push2} />
+        <Route path="/pull2" component={Pull2} />
+        <Route path="/legs2" component={Legs2} />
+        <Route path="/cardio" component={Cardio} />
+        <Route path="/weight" component={WeightTracking} />
+        <Route path="/blood-tracking" component={BloodTracking} />
+        <Route path="/photo-progress" component={PhotoProgress} />
+        <Route path="/thoughts" component={Thoughts} />
+        <Route path="/admin" component={Admin} />
+        <Route component={NotFound} />
+      </Switch>
+    </div>
   );
 }
 
@@ -52,10 +55,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="min-h-screen bg-background text-foreground">
-          <Header />
-          <Router />
-        </div>
+        <Router />
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
