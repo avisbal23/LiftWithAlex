@@ -15,6 +15,11 @@ export function useAuth() {
     checkAuthStatus();
   }, []);
 
+  // Debug logging
+  useEffect(() => {
+    console.log('🔐 useAuth - isAuthenticated changed:', isAuthenticated);
+  }, [isAuthenticated]);
+
   const checkAuthStatus = () => {
     try {
       const authData = localStorage.getItem(AUTH_KEY);

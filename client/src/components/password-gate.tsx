@@ -15,10 +15,13 @@ export function PasswordGate() {
 
   // Listen for authentication success and trigger dissolve
   useEffect(() => {
+    console.log('🚪 PasswordGate - isAuthenticated:', isAuthenticated, 'isDissolving:', isDissolving);
     if (isAuthenticated && !isDissolving) {
+      console.log('🚪 PasswordGate - Starting dissolve animation');
       setIsDissolving(true);
       // After dissolve animation completes, hide component completely
       setTimeout(() => {
+        console.log('🚪 PasswordGate - Hiding component');
         setShouldHide(true);
       }, 1000); // Match the animation duration
     }
