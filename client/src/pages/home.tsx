@@ -50,10 +50,7 @@ export default function Home() {
   // Update user settings mutation
   const updateUserSettingsMutation = useMutation({
     mutationFn: (settings: { currentBodyWeight: number }) =>
-      apiRequest("/api/user-settings", {
-        method: "POST",
-        body: JSON.stringify(settings),
-      }),
+      apiRequest("POST", "/api/user-settings", settings),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user-settings"] });
     },
