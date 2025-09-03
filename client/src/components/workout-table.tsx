@@ -91,12 +91,17 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
   };
 
   const addNewExercise = () => {
+    // Find the highest order value and add 1
+    const maxOrder = exercises.reduce((max, exercise) => 
+      Math.max(max, exercise.order || 0), 0
+    );
     createMutation.mutate({
       name: "New Exercise",
       weight: 0,
       reps: 0,
       notes: "",
       category,
+      order: maxOrder + 1,
     });
   };
 
@@ -228,6 +233,9 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
               <table className="w-full">
                 <thead className="bg-muted">
                   <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-16">
+                      #
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       {isCardio ? "Activity" : "Exercise"}
                     </th>
@@ -273,6 +281,16 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                 <tbody className="bg-background divide-y divide-border">
                   {exercises.map((exercise) => (
                     <tr key={exercise.id} data-testid={`row-exercise-${exercise.id}`}>
+                      <td className="px-6 py-4">
+                        <Input
+                          type="number"
+                          value={exercise.order || 0}
+                          onChange={(e) => updateExercise(exercise.id, "order", parseInt(e.target.value) || 0)}
+                          className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-12 text-center"
+                          data-testid={`input-order-${exercise.id}`}
+                          min="1"
+                        />
+                      </td>
                       <td className="px-6 py-4">
                         <Input
                           type="text"
@@ -376,8 +394,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               variant="ghost"
                               size="icon"
                               onClick={() => {
-                                setSelectedNotes({ exercise: exercise.name, notes: exercise.notes });
-                                setEditingNotes(exercise.notes);
+                                setSelectedNotes({ exercise: exercise.name, notes: exercise.notes || "" });
+                                setEditingNotes(exercise.notes || "");
                               }}
                               className="text-muted-foreground hover:text-foreground p-1 rounded transition-colors"
                               data-testid={`button-view-notes-${exercise.id}`}
@@ -424,7 +442,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                   </div>
                                 )}
                                 <div className="text-xs text-muted-foreground pt-2 border-t">
-                                  Last updated: {new Date(exercise.createdAt).toLocaleDateString("en-US", { 
+                                  Last updated: {new Date(exercise.createdAt || new Date()).toLocaleDateString("en-US", { 
                                     month: "short", 
                                     day: "numeric", 
                                     year: "numeric",
@@ -482,6 +500,17 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-1 flex-shrink-0">
+                            <span className="text-xs text-muted-foreground">#</span>
+                            <Input
+                              type="number"
+                              value={exercise.order || 0}
+                              onChange={(e) => updateExercise(exercise.id, "order", parseInt(e.target.value) || 0)}
+                              className="border-none bg-transparent p-0 text-xs text-muted-foreground focus:bg-background hover:bg-accent transition-colors w-8 text-center"
+                              data-testid={`input-order-mobile-${exercise.id}`}
+                              min="1"
+                            />
+                          </div>
                           <Input
                             type="text"
                             value={exercise.name}
@@ -502,8 +531,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               variant="ghost"
                               size="sm"
                               onClick={() => {
-                                setSelectedNotes({ exercise: exercise.name, notes: exercise.notes });
-                                setEditingNotes(exercise.notes);
+                                setSelectedNotes({ exercise: exercise.name, notes: exercise.notes || "" });
+                                setEditingNotes(exercise.notes || "");
                               }}
                               className="text-muted-foreground hover:text-foreground p-2"
                               data-testid={`button-view-notes-mobile-${exercise.id}`}
@@ -525,6 +554,12 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                 </div>
                               </CardHeader>
                               <CardContent className="space-y-4">
+                                <div className="space-y-2 mb-4">
+                                  <div className="text-sm font-medium text-muted-foreground">Order</div>
+                                  <div className="text-xl font-bold text-primary">
+                                    #{exercise.order || 0}
+                                  </div>
+                                </div>
                                 {isCardio ? (
                                   <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
@@ -615,6 +650,17 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                     {/* Expandable Content */}
                     {isExpanded && (
                       <div className="space-y-4 border-t border-border pt-4">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Order</label>
+                          <Input
+                            type="number"
+                            value={exercise.order || 0}
+                            onChange={(e) => updateExercise(exercise.id, "order", parseInt(e.target.value) || 0)}
+                            className="text-sm h-8"
+                            data-testid={`input-order-expanded-${exercise.id}`}
+                            min="1"
+                          />
+                        </div>
                         {isCardio ? (
                           <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1 col-span-2">
@@ -681,7 +727,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Weight (lbs)</label>
                               <Input
                                 type="number"
-                                value={exercise.weight}
+                                value={exercise.weight || 0}
                                 onChange={(e) => debouncedUpdate(exercise.id, "weight", parseInt(e.target.value) || 0)}
                                 className="text-base font-semibold"
                                 data-testid={`input-weight-mobile-${exercise.id}`}
@@ -691,7 +737,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Reps</label>
                               <Input
                                 type="number"
-                                value={exercise.reps}
+                                value={exercise.reps || 0}
                                 onChange={(e) => debouncedUpdate(exercise.id, "reps", parseInt(e.target.value) || 0)}
                                 className="text-base font-semibold"
                                 data-testid={`input-reps-mobile-${exercise.id}`}
@@ -704,7 +750,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Notes</label>
                           <Input
                             type="text"
-                            value={exercise.notes}
+                            value={exercise.notes || ""}
                             onChange={(e) => debouncedUpdate(exercise.id, "notes", e.target.value)}
                             placeholder="Add notes..."
                             className="text-sm"
