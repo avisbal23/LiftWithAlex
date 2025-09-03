@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,9 +10,62 @@ export function PasswordGate() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const autoSubmitTimeoutRef = useRef<NodeJS.Timeout>();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Auto-submit when keyboard disappears
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      // Clear any existing timeout
+      if (autoSubmitTimeoutRef.current) {
+        clearTimeout(autoSubmitTimeoutRef.current);
+      }
+
+      // Check if password is filled and input is not focused (keyboard likely hidden)
+      if (password.trim() && inputRef.current && !document.activeElement?.contains(inputRef.current)) {
+        // Wait a short moment to ensure keyboard is fully hidden, then auto-submit
+        autoSubmitTimeoutRef.current = setTimeout(() => {
+          if (password.trim() && !isLoading) {
+            handleSubmitPassword();
+          }
+        }, 300);
+      }
+    };
+
+    const handleBlur = () => {
+      // When input loses focus with content, set up auto-submit
+      if (password.trim() && !isLoading) {
+        autoSubmitTimeoutRef.current = setTimeout(() => {
+          if (password.trim() && !isLoading && inputRef.current && !inputRef.current.matches(':focus')) {
+            handleSubmitPassword();
+          }
+        }, 500);
+      }
+    };
+
+    // Listen for viewport changes (mobile keyboard hide/show)
+    window.addEventListener('resize', handleVisibilityChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Add blur listener to input
+    const inputElement = inputRef.current;
+    if (inputElement) {
+      inputElement.addEventListener('blur', handleBlur);
+    }
+
+    return () => {
+      window.removeEventListener('resize', handleVisibilityChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (inputElement) {
+        inputElement.removeEventListener('blur', handleBlur);
+      }
+      if (autoSubmitTimeoutRef.current) {
+        clearTimeout(autoSubmitTimeoutRef.current);
+      }
+    };
+  }, [password, isLoading]);
+
+  const handleSubmitPassword = () => {
     setIsLoading(true);
     setError('');
 
@@ -30,6 +83,15 @@ export function PasswordGate() {
         }, 800); // Small delay to show success message
       }
     }, 500);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Clear any pending auto-submit
+    if (autoSubmitTimeoutRef.current) {
+      clearTimeout(autoSubmitTimeoutRef.current);
+    }
+    handleSubmitPassword();
   };
 
   return (
@@ -68,6 +130,7 @@ export function PasswordGate() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
                 <Input
+                  ref={inputRef}
                   type="password"
                   placeholder="Password"
                   value={password}
