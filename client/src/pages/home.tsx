@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 
 export default function Home() {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [currentBodyWeight, setCurrentBodyWeight] = useState<string>("");
   const queryClient = useQueryClient();
   
   // Load personal records from independent API
@@ -454,11 +455,29 @@ export default function Home() {
             </Dialog>
           </div>
           
-              <div className="grid grid-cols-2 gap-6">
+          {/* Current Body Weight Input */}
+          <div className="mb-6">
+            <Label htmlFor="currentBodyWeight" className="text-sm font-medium text-foreground mb-2 block">
+              Current Body Weight (lbs)
+            </Label>
+            <Input
+              id="currentBodyWeight"
+              type="number"
+              step="0.1"
+              value={currentBodyWeight}
+              onChange={(e) => setCurrentBodyWeight(e.target.value)}
+              placeholder="Enter your current body weight"
+              className="max-w-xs relative backdrop-blur-sm bg-white/10 dark:bg-gray-600/20 border border-white/20 dark:border-gray-500/30"
+              data-testid="input-current-body-weight"
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-6">
                 {prs.map((pr) => (
                   <PRCard
                     key={pr.id}
                     pr={pr}
+                    currentBodyWeight={parseFloat(currentBodyWeight) || 0}
                     isEditing={editingId === pr.id}
                     onEdit={() => handleEdit(pr.id)}
                     onSave={(updatedData) => handleSave(pr.id, updatedData)}
@@ -478,8 +497,9 @@ export default function Home() {
   );
 }
 
-function PRCard({ pr, isEditing, onEdit, onSave, onDelete, onCancel }: {
+function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, onCancel }: {
   pr: any;
+  currentBodyWeight: number;
   isEditing: boolean;
   onEdit: () => void;
   onSave: (data: any) => void;
@@ -488,6 +508,14 @@ function PRCard({ pr, isEditing, onEdit, onSave, onDelete, onCancel }: {
 }) {
   const [editData, setEditData] = useState(() => ({ ...pr }));
   const [isFlipped, setIsFlipped] = useState(false);
+
+  const calculateBodyWeightPercentage = () => {
+    const prWeight = parseFloat(pr.weight);
+    if (currentBodyWeight > 0 && prWeight > 0) {
+      return ((prWeight / currentBodyWeight) * 100).toFixed(1);
+    }
+    return null;
+  };
 
   const handleSave = () => {
     onSave(editData);
@@ -675,6 +703,11 @@ function PRCard({ pr, isEditing, onEdit, onSave, onDelete, onCancel }: {
                   <div className="text-sm text-muted-foreground/80 font-medium">
                     Max {pr.reps} reps
                   </div>
+                  {calculateBodyWeightPercentage() && (
+                    <div className="text-xs text-yellow-600 dark:text-yellow-400 font-semibold bg-yellow-100/20 dark:bg-yellow-400/10 rounded-full px-2 py-1 mt-2">
+                      {calculateBodyWeightPercentage()}% BW
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -701,22 +734,33 @@ function PRCard({ pr, isEditing, onEdit, onSave, onDelete, onCancel }: {
                     </div>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="backdrop-blur-sm bg-white/10 dark:bg-gray-600/15 border border-white/20 dark:border-gray-500/30 rounded-lg p-3">
-                      <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
-                      <div className="relative">
-                        <div className="text-xs text-muted-foreground/70 uppercase tracking-wide font-medium">Weight</div>
-                        <div className="text-lg font-bold text-foreground mt-1">{pr.weight} lbs</div>
+                  <>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="backdrop-blur-sm bg-white/10 dark:bg-gray-600/15 border border-white/20 dark:border-gray-500/30 rounded-lg p-3">
+                        <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
+                        <div className="relative">
+                          <div className="text-xs text-muted-foreground/70 uppercase tracking-wide font-medium">Weight</div>
+                          <div className="text-lg font-bold text-foreground mt-1">{pr.weight} lbs</div>
+                        </div>
+                      </div>
+                      <div className="backdrop-blur-sm bg-white/10 dark:bg-gray-600/15 border border-white/20 dark:border-gray-500/30 rounded-lg p-3">
+                        <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
+                        <div className="relative">
+                          <div className="text-xs text-muted-foreground/70 uppercase tracking-wide font-medium">Max Reps</div>
+                          <div className="text-lg font-bold text-foreground mt-1">{pr.reps}</div>
+                        </div>
                       </div>
                     </div>
-                    <div className="backdrop-blur-sm bg-white/10 dark:bg-gray-600/15 border border-white/20 dark:border-gray-500/30 rounded-lg p-3">
-                      <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
-                      <div className="relative">
-                        <div className="text-xs text-muted-foreground/70 uppercase tracking-wide font-medium">Max Reps</div>
-                        <div className="text-lg font-bold text-foreground mt-1">{pr.reps}</div>
+                    {calculateBodyWeightPercentage() && (
+                      <div className="backdrop-blur-sm bg-yellow-100/20 dark:bg-yellow-400/10 border border-yellow-200/30 dark:border-yellow-400/30 rounded-lg p-3">
+                        <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-yellow-100/10 to-transparent dark:from-yellow-400/10"></div>
+                        <div className="relative">
+                          <div className="text-xs text-muted-foreground/70 uppercase tracking-wide font-medium">Body Weight %</div>
+                          <div className="text-lg font-bold text-yellow-600 dark:text-yellow-400 mt-1">{calculateBodyWeightPercentage()}%</div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
