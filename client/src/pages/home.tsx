@@ -656,14 +656,30 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
   }
 
   return (
-    <div 
-      className={`relative group cursor-pointer transition-all duration-300 ${
-        isFlipped 
-          ? "z-50 scale-110 col-span-2" 
-          : "hover:-translate-y-1 hover:scale-105"
-      }`}
-      onClick={handleFlip}
-    >
+    <>
+      {/* Backdrop for flipped card */}
+      {isFlipped && (
+        <div 
+          className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm z-40"
+          onClick={handleFlip}
+        />
+      )}
+      
+      <div 
+        className={`relative group cursor-pointer transition-all duration-300 ${
+          isFlipped 
+            ? "fixed z-50" 
+            : "hover:-translate-y-1 hover:scale-105"
+        }`}
+        onClick={handleFlip}
+        style={isFlipped ? {
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 'min(90vw, 32rem)',
+          height: 'min(60vh, 20rem)'
+        } : {}}
+      >
       {/* 3D Glassmorphism Card */}
       <div className={`backdrop-blur-lg bg-black/20 dark:bg-gray-200/15 border border-white/30 dark:border-gray-600/40 rounded-xl shadow-2xl transition-all duration-300 ${
         isFlipped 
@@ -882,5 +898,6 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 dark:via-gray-400/30 to-transparent rounded-b-xl"></div>
       </div>
     </div>
+    </>
   );
 }
