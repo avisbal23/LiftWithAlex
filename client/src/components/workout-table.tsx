@@ -5,11 +5,12 @@ import { OptimizedInput } from "@/components/optimized-input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Eye, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Eye, ChevronDown, GripVertical } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { type Exercise, type InsertExercise, type UpdateExercise, type InsertWorkoutLog } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { DragDropContext, Droppable, Draggable, type DropResult } from "react-beautiful-dnd";
 
 interface WorkoutTableProps {
   category: string;
@@ -118,6 +119,13 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
       updateMutation.mutate({
         id: exerciseId,
         data: changes as UpdateExercise,
+      }, {
+        onSuccess: () => {
+          // Invalidate cache if order changed to trigger re-sort
+          if (changes.order !== undefined) {
+            queryClient.invalidateQueries({ queryKey: ["/api/exercises", category] });
+          }
+        }
       });
       // Clear local changes after saving
       setEditingExercises(prev => {
@@ -130,7 +138,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
         description: "Your changes have been saved successfully.",
       });
     }
-  }, [editingExercises, updateMutation, toast]);
+  }, [editingExercises, updateMutation, toast, queryClient, category]);
 
   const hasChanges = useCallback((exerciseId: string) => {
     const changes = editingExercises[exerciseId];
@@ -165,6 +173,41 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
     if (confirm("Are you sure you want to delete this exercise?")) {
       deleteMutation.mutate(id);
     }
+  };
+
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const sourceIndex = result.source.index;
+    const destinationIndex = result.destination.index;
+
+    if (sourceIndex === destinationIndex) return;
+
+    // Reorder exercises array
+    const reorderedExercises = Array.from(exercises);
+    const [removed] = reorderedExercises.splice(sourceIndex, 1);
+    reorderedExercises.splice(destinationIndex, 0, removed);
+
+    // Update order values based on new positions
+    const updatesPromise = reorderedExercises.map((exercise, index) => {
+      const newOrder = index + 1;
+      if (exercise.order !== newOrder) {
+        return updateMutation.mutateAsync({
+          id: exercise.id,
+          data: { order: newOrder },
+        });
+      }
+      return Promise.resolve();
+    });
+
+    // Execute all updates and refresh the list
+    Promise.all(updatesPromise).then(() => {
+      queryClient.invalidateQueries({ queryKey: ["/api/exercises", category] });
+      toast({
+        title: "Order updated",
+        description: "Exercise order has been saved.",
+      });
+    });
   };
 
   if (isLoading) {
@@ -228,17 +271,21 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
       ) : (
         <div>
           {/* Desktop Table View */}
-          <div className="hidden md:block bg-card rounded-lg border border-border overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-16">
-                      #
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      {isCardio ? "Activity" : "Exercise"}
-                    </th>
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <div className="hidden md:block bg-card rounded-lg border border-border overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-16">
+                        
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-16">
+                        #
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        {isCardio ? "Activity" : "Exercise"}
+                      </th>
                     {isCardio ? (
                       <>
                         <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -278,19 +325,37 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-background divide-y divide-border">
-                  {exercises.map((exercise) => (
-                    <tr key={exercise.id} data-testid={`row-exercise-${exercise.id}`}>
-                      <td className="px-6 py-4">
-                        <Input
-                          type="number"
-                          value={editingExercises[exercise.id]?.order ?? exercise.order ?? 0}
-                          onChange={(e) => setEditingExercises(prev => ({ ...prev, [exercise.id]: { ...prev[exercise.id], order: parseInt(e.target.value) || 0 } }))}
-                          className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-12 text-center"
-                          data-testid={`input-order-${exercise.id}`}
-                          min="1"
-                        />
-                      </td>
+                <Droppable droppableId="exercises">
+                  {(provided) => (
+                    <tbody 
+                      className="bg-background divide-y divide-border"
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                    >
+                      {exercises.map((exercise, index) => (
+                        <Draggable key={exercise.id} draggableId={exercise.id} index={index}>
+                          {(provided, snapshot) => (
+                            <tr 
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              data-testid={`row-exercise-${exercise.id}`}
+                              className={snapshot.isDragging ? "opacity-75" : ""}
+                            >
+                              <td className="px-6 py-4">
+                                <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <Input
+                                  type="number"
+                                  value={editingExercises[exercise.id]?.order ?? exercise.order ?? 0}
+                                  onChange={(e) => setEditingExercises(prev => ({ ...prev, [exercise.id]: { ...prev[exercise.id], order: parseInt(e.target.value) || 0 } }))}
+                                  className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-12 text-center"
+                                  data-testid={`input-order-${exercise.id}`}
+                                  min="1"
+                                />
+                              </td>
                       <td className="px-6 py-4">
                         <Input
                           type="text"
@@ -479,27 +544,50 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
+                              </td>
+                            </tr>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </tbody>
+                  )}
+                </Droppable>
               </table>
             </div>
-          </div>
+            </div>
+          </DragDropContext>
 
           {/* Mobile Card View */}
-          <div className="md:hidden space-y-4">
-            {exercises.map((exercise) => {
-              const isExpanded = expandedCards.has(exercise.id);
-              const keyMetric = isCardio ? exercise.duration : `${exercise.weight} lbs`;
-              
-              return (
-                <Card key={exercise.id} className="bg-card" data-testid={`card-exercise-${exercise.id}`}>
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="mobile-exercises">
+              {(provided) => (
+                <div 
+                  className="md:hidden space-y-4"
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                >
+                  {exercises.map((exercise, index) => {
+                    const isExpanded = expandedCards.has(exercise.id);
+                    const keyMetric = isCardio ? exercise.duration : `${exercise.weight} lbs`;
+                    
+                    return (
+                      <Draggable key={exercise.id} draggableId={exercise.id} index={index}>
+                        {(provided, snapshot) => (
+                          <Card 
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            className={`bg-card ${snapshot.isDragging ? 'opacity-75' : ''}`} 
+                            data-testid={`card-exercise-${exercise.id}`}
+                          >
                   <CardContent className="p-4">
                     {/* Collapsed Header - Always Visible */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
+                          <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing flex-shrink-0">
+                            <GripVertical className="w-4 h-4 text-muted-foreground" />
+                          </div>
                           <div className="flex items-center space-x-1 flex-shrink-0">
                             <span className="text-xs text-muted-foreground">#</span>
                             <Input
@@ -759,11 +847,17 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                         </div>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                          </CardContent>
+                          </Card>
+                        )}
+                      </Draggable>
+                    );
+                  })}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
         </div>
       )}
 
