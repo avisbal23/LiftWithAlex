@@ -788,16 +788,23 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
               
               {/* Compass-style Data Grid with T-shaped Dividers */}
               <div className="relative">
-                {/* T-shaped Divider Lines */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  {/* Vertical line */}
-                  <div className="absolute w-px h-full bg-white/20 dark:bg-gray-400/20"></div>
-                  {/* Horizontal line */}
-                  <div className="absolute w-full h-px bg-white/20 dark:bg-gray-400/20"></div>
+                {/* Sophisticated T-shaped Divider Design */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  {/* Main Vertical Divider */}
+                  <div className="absolute w-1 h-full bg-gradient-to-b from-white/30 via-white/50 to-white/30 dark:from-gray-300/30 dark:via-gray-300/50 dark:to-gray-300/30 rounded-full shadow-lg"></div>
+                  {/* Main Horizontal Divider */}
+                  <div className="absolute w-full h-1 bg-gradient-to-r from-white/30 via-white/50 to-white/30 dark:from-gray-300/30 dark:via-gray-300/50 dark:to-gray-300/30 rounded-full shadow-lg"></div>
+                  
+                  {/* Center Junction Circle */}
+                  <div className="absolute w-4 h-4 bg-white/60 dark:bg-gray-300/60 rounded-full shadow-xl border-2 border-white/40 dark:border-gray-400/40"></div>
+                  
+                  {/* Inner highlight lines for depth */}
+                  <div className="absolute w-0.5 h-full bg-white/60 dark:bg-gray-200/60 rounded-full"></div>
+                  <div className="absolute w-full h-0.5 bg-white/60 dark:bg-gray-200/60 rounded-full"></div>
                 </div>
                 
-                {/* 4-Quadrant Grid */}
-                <div className="relative grid grid-cols-2 gap-0 h-24">
+                {/* 4-Quadrant Grid with proper spacing */}
+                <div className="relative grid grid-cols-2 gap-2 h-28 p-1">
                   {pr.category === "Cardio" ? (
                     <>
                       {/* Top Left - Category */}
