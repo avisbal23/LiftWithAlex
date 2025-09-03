@@ -592,7 +592,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new personal record
   app.post("/api/personal-records", async (req, res) => {
     try {
-      const validatedData = insertPersonalRecordSchema.parse(req.body);
+      // Get next order number
+      const allRecords = await storage.getAllPersonalRecords();
+      const maxOrder = Math.max(...allRecords.map(r => r.order || 0), 0);
+      
+      const dataWithOrder = { ...req.body, order: maxOrder + 1 };
+      const validatedData = insertPersonalRecordSchema.parse(dataWithOrder);
       const record = await storage.createPersonalRecord(validatedData);
       res.status(201).json(record);
     } catch (error) {

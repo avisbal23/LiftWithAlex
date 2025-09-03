@@ -126,6 +126,7 @@ export default function Home() {
         reps: data.reps || "",
         time: data.time || "",
         category: data.category,
+        order: data.order,
       });
     },
     onSuccess: () => {
@@ -180,6 +181,7 @@ export default function Home() {
     reps: record.reps || "",
     time: record.time || "",
     category: record.category,
+    order: record.order || 0,
     color: getCategoryColor(record.category)
   }));
 
@@ -531,6 +533,19 @@ function PRCard({ pr, isEditing, onEdit, onSave, onDelete, onCancel }: {
                 <option value="Legs">Legs</option>
                 <option value="Cardio">Cardio</option>
               </select>
+            </div>
+            
+            <div>
+              <Label htmlFor="order" className="text-sm font-medium text-foreground">Position (Order)</Label>
+              <Input
+                id="order"
+                type="number"
+                min="1"
+                value={editData.order || ""}
+                onChange={(e) => setEditData(prev => ({ ...prev, order: parseInt(e.target.value) || 1 }))}
+                className="mt-1"
+                placeholder="Enter position number"
+              />
             </div>
             
             {editData.category === "Cardio" ? (

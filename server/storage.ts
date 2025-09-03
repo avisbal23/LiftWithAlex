@@ -691,9 +691,13 @@ export class MemStorage implements IStorage {
   async getAllPersonalRecords(): Promise<PersonalRecord[]> {
     return Array.from(this.personalRecords.values())
       .sort((a, b) => {
+        // Sort by order first, then by creation date
+        if (a.order !== b.order) {
+          return (a.order || 0) - (b.order || 0);
+        }
         const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
         const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
-        return dateB.getTime() - dateA.getTime(); // Most recent first
+        return dateA.getTime() - dateB.getTime();
       });
   }
 
@@ -748,6 +752,7 @@ export class MemStorage implements IStorage {
       this.personalRecords.set(id, {
         id,
         ...pr,
+        order: index + 1, // Set initial order based on array position
         createdAt: now,
         updatedAt: now,
       });
@@ -1146,7 +1151,7 @@ export class DatabaseStorage implements IStorage {
 
   // Personal Record operations
   async getAllPersonalRecords(): Promise<PersonalRecord[]> {
-    return await db.select().from(personalRecords).orderBy(desc(personalRecords.createdAt));
+    return await db.select().from(personalRecords).orderBy(personalRecords.order, personalRecords.createdAt);
   }
 
   async createPersonalRecord(entry: InsertPersonalRecord): Promise<PersonalRecord> {
@@ -1170,14 +1175,14 @@ export class DatabaseStorage implements IStorage {
   private async seedPersonalRecordsData() {
     // Add sample PR records that are independent from workout database
     const prData = [
-      { exercise: "Flat Dumbbell Press", weight: "80", reps: "8", time: "", category: "Push" },
-      { exercise: "Incline Dumbbell Press", weight: "70", reps: "10", time: "", category: "Push" },
-      { exercise: "Lat Pulldown", weight: "150", reps: "8", time: "", category: "Pull" },
-      { exercise: "Barbell Rows", weight: "135", reps: "10", time: "", category: "Pull" },
-      { exercise: "Leg Press", weight: "400", reps: "12", time: "", category: "Legs" },
-      { exercise: "Romanian Deadlift", weight: "185", reps: "8", time: "", category: "Legs" },
-      { exercise: "5K Run", weight: "", reps: "", time: "22:30", category: "Cardio" },
-      { exercise: "10K Run", weight: "", reps: "", time: "48:15", category: "Cardio" }
+      { exercise: "Flat Dumbbell Press", weight: "80", reps: "8", time: "", category: "Push", order: 1 },
+      { exercise: "Incline Dumbbell Press", weight: "70", reps: "10", time: "", category: "Push", order: 2 },
+      { exercise: "Lat Pulldown", weight: "150", reps: "8", time: "", category: "Pull", order: 3 },
+      { exercise: "Barbell Rows", weight: "135", reps: "10", time: "", category: "Pull", order: 4 },
+      { exercise: "Leg Press", weight: "400", reps: "12", time: "", category: "Legs", order: 5 },
+      { exercise: "Romanian Deadlift", weight: "185", reps: "8", time: "", category: "Legs", order: 6 },
+      { exercise: "5K Run", weight: "", reps: "", time: "22:30", category: "Cardio", order: 7 },
+      { exercise: "10K Run", weight: "", reps: "", time: "48:15", category: "Cardio", order: 8 }
     ];
 
     for (const pr of prData) {

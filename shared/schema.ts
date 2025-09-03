@@ -164,6 +164,7 @@ export const personalRecords = pgTable("personal_records", {
   reps: text("reps").default(""),
   time: text("time").default(""), // For cardio
   category: text("category").notNull(), // 'Push', 'Pull', 'Legs', 'Cardio'
+  order: integer("order").default(0), // For custom ordering
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
