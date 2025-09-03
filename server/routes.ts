@@ -646,6 +646,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Reorder personal records
+  app.put("/api/personal-records/reorder", async (req, res) => {
+    try {
+      const reorderData = req.body;
+      await storage.reorderPersonalRecords(reorderData);
+      res.status(200).json({ message: "Personal records reordered successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to reorder personal records" });
+    }
+  });
+
   // User Settings API routes
   // Get user settings
   app.get("/api/user-settings", async (req, res) => {

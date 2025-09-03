@@ -53,6 +53,7 @@ export interface IStorage {
   createPersonalRecord(entry: InsertPersonalRecord): Promise<PersonalRecord>;
   updatePersonalRecord(id: string, entry: UpdatePersonalRecord): Promise<PersonalRecord | undefined>;
   deletePersonalRecord(id: string): Promise<boolean>;
+  reorderPersonalRecords(reorderData: Array<{ id: string; order: number }>): Promise<void>;
   
   getUserSettings(): Promise<UserSettings | undefined>;
   createOrUpdateUserSettings(entry: InsertUserSettings): Promise<UserSettings>;
@@ -744,6 +745,21 @@ export class MemStorage implements IStorage {
     return this.personalRecords.delete(id);
   }
 
+  async reorderPersonalRecords(reorderData: Array<{ id: string; order: number }>): Promise<void> {
+    // Update all records with their new order values
+    for (const { id, order } of reorderData) {
+      const existing = this.personalRecords.get(id);
+      if (existing) {
+        const updated: PersonalRecord = {
+          ...existing,
+          order,
+          updatedAt: new Date(),
+        };
+        this.personalRecords.set(id, updated);
+      }
+    }
+  }
+
   // User Settings operations
   async getUserSettings(): Promise<UserSettings | undefined> {
     return this.userSettings;
@@ -1198,6 +1214,15 @@ export class DatabaseStorage implements IStorage {
   async deletePersonalRecord(id: string): Promise<boolean> {
     const result = await db.delete(personalRecords).where(eq(personalRecords.id, id));
     return result.rowCount > 0;
+  }
+
+  async reorderPersonalRecords(reorderData: Array<{ id: string; order: number }>): Promise<void> {
+    // Update all records with their new order values
+    for (const { id, order } of reorderData) {
+      await db.update(personalRecords)
+        .set({ order, updatedAt: new Date() })
+        .where(eq(personalRecords.id, id));
+    }
   }
 
   // User Settings operations

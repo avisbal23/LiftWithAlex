@@ -4,13 +4,14 @@ import { type WorkoutLog, type Quote, type PersonalRecord, type UserSettings } f
 import { apiRequest } from "@/lib/queryClient";
 import Navigation from "@/components/layout/navigation";
 import { Link } from "wouter";
-import { Trophy, Calendar, Edit3, Save, X, Scale, Settings, MessageCircle, Trash2, Activity, Camera } from "lucide-react";
+import { Trophy, Calendar, Edit3, Save, X, Scale, Settings, MessageCircle, Trash2, Activity, Camera, GripVertical } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DragDropContext, Droppable, Draggable, type DropResult } from "react-beautiful-dnd";
 
 
 export default function Home() {
@@ -161,9 +162,52 @@ export default function Home() {
       queryClient.invalidateQueries({ queryKey: ["/api/personal-records"] });
     },
   });
+
+  const reorderPersonalRecordsMutation = useMutation({
+    mutationFn: async (reorderData: Array<{ id: string; order: number }>) => {
+      return apiRequest("PUT", "/api/personal-records/reorder", reorderData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/personal-records"] });
+    },
+  });
   
   const handleDelete = (id: string) => {
     deletePersonalRecordMutation.mutate(id);
+  };
+
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination || !personalRecords) return;
+
+    const sourceIndex = result.source.index;
+    const destinationIndex = result.destination.index;
+
+    if (sourceIndex === destinationIndex) return;
+
+    // Sort personal records by order first
+    const sortedPRs = [...personalRecords].sort((a, b) => (a.order || 0) - (b.order || 0));
+    
+    // Reorder the array
+    const reorderedPRs = [...sortedPRs];
+    const [removed] = reorderedPRs.splice(sourceIndex, 1);
+    reorderedPRs.splice(destinationIndex, 0, removed);
+
+    // Create the reorder data with new orders
+    const reorderData = reorderedPRs.map((pr, index) => ({
+      id: pr.id,
+      order: index + 1
+    }));
+
+    // Apply optimistic update
+    const optimisticUpdate = reorderedPRs.map((pr, index) => ({
+      ...pr,
+      order: index + 1
+    }));
+    
+    queryClient.setQueryData(["/api/personal-records"], optimisticUpdate);
+    
+    // Send to server
+    reorderPersonalRecordsMutation.mutate(reorderData);
   };
 
   const addPersonalRecordMutation = useMutation({
@@ -187,17 +231,19 @@ export default function Home() {
     addPersonalRecordMutation.mutate(newPR);
   };
 
-  // Use PersonalRecords directly for display
-  const prs = (personalRecords || []).map((record) => ({
-    id: record.id,
-    exercise: record.exercise,
-    weight: record.weight || "",
-    reps: record.reps || "",
-    time: record.time || "",
-    category: record.category,
-    order: record.order || 0,
-    color: getCategoryColor(record.category)
-  }));
+  // Use PersonalRecords directly for display, sorted by order
+  const prs = (personalRecords || [])
+    .sort((a, b) => (a.order || 0) - (b.order || 0))
+    .map((record) => ({
+      id: record.id,
+      exercise: record.exercise,
+      weight: record.weight || "",
+      reps: record.reps || "",
+      time: record.time || "",
+      category: record.category,
+      order: record.order || 0,
+      color: getCategoryColor(record.category)
+    }));
 
   return (
     <>
@@ -490,20 +536,41 @@ export default function Home() {
             />
           </div>
           
-          <div className="grid grid-cols-2 gap-6">
-                {prs.map((pr) => (
-                  <PRCard
-                    key={pr.id}
-                    pr={pr}
-                    currentBodyWeight={userSettings?.currentBodyWeight || 0}
-                    isEditing={editingId === pr.id}
-                    onEdit={() => handleEdit(pr.id)}
-                    onSave={(updatedData) => handleSave(pr.id, updatedData)}
-                    onDelete={() => handleDelete(pr.id)}
-                    onCancel={() => setEditingId(null)}
-                  />
-                ))}
-              </div>
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="pr-cards">
+              {(provided) => (
+                <div 
+                  className="grid grid-cols-2 gap-6"
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                >
+                  {prs.map((pr, index) => (
+                    <Draggable key={pr.id} draggableId={pr.id} index={index}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          className={`${snapshot.isDragging ? 'z-50' : ''}`}
+                        >
+                          <PRCard
+                            pr={pr}
+                            currentBodyWeight={userSettings?.currentBodyWeight || 0}
+                            isEditing={editingId === pr.id}
+                            onEdit={() => handleEdit(pr.id)}
+                            onSave={(updatedData) => handleSave(pr.id, updatedData)}
+                            onDelete={() => handleDelete(pr.id)}
+                            onCancel={() => setEditingId(null)}
+                            dragHandleProps={provided.dragHandleProps}
+                          />
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
             </div>
             
             {/* Bottom Glass Highlight */}
@@ -515,7 +582,7 @@ export default function Home() {
   );
 }
 
-function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, onCancel }: {
+function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, onCancel, dragHandleProps }: {
   pr: any;
   currentBodyWeight: number;
   isEditing: boolean;
@@ -523,6 +590,7 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
   onSave: (data: any) => void;
   onDelete: () => void;
   onCancel: () => void;
+  dragHandleProps?: any;
 }) {
   const [editData, setEditData] = useState(() => ({ ...pr }));
   const [isFlipped, setIsFlipped] = useState(false);
@@ -748,7 +816,16 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
 
           {!isFlipped ? (
             // Front side - 3D Glassmorphism view
-            <div className="text-center space-y-4">
+            <div className="text-center space-y-4 relative">
+              {/* Drag Handle for Front Side */}
+              <div 
+                {...dragHandleProps}
+                className="absolute -top-2 -left-2 p-1 cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-foreground/60 transition-colors z-10"
+                data-testid={`drag-handle-front-${pr.id}`}
+              >
+                <GripVertical className="w-4 h-4" />
+              </div>
+              
               {/* 3D Glass Badge */}
               <div className="relative inline-block">
                 <div className="backdrop-blur-sm bg-white/20 dark:bg-gray-600/25 border border-white/30 dark:border-gray-500/40 rounded-full px-4 py-2 shadow-lg">
@@ -795,12 +872,20 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
           ) : (
             // Back side - Compass-style layout
             <div className="w-full p-6 space-y-6">
-              {/* Workout Title with Matching Emojis */}
-              <div className="text-center">
+              {/* Workout Title with Matching Emojis and Drag Handle */}
+              <div className="text-center relative">
                 <div className="flex items-center justify-center space-x-3">
                   <span className="text-xl">🏋️</span>
                   <span className="text-lg font-bold text-foreground">{pr.exercise}</span>
                   <span className="text-xl">🏋️</span>
+                </div>
+                {/* Drag Handle */}
+                <div 
+                  {...dragHandleProps}
+                  className="absolute top-0 right-0 p-1 cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-foreground/80 transition-colors"
+                  data-testid={`drag-handle-${pr.id}`}
+                >
+                  <GripVertical className="w-4 h-4" />
                 </div>
               </div>
               
