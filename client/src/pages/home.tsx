@@ -910,17 +910,17 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
                 <div className="relative grid grid-cols-2 gap-2 h-28 p-1">
                   {pr.category === "Cardio" ? (
                     <>
-                      {/* Top Left - Category */}
-                      <div className="flex items-center justify-center p-3">
-                        <div className="text-center">
-                          <div className="text-sm font-medium text-foreground">{pr.category}</div>
-                        </div>
-                      </div>
-                      
-                      {/* Top Right - Time */}
+                      {/* Top Left - Time */}
                       <div className="flex items-center justify-center p-3">
                         <div className="text-center">
                           <div className="text-sm font-medium text-foreground">{pr.time}</div>
+                        </div>
+                      </div>
+                      
+                      {/* Top Right - Empty */}
+                      <div className="flex items-center justify-center p-3">
+                        <div className="text-center opacity-30">
+                          <div className="text-sm font-medium text-foreground">Best</div>
                         </div>
                       </div>
                       
@@ -940,14 +940,7 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
                     </>
                   ) : (
                     <>
-                      {/* Quadrant 1 - Category */}
-                      <div className="flex items-center justify-center p-3">
-                        <div className="text-center">
-                          <div className="text-sm font-medium text-foreground">{pr.category}</div>
-                        </div>
-                      </div>
-                      
-                      {/* Quadrant 2 - Body Weight % */}
+                      {/* Quadrant 1 - Body Weight % */}
                       <div className="flex items-center justify-center p-3">
                         {calculateBodyWeightPercentage() ? (
                           <div className="text-center">
@@ -960,6 +953,13 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
                         )}
                       </div>
                       
+                      {/* Quadrant 2 - Weight */}
+                      <div className="flex items-center justify-center p-3">
+                        <div className="text-center">
+                          <div className="text-sm font-medium text-foreground">{pr.weight} lbs</div>
+                        </div>
+                      </div>
+                      
                       {/* Quadrant 3 - Reps */}
                       <div className="flex items-center justify-center p-3">
                         <div className="text-center">
@@ -967,10 +967,10 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
                         </div>
                       </div>
                       
-                      {/* Quadrant 4 - Weight */}
+                      {/* Quadrant 4 - PR */}
                       <div className="flex items-center justify-center p-3">
-                        <div className="text-center">
-                          <div className="text-sm font-medium text-foreground">{pr.weight} lbs</div>
+                        <div className="text-center opacity-30">
+                          <div className="text-sm font-medium text-foreground">PR</div>
                         </div>
                       </div>
                     </>
