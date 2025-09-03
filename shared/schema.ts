@@ -16,6 +16,7 @@ export const exercises = pgTable("exercises", {
   reps: integer("reps").default(0),
   notes: text("notes").default(""),
   category: text("category").notNull(), // 'push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'cardio'
+  order: integer("order").default(0), // For custom ordering
   // Cardio-specific fields
   duration: text("duration").default(""), // "28:32"
   distance: text("distance").default(""), // "3.1 miles"
