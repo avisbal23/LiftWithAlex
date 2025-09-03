@@ -767,57 +767,43 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
               )}
             </div>
           ) : (
-            // Back side - 3D Structured data view
-            <div className="w-full space-y-4 text-center">
-              
-              <div className="space-y-3">
-                {/* Exercise Name */}
-                <div className="backdrop-blur-sm bg-white/10 dark:bg-gray-600/15 border border-white/20 dark:border-gray-500/30 rounded-lg p-3">
-                  <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
-                  <div className="relative">
-                    <div className="text-xs text-muted-foreground/70 uppercase tracking-wide font-medium">Exercise</div>
-                    <div className="text-sm font-semibold text-foreground mt-1">{pr.exercise}</div>
-                  </div>
-                </div>
-                
-                {pr.category === "Cardio" ? (
-                  <div className="backdrop-blur-sm bg-white/10 dark:bg-gray-600/15 border border-white/20 dark:border-gray-500/30 rounded-lg p-3">
-                    <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
-                    <div className="relative">
-                      <div className="text-xs text-muted-foreground/70 uppercase tracking-wide font-medium">Best Time</div>
-                      <div className="text-lg font-bold text-foreground mt-1">{pr.time}</div>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="backdrop-blur-sm bg-white/10 dark:bg-gray-600/15 border border-white/20 dark:border-gray-500/30 rounded-lg p-3">
-                        <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
-                        <div className="relative">
-                          <div className="text-xs text-muted-foreground/70 uppercase tracking-wide font-medium">Weight</div>
-                          <div className="text-lg font-bold text-foreground mt-1">{pr.weight} lbs</div>
-                        </div>
-                      </div>
-                      <div className="backdrop-blur-sm bg-white/10 dark:bg-gray-600/15 border border-white/20 dark:border-gray-500/30 rounded-lg p-3">
-                        <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
-                        <div className="relative">
-                          <div className="text-xs text-muted-foreground/70 uppercase tracking-wide font-medium">Max Reps</div>
-                          <div className="text-lg font-bold text-foreground mt-1">{pr.reps}</div>
-                        </div>
-                      </div>
-                    </div>
-                    {calculateBodyWeightPercentage() && (
-                      <div className="backdrop-blur-sm bg-yellow-100/20 dark:bg-yellow-400/10 border border-yellow-200/30 dark:border-yellow-400/30 rounded-lg p-3">
-                        <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-yellow-100/10 to-transparent dark:from-yellow-400/10"></div>
-                        <div className="relative">
-                          <div className="text-xs text-muted-foreground/70 uppercase tracking-wide font-medium">Body Weight %</div>
-                          <div className="text-lg font-bold text-yellow-600 dark:text-yellow-400 mt-1">{calculateBodyWeightPercentage()}%</div>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
+            // Back side - Simple text data view
+            <div className="w-full text-left space-y-3 p-4">
+              <div>
+                <span className="text-sm font-medium text-foreground">Exercise:</span>
+                <div className="text-lg text-foreground">{pr.exercise}</div>
               </div>
+              
+              <div>
+                <span className="text-sm font-medium text-foreground">Category:</span>
+                <div className="text-lg text-foreground">{pr.category}</div>
+              </div>
+              
+              {pr.category === "Cardio" ? (
+                <div>
+                  <span className="text-sm font-medium text-foreground">Best Time:</span>
+                  <div className="text-lg text-foreground">{pr.time}</div>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <span className="text-sm font-medium text-foreground">Weight:</span>
+                    <div className="text-lg text-foreground">{pr.weight} lbs</div>
+                  </div>
+                  
+                  <div>
+                    <span className="text-sm font-medium text-foreground">Max Reps:</span>
+                    <div className="text-lg text-foreground">{pr.reps}</div>
+                  </div>
+                  
+                  {calculateBodyWeightPercentage() && (
+                    <div>
+                      <span className="text-sm font-medium text-foreground">Body Weight %:</span>
+                      <div className="text-lg text-yellow-600 dark:text-yellow-400">{calculateBodyWeightPercentage()}%</div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
         </div>
