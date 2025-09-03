@@ -837,28 +837,14 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
                     </>
                   ) : (
                     <>
-                      {/* Top Left - Category */}
+                      {/* Quadrant 1 - Category */}
                       <div className="flex items-center justify-center p-3">
                         <div className="text-center">
                           <div className="text-sm font-medium text-foreground">{pr.category}</div>
                         </div>
                       </div>
                       
-                      {/* Top Right - Weight */}
-                      <div className="flex items-center justify-center p-3">
-                        <div className="text-center">
-                          <div className="text-sm font-medium text-foreground">{pr.weight} lbs</div>
-                        </div>
-                      </div>
-                      
-                      {/* Bottom Left - Reps */}
-                      <div className="flex items-center justify-center p-3">
-                        <div className="text-center">
-                          <div className="text-sm font-medium text-foreground">{pr.reps} reps</div>
-                        </div>
-                      </div>
-                      
-                      {/* Bottom Right - Body Weight % */}
+                      {/* Quadrant 2 - Body Weight % */}
                       <div className="flex items-center justify-center p-3">
                         {calculateBodyWeightPercentage() ? (
                           <div className="text-center">
@@ -869,6 +855,20 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
                             <div className="text-sm font-medium text-foreground">--%</div>
                           </div>
                         )}
+                      </div>
+                      
+                      {/* Quadrant 3 - Reps */}
+                      <div className="flex items-center justify-center p-3">
+                        <div className="text-center">
+                          <div className="text-sm font-medium text-foreground">{pr.reps} reps</div>
+                        </div>
+                      </div>
+                      
+                      {/* Quadrant 4 - Weight */}
+                      <div className="flex items-center justify-center p-3">
+                        <div className="text-center">
+                          <div className="text-sm font-medium text-foreground">{pr.weight} lbs</div>
+                        </div>
                       </div>
                     </>
                   )}
