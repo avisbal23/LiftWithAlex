@@ -676,14 +676,16 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
           left: '50%',
           top: '50%',
           transform: 'translate(-50%, -50%)',
-          width: 'min(90vw, 32rem)',
-          height: 'min(60vh, 20rem)'
+          width: 'min(85vw, 28rem)',
+          height: 'min(50vh, 18rem)',
+          maxWidth: '90vw',
+          maxHeight: '80vh'
         } : {}}
       >
       {/* 3D Glassmorphism Card */}
       <div className={`backdrop-blur-lg bg-black/20 dark:bg-gray-200/15 border border-white/30 dark:border-gray-600/40 rounded-xl shadow-2xl transition-all duration-300 ${
         isFlipped 
-          ? "shadow-3xl ring-4 ring-white/20 dark:ring-gray-400/20" 
+          ? "shadow-3xl ring-4 ring-white/20 dark:ring-gray-400/20 w-full h-full" 
           : "group-hover:shadow-3xl"
       }`}>
         {/* 3D Glass Effect */}
