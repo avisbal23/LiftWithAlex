@@ -657,11 +657,19 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
 
   return (
     <div 
-      className="relative group cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:scale-105"
+      className={`relative group cursor-pointer transition-all duration-300 ${
+        isFlipped 
+          ? "z-50 scale-110 col-span-2" 
+          : "hover:-translate-y-1 hover:scale-105"
+      }`}
       onClick={handleFlip}
     >
       {/* 3D Glassmorphism Card */}
-      <div className="backdrop-blur-lg bg-black/20 dark:bg-gray-200/15 border border-white/30 dark:border-gray-600/40 rounded-xl shadow-2xl group-hover:shadow-3xl transition-all duration-300">
+      <div className={`backdrop-blur-lg bg-black/20 dark:bg-gray-200/15 border border-white/30 dark:border-gray-600/40 rounded-xl shadow-2xl transition-all duration-300 ${
+        isFlipped 
+          ? "shadow-3xl ring-4 ring-white/20 dark:ring-gray-400/20" 
+          : "group-hover:shadow-3xl"
+      }`}>
         {/* 3D Glass Effect */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/15 to-black/5 dark:from-gray-300/15 dark:to-gray-700/5 rounded-xl"></div>
         
@@ -767,43 +775,43 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
               )}
             </div>
           ) : (
-            // Back side - Simple text data view
-            <div className="w-full text-left space-y-3 p-4">
-              <div>
-                <span className="text-sm font-medium text-foreground">Exercise:</span>
-                <div className="text-lg text-foreground">{pr.exercise}</div>
-              </div>
-              
-              <div>
-                <span className="text-sm font-medium text-foreground">Category:</span>
-                <div className="text-lg text-foreground">{pr.category}</div>
-              </div>
-              
-              {pr.category === "Cardio" ? (
-                <div>
-                  <span className="text-sm font-medium text-foreground">Best Time:</span>
-                  <div className="text-lg text-foreground">{pr.time}</div>
+            // Back side - Icon-based compact grid
+            <div className="w-full p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="flex items-center space-x-2">
+                  <span className="text-lg">🏋️</span>
+                  <span className="font-medium text-foreground">{pr.exercise}</span>
                 </div>
-              ) : (
-                <>
-                  <div>
-                    <span className="text-sm font-medium text-foreground">Weight:</span>
-                    <div className="text-lg text-foreground">{pr.weight} lbs</div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-lg">📊</span>
+                  <span className="font-medium text-foreground">{pr.category}</span>
+                </div>
+                
+                {pr.category === "Cardio" ? (
+                  <div className="flex items-center space-x-2 col-span-2">
+                    <span className="text-lg">⏱️</span>
+                    <span className="font-medium text-foreground">{pr.time}</span>
                   </div>
-                  
-                  <div>
-                    <span className="text-sm font-medium text-foreground">Max Reps:</span>
-                    <div className="text-lg text-foreground">{pr.reps}</div>
-                  </div>
-                  
-                  {calculateBodyWeightPercentage() && (
-                    <div>
-                      <span className="text-sm font-medium text-foreground">Body Weight %:</span>
-                      <div className="text-lg text-yellow-600 dark:text-yellow-400">{calculateBodyWeightPercentage()}%</div>
+                ) : (
+                  <>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg">⚖️</span>
+                      <span className="font-medium text-foreground">{pr.weight} lbs</span>
                     </div>
-                  )}
-                </>
-              )}
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg">🔢</span>
+                      <span className="font-medium text-foreground">{pr.reps} reps</span>
+                    </div>
+                    
+                    {calculateBodyWeightPercentage() && (
+                      <div className="flex items-center space-x-2 col-span-2">
+                        <span className="text-lg">📈</span>
+                        <span className="font-medium text-yellow-600 dark:text-yellow-400">{calculateBodyWeightPercentage()}% BW</span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           )}
         </div>
