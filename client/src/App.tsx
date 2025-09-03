@@ -24,8 +24,6 @@ import { useAuth } from "@/hooks/useAuth";
 function Router() {
   const { isAuthenticated } = useAuth();
 
-  console.log('📱 Router - isAuthenticated:', isAuthenticated);
-
   if (!isAuthenticated) {
     return <PasswordGate />;
   }
