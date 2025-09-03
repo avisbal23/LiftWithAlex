@@ -361,7 +361,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                           type="text"
                           value={exercise.name}
                           onChange={(e) => updateExercise(exercise.id, "name", e.target.value)}
-                          className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors"
+                          className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors whitespace-normal break-words"
                           data-testid={`input-exercise-name-${exercise.id}`}
                         />
                       </td>
@@ -603,7 +603,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                             type="text"
                             value={exercise.name}
                             onChange={(e) => updateExercise(exercise.id, "name", e.target.value)}
-                            className="font-semibold text-base border-none bg-transparent p-0 text-foreground focus:bg-background hover:bg-accent transition-colors flex-1"
+                            className="font-semibold text-base border-none bg-transparent p-0 text-foreground focus:bg-background hover:bg-accent transition-colors flex-1 whitespace-normal break-words"
                             data-testid={`input-exercise-name-mobile-${exercise.id}`}
                           />
                           <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
