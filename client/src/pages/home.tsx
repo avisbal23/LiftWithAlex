@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { type WorkoutLog, type Quote, type PersonalRecord } from "@shared/schema";
+import { type WorkoutLog, type Quote, type PersonalRecord, type UserSettings } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import Navigation from "@/components/layout/navigation";
 import { Link } from "wouter";
@@ -15,7 +15,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 
 export default function Home() {
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [currentBodyWeight, setCurrentBodyWeight] = useState<string>("");
   const queryClient = useQueryClient();
   
   // Load personal records from independent API
@@ -41,6 +40,23 @@ export default function Home() {
     gcTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: false,
+  });
+
+  // Load user settings for current body weight
+  const { data: userSettings } = useQuery<UserSettings | null>({
+    queryKey: ["/api/user-settings"],
+  });
+
+  // Update user settings mutation
+  const updateUserSettingsMutation = useMutation({
+    mutationFn: (settings: { currentBodyWeight: number }) =>
+      apiRequest("/api/user-settings", {
+        method: "POST",
+        body: JSON.stringify(settings),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user-settings"] });
+    },
   });
 
   const getNextWorkoutDay = () => {
@@ -464,8 +480,13 @@ export default function Home() {
               id="currentBodyWeight"
               type="number"
               step="0.1"
-              value={currentBodyWeight}
-              onChange={(e) => setCurrentBodyWeight(e.target.value)}
+              value={userSettings?.currentBodyWeight || ""}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value);
+                if (!isNaN(value) && value > 0) {
+                  updateUserSettingsMutation.mutate({ currentBodyWeight: value });
+                }
+              }}
               placeholder="Enter your current body weight"
               className="max-w-xs relative backdrop-blur-sm bg-white/10 dark:bg-gray-600/20 border border-white/20 dark:border-gray-500/30"
               data-testid="input-current-body-weight"
@@ -477,7 +498,7 @@ export default function Home() {
                   <PRCard
                     key={pr.id}
                     pr={pr}
-                    currentBodyWeight={parseFloat(currentBodyWeight) || 0}
+                    currentBodyWeight={userSettings?.currentBodyWeight || 0}
                     isEditing={editingId === pr.id}
                     onEdit={() => handleEdit(pr.id)}
                     onSave={(updatedData) => handleSave(pr.id, updatedData)}
@@ -650,20 +671,57 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
         {/* Inner Glass Highlight */}
         <div className="absolute inset-0.5 bg-gradient-to-b from-white/20 to-transparent dark:from-gray-300/20 rounded-xl opacity-50"></div>
         <div className="relative flex-1 flex flex-col justify-center items-center p-6 aspect-square">
-          {/* 3D Glass Edit Button */}
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit();
-            }}
-            className="absolute top-3 right-3 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-all duration-200 backdrop-blur-sm bg-white/20 dark:bg-gray-600/30 border border-white/30 dark:border-gray-500/40 rounded-lg hover:bg-white/30 dark:hover:bg-gray-500/40 hover:scale-110"
-            data-testid={`button-edit-pr-${pr.id}`}
-          >
-            <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/20 to-transparent dark:from-gray-400/20"></div>
-            <Edit3 className="w-3 h-3 relative z-10 text-foreground" />
-          </Button>
+          {/* 3D Glass Edit/Save/Cancel Buttons */}
+          {!isEditing ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="absolute top-3 right-3 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-all duration-200 backdrop-blur-sm bg-white/20 dark:bg-gray-600/30 border border-white/30 dark:border-gray-500/40 rounded-lg hover:bg-white/30 dark:hover:bg-gray-500/40 hover:scale-110"
+              data-testid={`button-edit-pr-${pr.id}`}
+            >
+              <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/20 to-transparent dark:from-gray-400/20"></div>
+              <Edit3 className="w-3 h-3 relative z-10 text-foreground" />
+            </Button>
+          ) : (
+            <div className="absolute top-3 right-3 flex gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSave?.({
+                    exercise: editData.exercise,
+                    weight: editData.weight,
+                    reps: editData.reps,
+                    time: editData.time,
+                    category: editData.category
+                  });
+                }}
+                className="h-8 w-8 p-0 transition-all duration-200 backdrop-blur-sm bg-green-500/20 dark:bg-green-400/20 border border-green-500/30 dark:border-green-400/30 rounded-lg hover:bg-green-500/30 dark:hover:bg-green-400/30 hover:scale-110"
+                data-testid={`button-save-pr-${pr.id}`}
+              >
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-green-400/20 to-transparent"></div>
+                <Save className="w-3 h-3 relative z-10 text-green-600 dark:text-green-400" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCancel();
+                }}
+                className="h-8 w-8 p-0 transition-all duration-200 backdrop-blur-sm bg-red-500/20 dark:bg-red-400/20 border border-red-500/30 dark:border-red-400/30 rounded-lg hover:bg-red-500/30 dark:hover:bg-red-400/30 hover:scale-110"
+                data-testid={`button-cancel-pr-${pr.id}`}
+              >
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-red-400/20 to-transparent"></div>
+                <X className="w-3 h-3 relative z-10 text-red-600 dark:text-red-400" />
+              </Button>
+            </div>
+          )}
 
           {!isFlipped ? (
             // Front side - 3D Glassmorphism view

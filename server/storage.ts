@@ -1,5 +1,5 @@
-import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord } from "@shared/schema";
-import { exercises, workoutLogs, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings } from "@shared/schema";
+import { exercises, workoutLogs, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords, userSettings } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
@@ -53,6 +53,9 @@ export interface IStorage {
   createPersonalRecord(entry: InsertPersonalRecord): Promise<PersonalRecord>;
   updatePersonalRecord(id: string, entry: UpdatePersonalRecord): Promise<PersonalRecord | undefined>;
   deletePersonalRecord(id: string): Promise<boolean>;
+  
+  getUserSettings(): Promise<UserSettings | undefined>;
+  createOrUpdateUserSettings(entry: InsertUserSettings): Promise<UserSettings>;
 }
 
 export class MemStorage implements IStorage {
@@ -65,6 +68,7 @@ export class MemStorage implements IStorage {
   private thoughts: Map<string, Thought>;
   private quotes: Map<string, Quote>;
   private personalRecords: Map<string, PersonalRecord>;
+  private userSettings: UserSettings | undefined;
 
   constructor() {
     this.users = new Map();
@@ -76,6 +80,7 @@ export class MemStorage implements IStorage {
     this.thoughts = new Map();
     this.quotes = new Map();
     this.personalRecords = new Map();
+    this.userSettings = undefined;
     
     // Add some initial sample data
     this.seedData();
@@ -733,6 +738,23 @@ export class MemStorage implements IStorage {
     return this.personalRecords.delete(id);
   }
 
+  // User Settings operations
+  async getUserSettings(): Promise<UserSettings | undefined> {
+    return this.userSettings;
+  }
+
+  async createOrUpdateUserSettings(entry: InsertUserSettings): Promise<UserSettings> {
+    const id = this.userSettings?.id || randomUUID();
+    const settings: UserSettings = {
+      ...entry,
+      id,
+      createdAt: this.userSettings?.createdAt || new Date(),
+      updatedAt: new Date(),
+    };
+    this.userSettings = settings;
+    return settings;
+  }
+
   private seedPersonalRecords() {
     // Add sample PR records that are independent from workout database
     const prs = [
@@ -1170,6 +1192,26 @@ export class DatabaseStorage implements IStorage {
   async deletePersonalRecord(id: string): Promise<boolean> {
     const result = await db.delete(personalRecords).where(eq(personalRecords.id, id));
     return result.rowCount > 0;
+  }
+
+  // User Settings operations
+  async getUserSettings(): Promise<UserSettings | undefined> {
+    const [settings] = await db.select().from(userSettings).limit(1);
+    return settings || undefined;
+  }
+
+  async createOrUpdateUserSettings(entry: InsertUserSettings): Promise<UserSettings> {
+    const existing = await this.getUserSettings();
+    if (existing) {
+      const [updated] = await db.update(userSettings)
+        .set({ ...entry, updatedAt: new Date() })
+        .where(eq(userSettings.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(userSettings).values(entry).returning();
+      return created;
+    }
   }
 
   private async seedPersonalRecordsData() {

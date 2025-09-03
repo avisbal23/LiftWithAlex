@@ -156,6 +156,14 @@ export const quotes = pgTable("quotes", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// User settings for storing current body weight and other preferences
+export const userSettings = pgTable("user_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  currentBodyWeight: real("current_body_weight"), // Current body weight in lbs
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Personal Records - separate from workout exercises
 export const personalRecords = pgTable("personal_records", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -229,6 +237,14 @@ export const insertPersonalRecordSchema = createInsertSchema(personalRecords).om
 
 export const updatePersonalRecordSchema = insertPersonalRecordSchema.partial();
 
+export const insertUserSettingsSchema = createInsertSchema(userSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateUserSettingsSchema = insertUserSettingsSchema.partial();
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Exercise = typeof exercises.$inferSelect;
@@ -254,3 +270,6 @@ export type UpdateQuote = z.infer<typeof updateQuoteSchema>;
 export type PersonalRecord = typeof personalRecords.$inferSelect;
 export type InsertPersonalRecord = z.infer<typeof insertPersonalRecordSchema>;
 export type UpdatePersonalRecord = z.infer<typeof updatePersonalRecordSchema>;
+export type UserSettings = typeof userSettings.$inferSelect;
+export type InsertUserSettings = z.infer<typeof insertUserSettingsSchema>;
+export type UpdateUserSettings = z.infer<typeof updateUserSettingsSchema>;
