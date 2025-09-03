@@ -1,12 +1,10 @@
-import { Moon, Sun, Settings, LogOut } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
-import { useAuth } from "@/hooks/useAuth";
+import HamburgerMenu from "@/components/layout/hamburger-menu";
 
 export default function Header() {
   const [isDark, setIsDark] = useState(false);
-  const { logout } = useAuth();
 
   useEffect(() => {
     const saved = localStorage.getItem("theme");
@@ -53,31 +51,6 @@ export default function Header() {
             
             <div className="flex items-center space-x-2">
               {/* 3D Glass Buttons */}
-              <Link to="/admin">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  data-testid="button-admin"
-                  className="relative backdrop-blur-sm bg-white/10 dark:bg-gray-600/20 border border-white/20 dark:border-gray-500/30 rounded-lg text-white dark:text-gray-700 hover:bg-white/20 dark:hover:bg-gray-500/30 transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-                >
-                  {/* Button 3D Effect */}
-                  <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
-                  <Settings className="h-5 w-5 relative z-10" />
-                </Button>
-              </Link>
-              
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={logout}
-                data-testid="button-logout"
-                className="relative backdrop-blur-sm bg-white/10 dark:bg-gray-600/20 border border-white/20 dark:border-gray-500/30 rounded-lg text-white dark:text-gray-700 hover:bg-red-500/20 dark:hover:bg-red-500/30 transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-              >
-                {/* Button 3D Effect */}
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
-                <LogOut className="h-5 w-5 relative z-10" />
-              </Button>
-              
               <Button 
                 variant="ghost" 
                 size="icon" 
@@ -89,6 +62,8 @@ export default function Header() {
                 <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
                 {isDark ? <Sun className="h-5 w-5 relative z-10" /> : <Moon className="h-5 w-5 relative z-10" />}
               </Button>
+              
+              <HamburgerMenu />
             </div>
           </div>
         </div>
