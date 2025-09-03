@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { type WorkoutLog, type Quote, type Exercise } from "@shared/schema";
+import { type WorkoutLog, type Quote, type PersonalRecord } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import Navigation from "@/components/layout/navigation";
 import { Link } from "wouter";
@@ -12,79 +12,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
-// Static PR data that you can edit manually
-const initialPRs = [
-  {
-    id: "1",
-    exercise: "Flat Dumbbell Press",
-    weight: "80",
-    reps: "8",
-    category: "Push",
-    color: "bg-red-500/10 text-red-600 border-red-200"
-  },
-  {
-    id: "2", 
-    exercise: "Incline Dumbbell Press",
-    weight: "70",
-    reps: "10",
-    category: "Push",
-    color: "bg-red-500/10 text-red-600 border-red-200"
-  },
-  {
-    id: "3",
-    exercise: "Lat Pulldown",
-    weight: "150",
-    reps: "8",
-    category: "Pull", 
-    color: "bg-blue-500/10 text-blue-600 border-blue-200"
-  },
-  {
-    id: "4",
-    exercise: "Barbell Rows",
-    weight: "135",
-    reps: "10",
-    category: "Pull",
-    color: "bg-blue-500/10 text-blue-600 border-blue-200"
-  },
-  {
-    id: "5",
-    exercise: "Leg Press",
-    weight: "400",
-    reps: "12",
-    category: "Legs",
-    color: "bg-green-500/10 text-green-600 border-green-200"
-  },
-  {
-    id: "6",
-    exercise: "Romanian Deadlift",
-    weight: "185",
-    reps: "8", 
-    category: "Legs",
-    color: "bg-green-500/10 text-green-600 border-green-200"
-  },
-  {
-    id: "7",
-    exercise: "5K Run",
-    time: "22:30",
-    category: "Cardio",
-    color: "bg-purple-500/10 text-purple-600 border-purple-200"
-  },
-  {
-    id: "8",
-    exercise: "10K Run", 
-    time: "48:15",
-    category: "Cardio",
-    color: "bg-purple-500/10 text-purple-600 border-purple-200"
-  }
-];
 
 export default function Home() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   
-  // Load actual exercises from database instead of static data
-  const { data: allExercises } = useQuery<Exercise[]>({
-    queryKey: ["/api/exercises"],
+  // Load personal records from independent API
+  const { data: personalRecords } = useQuery<PersonalRecord[]>({
+    queryKey: ["/api/personal-records"],
   });
   
   const [newPR, setNewPR] = useState({
@@ -183,74 +118,69 @@ export default function Home() {
     setEditingId(id);
   };
 
-  const updateExerciseMutation = useMutation({
+  const updatePersonalRecordMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      return apiRequest("PATCH", `/api/exercises/${id}`, {
-        name: data.exercise,
-        weight: data.weight ? parseInt(data.weight) : null,
-        reps: data.reps ? parseInt(data.reps) : null,
-        duration: data.time || "",
-        category: data.category.toLowerCase(),
+      return apiRequest("PATCH", `/api/personal-records/${id}`, {
+        exercise: data.exercise,
+        weight: data.weight || "",
+        reps: data.reps || "",
+        time: data.time || "",
+        category: data.category,
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/exercises"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/personal-records"] });
       setEditingId(null);
     },
   });
   
   const handleSave = (id: string, updatedData: any) => {
-    updateExerciseMutation.mutate({ id, data: updatedData });
+    updatePersonalRecordMutation.mutate({ id, data: updatedData });
   };
 
-  const deleteExerciseMutation = useMutation({
+  const deletePersonalRecordMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest("DELETE", `/api/exercises/${id}`);
+      return apiRequest("DELETE", `/api/personal-records/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/exercises"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/personal-records"] });
     },
   });
   
   const handleDelete = (id: string) => {
-    deleteExerciseMutation.mutate(id);
+    deletePersonalRecordMutation.mutate(id);
   };
 
-  const addExerciseMutation = useMutation({
+  const addPersonalRecordMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest("POST", "/api/exercises", {
-        name: data.exercise,
-        weight: data.weight ? parseInt(data.weight) : null,
-        reps: data.reps ? parseInt(data.reps) : null,
-        duration: data.time || "",
-        category: data.category.toLowerCase(),
-        notes: "",
-        distance: "", 
-        pace: "",
-        calories: 0,
-        rpe: 0
+      return apiRequest("POST", "/api/personal-records", {
+        exercise: data.exercise,
+        weight: data.weight || "",
+        reps: data.reps || "",
+        time: data.time || "",
+        category: data.category,
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/exercises"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/personal-records"] });
       setNewPR({ exercise: "", weight: "", reps: "", time: "", category: "Push" });
     },
   });
   
   const handleAddPR = () => {
     if (!newPR.exercise) return;
-    addExerciseMutation.mutate(newPR);
+    addPersonalRecordMutation.mutate(newPR);
   };
 
-  // Convert exercises to PR format for display (after function definitions)
-  const prs = (allExercises || []).slice(0, 8).map((exercise) => ({
-    id: exercise.id,
-    exercise: exercise.name,
-    weight: exercise.weight?.toString() || "",
-    reps: exercise.reps?.toString() || "",
-    time: exercise.category === "cardio" ? (exercise.duration || "") : undefined,
-    category: exercise.category.charAt(0).toUpperCase() + exercise.category.slice(1),
-    color: getCategoryColor(exercise.category)
+  // Use PersonalRecords directly for display
+  const prs = (personalRecords || []).map((record) => ({
+    id: record.id,
+    exercise: record.exercise,
+    weight: record.weight || "",
+    reps: record.reps || "",
+    time: record.time || "",
+    category: record.category,
+    color: getCategoryColor(record.category)
   }));
 
   return (

@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import path from "path";
 import fs from "fs";
-import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema } from "@shared/schema";
+import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -575,6 +575,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error bulk importing quotes:", error);
       res.status(500).json({ error: "Failed to bulk import quotes" });
+    }
+  });
+
+  // Personal Records API routes
+  // Get all personal records
+  app.get("/api/personal-records", async (req, res) => {
+    try {
+      const records = await storage.getAllPersonalRecords();
+      res.json(records);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch personal records" });
+    }
+  });
+
+  // Create new personal record
+  app.post("/api/personal-records", async (req, res) => {
+    try {
+      const validatedData = insertPersonalRecordSchema.parse(req.body);
+      const record = await storage.createPersonalRecord(validatedData);
+      res.status(201).json(record);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create personal record" });
+      }
+    }
+  });
+
+  // Update personal record
+  app.patch("/api/personal-records/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const validatedData = updatePersonalRecordSchema.parse(req.body);
+      const record = await storage.updatePersonalRecord(id, validatedData);
+      
+      if (!record) {
+        return res.status(404).json({ message: "Personal record not found" });
+      }
+      
+      res.json(record);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update personal record" });
+      }
+    }
+  });
+
+  // Delete personal record
+  app.delete("/api/personal-records/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const deleted = await storage.deletePersonalRecord(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Personal record not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete personal record" });
     }
   });
 

@@ -38,7 +38,7 @@ export function useAuth() {
 
   const login = (password: string): boolean => {
     // Simple password check - you can change this password
-    const correctPassword = 'VISBAL!';
+    const correctPassword = 'VISBAL';
     
     if (password === correctPassword) {
       const authData: AuthState = {

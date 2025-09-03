@@ -1,5 +1,5 @@
-import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote } from "@shared/schema";
-import { exercises, workoutLogs, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord } from "@shared/schema";
+import { exercises, workoutLogs, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
@@ -48,6 +48,11 @@ export interface IStorage {
   getActiveQuotes(): Promise<Quote[]>;
   getRandomQuote(): Promise<Quote | undefined>;
   clearAllQuotes(): Promise<void>;
+  
+  getAllPersonalRecords(): Promise<PersonalRecord[]>;
+  createPersonalRecord(entry: InsertPersonalRecord): Promise<PersonalRecord>;
+  updatePersonalRecord(id: string, entry: UpdatePersonalRecord): Promise<PersonalRecord | undefined>;
+  deletePersonalRecord(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -59,6 +64,7 @@ export class MemStorage implements IStorage {
   private photoProgress: Map<string, PhotoProgress>;
   private thoughts: Map<string, Thought>;
   private quotes: Map<string, Quote>;
+  private personalRecords: Map<string, PersonalRecord>;
 
   constructor() {
     this.users = new Map();
@@ -69,10 +75,12 @@ export class MemStorage implements IStorage {
     this.photoProgress = new Map();
     this.thoughts = new Map();
     this.quotes = new Map();
+    this.personalRecords = new Map();
     
     // Add some initial sample data
     this.seedData();
     this.seedBloodData();
+    this.seedPersonalRecords();
   }
 
   private seedData() {
@@ -679,6 +687,73 @@ export class MemStorage implements IStorage {
     this.quotes.clear();
   }
 
+  // Personal Records Methods
+  async getAllPersonalRecords(): Promise<PersonalRecord[]> {
+    return Array.from(this.personalRecords.values())
+      .sort((a, b) => {
+        const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+        const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+        return dateB.getTime() - dateA.getTime(); // Most recent first
+      });
+  }
+
+  async createPersonalRecord(entry: InsertPersonalRecord): Promise<PersonalRecord> {
+    const id = randomUUID();
+    const now = new Date();
+    const personalRecord: PersonalRecord = {
+      id,
+      ...entry,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.personalRecords.set(id, personalRecord);
+    return personalRecord;
+  }
+
+  async updatePersonalRecord(id: string, updateEntry: UpdatePersonalRecord): Promise<PersonalRecord | undefined> {
+    const existing = this.personalRecords.get(id);
+    if (!existing) {
+      return undefined;
+    }
+    
+    const updated: PersonalRecord = {
+      ...existing,
+      ...updateEntry,
+      updatedAt: new Date(),
+    };
+    this.personalRecords.set(id, updated);
+    return updated;
+  }
+
+  async deletePersonalRecord(id: string): Promise<boolean> {
+    return this.personalRecords.delete(id);
+  }
+
+  private seedPersonalRecords() {
+    // Add sample PR records that are independent from workout database
+    const prs = [
+      { exercise: "Flat Dumbbell Press", weight: "80", reps: "8", time: "", category: "Push" },
+      { exercise: "Incline Dumbbell Press", weight: "70", reps: "10", time: "", category: "Push" },
+      { exercise: "Lat Pulldown", weight: "150", reps: "8", time: "", category: "Pull" },
+      { exercise: "Barbell Rows", weight: "135", reps: "10", time: "", category: "Pull" },
+      { exercise: "Leg Press", weight: "400", reps: "12", time: "", category: "Legs" },
+      { exercise: "Romanian Deadlift", weight: "185", reps: "8", time: "", category: "Legs" },
+      { exercise: "5K Run", weight: "", reps: "", time: "22:30", category: "Cardio" },
+      { exercise: "10K Run", weight: "", reps: "", time: "48:15", category: "Cardio" }
+    ];
+
+    prs.forEach((pr, index) => {
+      const id = `pr-${index + 1}`;
+      const now = new Date();
+      this.personalRecords.set(id, {
+        id,
+        ...pr,
+        createdAt: now,
+        updatedAt: now,
+      });
+    });
+  }
+
 }
 
 // Database Storage Implementation
@@ -697,6 +772,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       await this.seedSampleData();
+      await this.seedPersonalRecordsData();
       console.log('Database seeded with sample data');
     } catch (error) {
       console.error('Error seeding database:', error);
@@ -1066,6 +1142,47 @@ export class DatabaseStorage implements IStorage {
 
   async clearAllQuotes(): Promise<void> {
     await db.delete(quotes);
+  }
+
+  // Personal Record operations
+  async getAllPersonalRecords(): Promise<PersonalRecord[]> {
+    return await db.select().from(personalRecords).orderBy(desc(personalRecords.createdAt));
+  }
+
+  async createPersonalRecord(entry: InsertPersonalRecord): Promise<PersonalRecord> {
+    const [newEntry] = await db.insert(personalRecords).values(entry).returning();
+    return newEntry;
+  }
+
+  async updatePersonalRecord(id: string, entry: UpdatePersonalRecord): Promise<PersonalRecord | undefined> {
+    const [updated] = await db.update(personalRecords)
+      .set({ ...entry, updatedAt: new Date() })
+      .where(eq(personalRecords.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deletePersonalRecord(id: string): Promise<boolean> {
+    const result = await db.delete(personalRecords).where(eq(personalRecords.id, id));
+    return result.rowCount > 0;
+  }
+
+  private async seedPersonalRecordsData() {
+    // Add sample PR records that are independent from workout database
+    const prData = [
+      { exercise: "Flat Dumbbell Press", weight: "80", reps: "8", time: "", category: "Push" },
+      { exercise: "Incline Dumbbell Press", weight: "70", reps: "10", time: "", category: "Push" },
+      { exercise: "Lat Pulldown", weight: "150", reps: "8", time: "", category: "Pull" },
+      { exercise: "Barbell Rows", weight: "135", reps: "10", time: "", category: "Pull" },
+      { exercise: "Leg Press", weight: "400", reps: "12", time: "", category: "Legs" },
+      { exercise: "Romanian Deadlift", weight: "185", reps: "8", time: "", category: "Legs" },
+      { exercise: "5K Run", weight: "", reps: "", time: "22:30", category: "Cardio" },
+      { exercise: "10K Run", weight: "", reps: "", time: "48:15", category: "Cardio" }
+    ];
+
+    for (const pr of prData) {
+      await db.insert(personalRecords).values(pr);
+    }
   }
 }
 
