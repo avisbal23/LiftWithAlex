@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +9,20 @@ export function PasswordGate() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const [isDissolving, setIsDissolving] = useState(false);
+  const [shouldHide, setShouldHide] = useState(false);
+  const { login, isAuthenticated } = useAuth();
+
+  // Listen for authentication success and trigger dissolve
+  useEffect(() => {
+    if (isAuthenticated && !isDissolving) {
+      setIsDissolving(true);
+      // After dissolve animation completes, hide component completely
+      setTimeout(() => {
+        setShouldHide(true);
+      }, 1000); // Match the animation duration
+    }
+  }, [isAuthenticated, isDissolving]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,17 +35,27 @@ export function PasswordGate() {
       if (!success) {
         setError('Incorrect password. Please try again.');
         setPassword('');
+        setIsLoading(false);
       }
-      setIsLoading(false);
+      // If success, isLoading will stay true while dissolving
     }, 500);
   };
 
+  // Don't render anything if should hide
+  if (shouldHide) {
+    return null;
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/50 to-background p-4">
+    <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/50 to-background p-4 transition-all duration-1000 ${
+      isDissolving ? 'opacity-0 scale-95 blur-sm' : 'opacity-100 scale-100 blur-none'
+    }`}>
       {/* Glassmorphism Background Effect */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10"></div>
       
-      <Card className="w-full max-w-md relative backdrop-blur-md bg-white/10 dark:bg-black/10 border border-white/20 dark:border-white/10 shadow-2xl shadow-primary/20">
+      <Card className={`w-full max-w-md relative backdrop-blur-md bg-white/10 dark:bg-black/10 border border-white/20 dark:border-white/10 shadow-2xl shadow-primary/20 transition-all duration-1000 ${
+        isDissolving ? 'opacity-0 scale-90 translate-y-4' : 'opacity-100 scale-100 translate-y-0'
+      }`}>
         {/* Glass effect overlay */}
         <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/20 to-transparent dark:from-gray-400/20 pointer-events-none"></div>
         
@@ -83,10 +106,10 @@ export function PasswordGate() {
             <Button 
               type="submit" 
               className="w-full backdrop-blur-sm bg-primary/90 hover:bg-primary text-white shadow-lg shadow-primary/30 disabled:opacity-50"
-              disabled={isLoading}
+              disabled={isLoading || isDissolving}
               data-testid="button-login"
             >
-              {isLoading ? 'Verifying...' : 'Access Tracker'}
+              {isDissolving ? 'Success! Loading...' : isLoading ? 'Verifying...' : 'Access Tracker'}
             </Button>
           </form>
           
