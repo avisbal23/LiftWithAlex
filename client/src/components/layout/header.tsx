@@ -31,18 +31,18 @@ export default function Header() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
               {/* 3D Modern Title */}
-              <h1 className="text-xl font-bold text-white dark:text-gray-800 tracking-wide" data-testid="app-title">
+              <h1 className="text-xl font-bold tracking-wide" data-testid="app-title">
                 <span className="relative inline-block">
-                  {/* Text Shadow for 3D Effect */}
-                  <span className="absolute inset-0 text-white/20 dark:text-gray-600/30 transform translate-x-0.5 translate-y-0.5 blur-sm">
+                  {/* Outer glow effect */}
+                  <span className="absolute inset-0 text-white blur-md opacity-60">
                     Visbal Gym Tracker
                   </span>
-                  {/* Main Text */}
-                  <span className="relative bg-gradient-to-b from-white to-gray-200 dark:from-gray-800 dark:to-gray-600 bg-clip-text text-transparent font-extrabold">
+                  {/* Inner glow effect */}
+                  <span className="absolute inset-0 text-white blur-sm opacity-80">
                     Visbal Gym Tracker
                   </span>
-                  {/* Top highlight */}
-                  <span className="absolute inset-0 bg-gradient-to-b from-white/40 to-transparent dark:from-gray-400/40 bg-clip-text text-transparent transform -translate-y-px">
+                  {/* Main Text with subtle glow */}
+                  <span className="relative text-white font-extrabold drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]">
                     Visbal Gym Tracker
                   </span>
                 </span>
