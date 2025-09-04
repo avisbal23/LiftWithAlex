@@ -314,14 +314,25 @@ export default function Admin() {
           throw new Error(`Invalid date format "${rawDate}". Use M/D/YY or YYYY-MM-DD format.`);
         }
         
-        // Validate time format (HH:MM)
-        if (!rawTime.match(/^\d{1,2}:\d{2}$/)) {
-          throw new Error(`Invalid time format "${rawTime}". Use HH:MM format.`);
+        // Convert time from 12-hour to 24-hour format if needed
+        let formattedTime = rawTime;
+        const timeMatch = rawTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+        if (timeMatch) {
+          const [, hours, minutes, period] = timeMatch;
+          let hour24 = parseInt(hours);
+          if (period.toUpperCase() === 'PM' && hour24 !== 12) {
+            hour24 += 12;
+          } else if (period.toUpperCase() === 'AM' && hour24 === 12) {
+            hour24 = 0;
+          }
+          formattedTime = `${hour24.toString().padStart(2, '0')}:${minutes}`;
+        } else if (rawTime.match(/^\d{1,2}:\d{2}$/)) {
+          // Handle 24-hour format - just ensure proper padding
+          const [hours, minutes] = rawTime.split(':');
+          formattedTime = `${hours.padStart(2, '0')}:${minutes}`;
+        } else {
+          throw new Error(`Invalid time format "${rawTime}". Use HH:MM or H:MM AM/PM format.`);
         }
-        
-        // Ensure proper HH:MM format with zero padding
-        const [hours, minutes] = rawTime.split(':');
-        const formattedTime = `${hours.padStart(2, '0')}:${minutes}`;
         
         // Handle null or numeric lean mass
         let parsedLeanMass = 0;
