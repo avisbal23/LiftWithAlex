@@ -11,12 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "react-beautiful-dnd";
-import { NavigationMenu } from "@/components/NavigationMenu";
 
 
 export default function Home() {
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const queryClient = useQueryClient();
   
   // Load personal records from independent API
@@ -347,7 +345,6 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <Button 
             variant="ghost"
-            onClick={() => setIsMenuOpen(true)}
             data-testid="button-home-menu-main"
             className="w-full relative backdrop-blur-sm bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 py-3"
           >
@@ -1023,11 +1020,6 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
       </div>
     </div>
     
-    {/* Navigation Menu Overlay */}
-    <NavigationMenu 
-      isOpen={isMenuOpen} 
-      onClose={() => setIsMenuOpen(false)} 
-    />
     </>
   );
 }
