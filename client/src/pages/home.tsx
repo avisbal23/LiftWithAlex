@@ -164,12 +164,24 @@ export default function Home() {
 
   // Group visible shortcuts into rows for display
   const groupShortcutsIntoRows = () => {
-    if (visibleShortcuts.length === 0) return [];
+    let shortcuts = visibleShortcuts;
     
-    const workoutShortcuts = visibleShortcuts.filter(s => 
+    // If no shortcuts are visible, show only the Administration button as fallback
+    if (shortcuts.length === 0) {
+      shortcuts = [{
+        id: 'admin-fallback',
+        shortcutKey: 'admin',
+        shortcutName: 'Administration',
+        routePath: '/admin',
+        isVisible: 1,
+        order: 1
+      }];
+    }
+    
+    const workoutShortcuts = shortcuts.filter(s => 
       ['push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'cardio'].includes(s.shortcutKey)
     );
-    const otherShortcuts = visibleShortcuts.filter(s => 
+    const otherShortcuts = shortcuts.filter(s => 
       !['push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'cardio'].includes(s.shortcutKey)
     );
 
@@ -398,11 +410,6 @@ export default function Home() {
                 {row.map(renderShortcutBadge)}
               </div>
             ))}
-            {visibleShortcuts.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center">
-                No shortcuts configured. Visit the Administration page to manage your home screen shortcuts.
-              </p>
-            )}
           </div>
         </div>
 
