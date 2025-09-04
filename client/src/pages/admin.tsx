@@ -38,10 +38,7 @@ export default function Admin() {
 
   const updateShortcutMutation = useMutation({
     mutationFn: async ({ shortcutKey, isVisible }: { shortcutKey: string; isVisible: boolean }) => {
-      return apiRequest(`/api/shortcut-settings/${shortcutKey}`, {
-        method: "PATCH",
-        body: { isVisible: isVisible ? 1 : 0 }
-      });
+      return apiRequest("PATCH", `/api/shortcut-settings/${shortcutKey}`, { isVisible: isVisible ? 1 : 0 });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/shortcut-settings"] });
