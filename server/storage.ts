@@ -833,14 +833,16 @@ export class DatabaseStorage implements IStorage {
       // Check if we already have exercises (indicating the database has been seeded)
       const existingExercises = await db.select().from(exercises).limit(1);
       if (existingExercises.length > 0) {
-        // Even if exercises exist, check if shortcuts need to be initialized
+        // Even if exercises exist, check if shortcuts and tabs need to be initialized
         await this.initializeDefaultShortcuts();
+        await this.initializeDefaultTabs();
         return; // Already seeded
       }
 
       await this.seedSampleData();
       await this.seedPersonalRecordsData();
       await this.initializeDefaultShortcuts();
+      await this.initializeDefaultTabs();
       console.log('Database seeded with sample data');
     } catch (error) {
       console.error('Error seeding database:', error);
@@ -1309,6 +1311,32 @@ export class DatabaseStorage implements IStorage {
     // Insert all default shortcuts
     for (const shortcut of defaultShortcuts) {
       await db.insert(shortcutSettings).values(shortcut);
+    }
+  }
+
+  async initializeDefaultTabs(): Promise<void> {
+    // Check if tabs already exist
+    const existing = await db.select().from(tabSettings).limit(1);
+    if (existing.length > 0) {
+      return; // Already initialized
+    }
+
+    // Define all available tabs with default visibility
+    // Home tab is always visible and cannot be disabled
+    const defaultTabs = [
+      { tabKey: 'home', tabName: 'Home', routePath: '/', isVisible: 1, order: 1 },
+      { tabKey: 'push', tabName: 'Push', routePath: '/push', isVisible: 1, order: 2 },
+      { tabKey: 'pull', tabName: 'Pull', routePath: '/pull', isVisible: 1, order: 3 },
+      { tabKey: 'legs', tabName: 'Legs', routePath: '/legs', isVisible: 1, order: 4 },
+      { tabKey: 'push2', tabName: 'Push 2', routePath: '/push2', isVisible: 1, order: 5 },
+      { tabKey: 'pull2', tabName: 'Pull 2', routePath: '/pull2', isVisible: 1, order: 6 },
+      { tabKey: 'legs2', tabName: 'Legs 2', routePath: '/legs2', isVisible: 0, order: 7 },
+      { tabKey: 'cardio', tabName: 'Cardio', routePath: '/cardio', isVisible: 1, order: 8 }
+    ];
+
+    // Insert all default tabs
+    for (const tab of defaultTabs) {
+      await db.insert(tabSettings).values(tab);
     }
   }
 

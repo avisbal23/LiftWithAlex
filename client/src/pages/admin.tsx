@@ -767,19 +767,24 @@ Example:
                 Control which navigation tabs are visible in the header. Toggle any tab on or off to customize your navigation menu.
               </p>
               <div className="grid grid-cols-2 gap-4">
-                {tabSettings.map((tab) => (
-                  <button
+                {tabSettings.map((tab) => {
+                  const isHomeTab = tab.tabKey === 'home';
+                  const isDisabled = updateTabMutation.isPending || isHomeTab;
+                  
+                  return (
+                    <button
                     key={tab.tabKey}
-                    onClick={() => handleTabToggle(tab.tabKey, tab.isVisible !== 1)}
-                    disabled={updateTabMutation.isPending}
+                    onClick={() => !isHomeTab && handleTabToggle(tab.tabKey, tab.isVisible !== 1)}
+                    disabled={isDisabled}
                     className={`
-                      relative p-6 rounded-xl border-2 transition-all duration-300 cursor-pointer group
+                      relative p-6 rounded-xl border-2 transition-all duration-300 group
                       ${tab.isVisible === 1
                         ? 'bg-green-50 dark:bg-green-950/20 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300' 
                         : 'bg-red-50 dark:bg-red-950/20 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300'
                       }
-                      hover:scale-105 hover:shadow-lg
+                      ${!isHomeTab ? 'cursor-pointer hover:scale-105 hover:shadow-lg' : 'cursor-not-allowed'}
                       disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+                      ${isHomeTab ? 'opacity-75' : ''}
                     `}
                     data-testid={`button-tab-${tab.tabKey}`}
                   >
@@ -803,13 +808,19 @@ Example:
                           ${tab.isVisible === 1 ? 'bg-green-500' : 'bg-red-500'}
                         `} />
                         {tab.isVisible === 1 ? 'VISIBLE' : 'HIDDEN'}
+                        {isHomeTab && (
+                          <span className="text-xs text-muted-foreground/70 ml-1">
+                            (Always Active)
+                          </span>
+                        )}
                       </div>
                     </div>
                     
                     {/* Hover effect overlay */}
                     <div className="absolute inset-0 bg-white/10 dark:bg-black/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
-                ))}
+                  );
+                })}
               </div>
               {tabSettings.length === 0 && (
                 <p className="text-sm text-muted-foreground italic">
