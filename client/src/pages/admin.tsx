@@ -114,25 +114,24 @@ export default function Admin() {
   };
 
   const downloadWeightTemplate = () => {
-    const csvHeaders = 'Date,Time,Weight(lb),Body Fat(%),Fat-Free Mass(lb),Muscle Mass(lb),BMI,Subcutaneous Fat(%),Skeletal Muscle(%),Body Water(%),Visceral Fat,Bone Mass(lb),Protein (%),BMR(kcal),Metabolic Age';
     const sampleRows = [
-      '8/24/25,11:52:37 AM,166.4,15.0,141.4,134.2,26.8,12.4,54.9,61.4,9,7.2,19.4,1769,31',
-      '8/21/25,7:47:06 AM,167.4,15.1,142.0,135.0,27.0,12.5,54.8,61.3,10,7.0,19.4,1747,31',
-      '8/18/25,8:15:22 AM,168.2,15.3,142.8,135.8,27.1,12.7,54.7,61.2,10,7.0,19.3,1752,31'
+      '2025-01-09|08:30|185.5|15.2|150.3',
+      '2025-01-08|08:15|186.0|15.4|149.8',
+      '2025-01-07|08:20|186.3|15.6|149.5'
     ];
     
-    const csvContent = [csvHeaders, ...sampleRows].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const content = sampleRows.join('\n');
+    const blob = new Blob([content], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'weight-import-template.csv';
+    link.download = 'weight-import-template.txt';
     link.click();
     window.URL.revokeObjectURL(url);
     
     toast({
       title: "Template Downloaded",
-      description: "Weight import template CSV file downloaded (RENPHO format)",
+      description: "Weight import template downloaded (DATE|TIME|WEIGHT|BODYFATPERCENTAGE|LEANMASS format)",
     });
   };
 
@@ -282,7 +281,7 @@ export default function Admin() {
     if (!weightImportData.trim()) {
       toast({
         title: "Error", 
-        description: "Please paste weight CSV data to import",
+        description: "Please paste weight data to import",
         variant: "destructive",
       });
       return;
@@ -291,24 +290,49 @@ export default function Admin() {
     setIsImporting(true);
     try {
       const lines = weightImportData.trim().split('\n');
-      if (lines.length < 2) {
-        throw new Error("CSV must have at least header and one data row");
+      if (lines.length < 1) {
+        throw new Error("Data must have at least one row");
       }
       
-      const headers = lines[0].split(',').map(h => h.trim());
-      const expectedHeaders = ['Date', 'Time', 'Weight(lb)', 'Body Fat(%)', 'Muscle Mass(lb)', 'BMI'];
-      
-      if (!expectedHeaders.every(header => headers.includes(header))) {
-        throw new Error(`CSV must include headers: ${expectedHeaders.join(', ')}`);
-      }
-      
-      const rows = lines.slice(1).map(line => {
-        const values = line.split(',');
-        const row: any = {};
-        headers.forEach((header, index) => {
-          row[header] = values[index]?.trim();
-        });
-        return row;
+      const rows = lines.map(line => {
+        const values = line.split('|').map(v => v.trim());
+        
+        if (values.length < 5) {
+          throw new Error("Each line must have 5 pipe-separated values: DATE|TIME|WEIGHT|BODYFATPERCENTAGE|LEANMASS");
+        }
+        
+        const [date, time, weight, bodyFat, leanMass] = values;
+        
+        // Validate date format (YYYY-MM-DD)
+        if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          throw new Error(`Invalid date format "${date}". Use YYYY-MM-DD format.`);
+        }
+        
+        // Validate time format (HH:MM)
+        if (!time.match(/^\d{2}:\d{2}$/)) {
+          throw new Error(`Invalid time format "${time}". Use HH:MM format.`);
+        }
+        
+        return {
+          date,
+          time,
+          weight: parseFloat(weight),
+          bodyFat: parseFloat(bodyFat),
+          leanMass: parseFloat(leanMass)
+        };
+      });
+
+      // Validate numeric values
+      rows.forEach((row, index) => {
+        if (isNaN(row.weight) || row.weight <= 0) {
+          throw new Error(`Invalid weight value on line ${index + 1}: "${row.weight}"`);
+        }
+        if (isNaN(row.bodyFat) || row.bodyFat < 0 || row.bodyFat > 100) {
+          throw new Error(`Invalid body fat percentage on line ${index + 1}: "${row.bodyFat}"`);
+        }
+        if (isNaN(row.leanMass) || row.leanMass <= 0) {
+          throw new Error(`Invalid lean mass value on line ${index + 1}: "${row.leanMass}"`);
+        }
       });
 
       // Clear existing weight entries first
@@ -318,23 +342,23 @@ export default function Admin() {
       await Promise.all(deletePromises);
 
       // Import new weight entries
-      const importPromises = rows.map((row: any) => 
+      const importPromises = rows.map((row) => 
         apiRequest("POST", "/api/weight-entries", {
-          date: row['Date'] || '',
-          time: row['Time'] || '',
-          weight: parseFloat(row['Weight(lb)']) || 0,
-          bodyFat: parseFloat(row['Body Fat(%)']) || 0,
-          fatFreeMass: parseFloat(row['Fat-Free Mass(lb)']) || 0,
-          muscleMass: parseFloat(row['Muscle Mass(lb)']) || 0,
-          bmi: parseFloat(row['BMI']) || 0,
-          subcutaneousFat: parseFloat(row['Subcutaneous Fat(%)']) || 0,
-          skeletalMuscle: parseFloat(row['Skeletal Muscle(%)']) || 0,
-          bodyWater: parseFloat(row['Body Water(%)']) || 0,
-          visceralFat: parseInt(row['Visceral Fat']) || 0,
-          boneMass: parseFloat(row['Bone Mass(lb)']) || 0,
-          protein: parseFloat(row['Protein (%)']) || 0,
-          bmr: parseInt(row['BMR(kcal)']) || 0,
-          metabolicAge: parseInt(row['Metabolic Age']) || 0
+          date: row.date,
+          time: row.time,
+          weight: row.weight,
+          bodyFat: row.bodyFat,
+          fatFreeMass: row.leanMass,
+          muscleMass: row.leanMass, // Using lean mass for muscle mass
+          bmi: 0, // Will be calculated if needed
+          subcutaneousFat: 0,
+          skeletalMuscle: 0,
+          bodyWater: 0,
+          visceralFat: 0,
+          boneMass: 0,
+          protein: 0,
+          bmr: 0,
+          metabolicAge: 0
         })
       );
       await Promise.all(importPromises);
@@ -344,13 +368,13 @@ export default function Admin() {
       
       toast({
         title: "Import Successful",
-        description: `${rows.length} weight entries imported from CSV`,
+        description: `${rows.length} weight entries imported`,
       });
       setWeightImportData("");
     } catch (error) {
       toast({
         title: "Import Failed",
-        description: error instanceof Error ? error.message : "Invalid CSV format",
+        description: error instanceof Error ? error.message : "Invalid data format",
         variant: "destructive",
       });
     } finally {
@@ -590,10 +614,10 @@ export default function Admin() {
                 <Label htmlFor="weight-import">Import Weight Data</Label>
                 <Textarea
                   id="weight-import"
-                  placeholder="Paste your weight export CSV here...\nFormat: Date,Time,Weight(lb),Body Fat(%),Fat-Free Mass(lb),Muscle Mass(lb),BMI,..."
+                  placeholder="Paste your weight data here...\nFormat: DATE|TIME|WEIGHT|BODYFATPERCENTAGE|LEANMASS\nExample: 2025-01-09|08:30|185.5|15.2|150.3"
                   value={weightImportData}
                   onChange={(e) => setWeightImportData(e.target.value)}
-                  className="min-h-[100px] font-mono text-sm"
+                  className="min-h-[80px] sm:min-h-[100px] font-mono text-xs sm:text-sm"
                 />
                 <Button 
                   onClick={importWeights}
