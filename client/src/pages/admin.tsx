@@ -334,6 +334,17 @@ export default function Admin() {
           throw new Error(`Invalid time format "${rawTime}". Use HH:MM or H:MM AM/PM format.`);
         }
         
+        // Handle null or numeric body fat percentage
+        let parsedBodyFat = 0;
+        if (bodyFat.toLowerCase() === 'null' || bodyFat === '') {
+          parsedBodyFat = 0;
+        } else {
+          parsedBodyFat = parseFloat(bodyFat);
+          if (isNaN(parsedBodyFat)) {
+            throw new Error(`Invalid body fat value "${bodyFat}". Use a number or "null".`);
+          }
+        }
+
         // Handle null or numeric lean mass
         let parsedLeanMass = 0;
         if (leanMass.toLowerCase() === 'null' || leanMass === '') {
@@ -349,7 +360,7 @@ export default function Admin() {
           date: formattedDate,
           time: formattedTime,
           weight: parseFloat(weight),
-          bodyFat: parseFloat(bodyFat),
+          bodyFat: parsedBodyFat,
           leanMass: parsedLeanMass
         };
       });
