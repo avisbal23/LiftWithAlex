@@ -265,7 +265,7 @@ export default function Home() {
                   variant="ghost"
                   onClick={() => refetchQuote()}
                   disabled={isQuoteLoading}
-                  className="absolute top-3 right-3 h-8 w-8 p-0 opacity-0 hover:opacity-100 transition-all duration-200 backdrop-blur-sm bg-white/20 dark:bg-gray-600/30 border border-white/30 dark:border-gray-500/40 rounded-lg hover:bg-white/30 dark:hover:bg-gray-500/40 hover:scale-110 z-20"
+                  className="absolute top-3 right-3 h-8 w-8 p-0 transition-all duration-200 backdrop-blur-sm bg-white/20 dark:bg-gray-600/30 border border-white/30 dark:border-gray-500/40 rounded-lg hover:bg-white/30 dark:hover:bg-gray-500/40 hover:scale-110 active:scale-95 z-20"
                   data-testid="button-refresh-quote"
                 >
                   <RefreshCw className={`w-3 h-3 text-foreground ${isQuoteLoading ? 'animate-spin' : ''}`} />
