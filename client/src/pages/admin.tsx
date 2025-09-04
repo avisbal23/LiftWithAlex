@@ -708,13 +708,14 @@ Example:
                     onClick={() => handleShortcutToggle(shortcut.shortcutKey, shortcut.isVisible !== 1)}
                     disabled={updateShortcutMutation.isPending}
                     className={`
-                      relative p-6 rounded-xl border-2 transition-all duration-300 cursor-pointer group
+                      relative p-6 rounded-xl transition-all duration-300 cursor-pointer group aspect-square
+                      backdrop-blur-lg border shadow-2xl
                       ${shortcut.isVisible === 1
-                        ? 'bg-green-50 dark:bg-green-950/20 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300' 
-                        : 'bg-red-50 dark:bg-red-950/20 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300'
+                        ? 'bg-green-100/20 dark:bg-green-950/20 border-green-300/30 dark:border-green-700/40 text-green-700 dark:text-green-300 shadow-green-400/20' 
+                        : 'bg-red-100/20 dark:bg-red-950/20 border-red-300/30 dark:border-red-700/40 text-red-700 dark:text-red-300 shadow-red-400/20'
                       }
-                      hover:scale-105 hover:shadow-lg
-                      disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+                      hover:-translate-y-1 hover:scale-105 hover:shadow-3xl
+                      disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0
                     `}
                     data-testid={`button-shortcut-${shortcut.shortcutKey}`}
                   >
@@ -740,6 +741,12 @@ Example:
                         {shortcut.isVisible === 1 ? 'ACTIVE' : 'INACTIVE'}
                       </div>
                     </div>
+                    
+                    {/* 3D Glass Effect */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/15 to-black/5 dark:from-gray-300/15 dark:to-gray-700/5 rounded-xl"></div>
+                    
+                    {/* Inner Glass Highlight */}
+                    <div className="absolute inset-0.5 bg-gradient-to-b from-white/20 to-transparent dark:from-gray-300/20 rounded-xl opacity-50"></div>
                     
                     {/* Hover effect overlay */}
                     <div className="absolute inset-0 bg-white/10 dark:bg-black/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -779,13 +786,14 @@ Example:
                     onClick={() => !isLockedTab && handleTabToggle(tab.tabKey, tab.isVisible !== 1)}
                     disabled={isDisabled}
                     className={`
-                      relative p-6 rounded-xl border-2 transition-all duration-300 group
+                      relative p-6 rounded-xl transition-all duration-300 group aspect-square
+                      backdrop-blur-lg border shadow-2xl
                       ${tab.isVisible === 1
-                        ? 'bg-green-50 dark:bg-green-950/20 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300' 
-                        : 'bg-red-50 dark:bg-red-950/20 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300'
+                        ? 'bg-green-100/20 dark:bg-green-950/20 border-green-300/30 dark:border-green-700/40 text-green-700 dark:text-green-300 shadow-green-400/20' 
+                        : 'bg-red-100/20 dark:bg-red-950/20 border-red-300/30 dark:border-red-700/40 text-red-700 dark:text-red-300 shadow-red-400/20'
                       }
-                      ${!isLockedTab ? 'cursor-pointer hover:scale-105 hover:shadow-lg' : 'cursor-not-allowed'}
-                      disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+                      ${!isLockedTab ? 'cursor-pointer hover:-translate-y-1 hover:scale-105 hover:shadow-3xl' : 'cursor-not-allowed'}
+                      disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0
                       ${isLockedTab ? 'opacity-75' : ''}
                     `}
                     data-testid={`button-tab-${tab.tabKey}`}
@@ -818,6 +826,12 @@ Example:
                         )}
                       </div>
                     </div>
+                    
+                    {/* 3D Glass Effect */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/15 to-black/5 dark:from-gray-300/15 dark:to-gray-700/5 rounded-xl"></div>
+                    
+                    {/* Inner Glass Highlight */}
+                    <div className="absolute inset-0.5 bg-gradient-to-b from-white/20 to-transparent dark:from-gray-300/20 rounded-xl opacity-50"></div>
                     
                     {/* Hover effect overlay */}
                     <div className="absolute inset-0 bg-white/10 dark:bg-black/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
