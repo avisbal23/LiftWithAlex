@@ -148,7 +148,7 @@ export default function Admin() {
     
     const csvHeaders = 'name,category,weight,reps,notes,duration,distance,pace,calories,rpe,createdAt';
     const csvRows = exercises.map(exercise => {
-      const createdAt = new Date(exercise.createdAt).toISOString();
+      const createdAt = exercise.createdAt ? new Date(exercise.createdAt).toISOString() : new Date().toISOString();
       return `"${exercise.name}","${exercise.category}",${exercise.weight || 0},${exercise.reps || 0},"${(exercise.notes || '').replace(/"/g, '""')}","${exercise.duration || ''}","${exercise.distance || ''}","${exercise.pace || ''}",${exercise.calories || 0},${exercise.rpe || 0},"${createdAt}"`;
     });
     
@@ -179,7 +179,7 @@ export default function Admin() {
     
     const csvHeaders = 'Date,Time,Weight(lb),Body Fat(%),Fat-Free Mass(lb),Muscle Mass(lb),BMI,Subcutaneous Fat(%),Skeletal Muscle(%),Body Water(%),Visceral Fat,Bone Mass(lb),Protein (%),BMR(kcal),Metabolic Age';
     const csvRows = weightEntries.map(entry => {
-      const date = new Date(entry.date).toLocaleDateString('en-US', { month: '1-2', day: '1-2', year: '2-digit' }).replace(/\//g, '/');
+      const date = new Date(entry.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }).replace(/\//g, '/');
       const time = entry.time || '12:00:00 PM';
       return `${date},${time},${entry.weight || 0},${entry.bodyFat || 0},${entry.fatFreeMass || 0},${entry.muscleMass || 0},${entry.bmi || 0},${entry.subcutaneousFat || 0},${entry.skeletalMuscle || 0},${entry.bodyWater || 0},${entry.visceralFat || 0},${entry.boneMass || 0},${entry.protein || 0},${entry.bmr || 0},${entry.metabolicAge || 0}`;
     });
@@ -238,28 +238,23 @@ export default function Admin() {
 
       // Clear existing exercises first
       const deletePromises = exercises.map(exercise => 
-        apiRequest(`/api/exercises/${exercise.id}`, {
-          method: "DELETE",
-        })
+        apiRequest("DELETE", `/api/exercises/${exercise.id}`)
       );
       await Promise.all(deletePromises);
 
       // Import new exercises
       const importPromises = rows.map((row: any) => 
-        apiRequest("/api/exercises", {
-          method: "POST",
-          body: JSON.stringify({
-            name: row.name || '',
-            weight: parseFloat(row.weight) || 0,
-            reps: parseInt(row.reps) || 0,
-            notes: row.notes || "",
-            category: row.category || 'push',
-            duration: row.duration || "",
-            distance: row.distance || "",
-            pace: row.pace || "",
-            calories: parseInt(row.calories) || 0,
-            rpe: parseInt(row.rpe) || 0
-          }),
+        apiRequest("POST", "/api/exercises", {
+          name: row.name || '',
+          weight: parseFloat(row.weight) || 0,
+          reps: parseInt(row.reps) || 0,
+          notes: row.notes || "",
+          category: row.category || 'push',
+          duration: row.duration || "",
+          distance: row.distance || "",
+          pace: row.pace || "",
+          calories: parseInt(row.calories) || 0,
+          rpe: parseInt(row.rpe) || 0
         })
       );
       await Promise.all(importPromises);
@@ -318,33 +313,28 @@ export default function Admin() {
 
       // Clear existing weight entries first
       const deletePromises = weightEntries.map(entry => 
-        apiRequest(`/api/weight-entries/${entry.id}`, {
-          method: "DELETE",
-        })
+        apiRequest("DELETE", `/api/weight-entries/${entry.id}`)
       );
       await Promise.all(deletePromises);
 
       // Import new weight entries
       const importPromises = rows.map((row: any) => 
-        apiRequest("/api/weight-entries", {
-          method: "POST",
-          body: JSON.stringify({
-            date: row['Date'] || '',
-            time: row['Time'] || '',
-            weight: parseFloat(row['Weight(lb)']) || 0,
-            bodyFat: parseFloat(row['Body Fat(%)']) || 0,
-            fatFreeMass: parseFloat(row['Fat-Free Mass(lb)']) || 0,
-            muscleMass: parseFloat(row['Muscle Mass(lb)']) || 0,
-            bmi: parseFloat(row['BMI']) || 0,
-            subcutaneousFat: parseFloat(row['Subcutaneous Fat(%)']) || 0,
-            skeletalMuscle: parseFloat(row['Skeletal Muscle(%)']) || 0,
-            bodyWater: parseFloat(row['Body Water(%)']) || 0,
-            visceralFat: parseInt(row['Visceral Fat']) || 0,
-            boneMass: parseFloat(row['Bone Mass(lb)']) || 0,
-            protein: parseFloat(row['Protein (%)']) || 0,
-            bmr: parseInt(row['BMR(kcal)']) || 0,
-            metabolicAge: parseInt(row['Metabolic Age']) || 0
-          }),
+        apiRequest("POST", "/api/weight-entries", {
+          date: row['Date'] || '',
+          time: row['Time'] || '',
+          weight: parseFloat(row['Weight(lb)']) || 0,
+          bodyFat: parseFloat(row['Body Fat(%)']) || 0,
+          fatFreeMass: parseFloat(row['Fat-Free Mass(lb)']) || 0,
+          muscleMass: parseFloat(row['Muscle Mass(lb)']) || 0,
+          bmi: parseFloat(row['BMI']) || 0,
+          subcutaneousFat: parseFloat(row['Subcutaneous Fat(%)']) || 0,
+          skeletalMuscle: parseFloat(row['Skeletal Muscle(%)']) || 0,
+          bodyWater: parseFloat(row['Body Water(%)']) || 0,
+          visceralFat: parseInt(row['Visceral Fat']) || 0,
+          boneMass: parseFloat(row['Bone Mass(lb)']) || 0,
+          protein: parseFloat(row['Protein (%)']) || 0,
+          bmr: parseInt(row['BMR(kcal)']) || 0,
+          metabolicAge: parseInt(row['Metabolic Age']) || 0
         })
       );
       await Promise.all(importPromises);
@@ -452,7 +442,7 @@ export default function Admin() {
             text: text.trim(),
             author: author.trim(),
             category: 'motivational', // Default category
-            isActive: true
+            isActive: 1
           });
         }
       }
@@ -463,18 +453,13 @@ export default function Admin() {
 
       // Clear existing quotes first
       const deletePromises = quotes.map(quote => 
-        apiRequest(`/api/quotes/${quote.id}`, {
-          method: "DELETE",
-        })
+        apiRequest("DELETE", `/api/quotes/${quote.id}`)
       );
       await Promise.all(deletePromises);
 
       // Import new quotes
       const importPromises = parsedQuotes.map(quote => 
-        apiRequest("/api/quotes", {
-          method: "POST",
-          body: JSON.stringify(quote),
-        })
+        apiRequest("POST", "/api/quotes", quote)
       );
       await Promise.all(importPromises);
 
