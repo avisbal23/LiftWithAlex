@@ -49,9 +49,12 @@ export function UniversalNavigation() {
   const navbarPages = visiblePages.slice(0, 6); // Home + next 5 visible
   const dropdownPages = visiblePages.slice(6); // Remaining visible pages
 
-  // Add admin to dropdown if not already visible in navbar and not in visible pages
-  if (!visiblePages.some(p => p.key === "admin") && !navbarPages.some(p => p.key === "admin")) {
-    dropdownPages.push(adminPage);
+  // Admin is ALWAYS available in dropdown menu (unless it's already in navbar)
+  if (!navbarPages.some(p => p.key === "admin")) {
+    // Add admin to dropdown, but avoid duplicates
+    if (!dropdownPages.some(p => p.key === "admin")) {
+      dropdownPages.push(adminPage);
+    }
   }
 
   const handleHomeClick = () => {
