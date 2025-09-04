@@ -1,5 +1,5 @@
-import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings } from "@shared/schema";
-import { exercises, workoutLogs, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords, userSettings } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings } from "@shared/schema";
+import { exercises, workoutLogs, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc, sql } from "drizzle-orm";
@@ -57,6 +57,11 @@ export interface IStorage {
   
   getUserSettings(): Promise<UserSettings | undefined>;
   createOrUpdateUserSettings(entry: InsertUserSettings): Promise<UserSettings>;
+  
+  getAllShortcutSettings(): Promise<ShortcutSettings[]>;
+  getVisibleShortcutSettings(): Promise<ShortcutSettings[]>;
+  updateShortcutSettings(shortcutKey: string, entry: UpdateShortcutSettings): Promise<ShortcutSettings | undefined>;
+  initializeDefaultShortcuts(): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -70,6 +75,7 @@ export class MemStorage implements IStorage {
   private quotes: Map<string, Quote>;
   private personalRecords: Map<string, PersonalRecord>;
   private userSettings: UserSettings | undefined;
+  private shortcutSettings: Map<string, ShortcutSettings>;
 
   constructor() {
     this.users = new Map();
@@ -82,11 +88,13 @@ export class MemStorage implements IStorage {
     this.quotes = new Map();
     this.personalRecords = new Map();
     this.userSettings = undefined;
+    this.shortcutSettings = new Map();
     
     // Add some initial sample data
     this.seedData();
     this.seedBloodData();
     this.seedPersonalRecords();
+    this.initializeDefaultShortcuts();
   }
 
   private seedData() {
@@ -1242,6 +1250,54 @@ export class DatabaseStorage implements IStorage {
     } else {
       const [created] = await db.insert(userSettings).values(entry).returning();
       return created;
+    }
+  }
+
+  // Shortcut Settings operations
+  async getAllShortcutSettings(): Promise<ShortcutSettings[]> {
+    return await db.select().from(shortcutSettings).orderBy(shortcutSettings.order, shortcutSettings.createdAt);
+  }
+
+  async getVisibleShortcutSettings(): Promise<ShortcutSettings[]> {
+    return await db.select().from(shortcutSettings)
+      .where(eq(shortcutSettings.isVisible, 1))
+      .orderBy(shortcutSettings.order, shortcutSettings.createdAt);
+  }
+
+  async updateShortcutSettings(shortcutKey: string, entry: UpdateShortcutSettings): Promise<ShortcutSettings | undefined> {
+    const [updated] = await db.update(shortcutSettings)
+      .set({ ...entry, updatedAt: new Date() })
+      .where(eq(shortcutSettings.shortcutKey, shortcutKey))
+      .returning();
+    return updated || undefined;
+  }
+
+  async initializeDefaultShortcuts(): Promise<void> {
+    // Check if shortcuts already exist
+    const existing = await db.select().from(shortcutSettings).limit(1);
+    if (existing.length > 0) {
+      return; // Already initialized
+    }
+
+    // Define all available shortcuts with default visibility
+    const defaultShortcuts = [
+      { shortcutKey: 'push', shortcutName: 'Push Day', routePath: '/push', isVisible: 1, order: 1 },
+      { shortcutKey: 'pull', shortcutName: 'Pull Day', routePath: '/pull', isVisible: 1, order: 2 },
+      { shortcutKey: 'legs', shortcutName: 'Legs Day', routePath: '/legs', isVisible: 1, order: 3 },
+      { shortcutKey: 'push2', shortcutName: 'Push Day 2', routePath: '/push2', isVisible: 1, order: 4 },
+      { shortcutKey: 'pull2', shortcutName: 'Pull Day 2', routePath: '/pull2', isVisible: 1, order: 5 },
+      { shortcutKey: 'legs2', shortcutName: 'Legs Day 2', routePath: '/legs2', isVisible: 0, order: 6 },
+      { shortcutKey: 'cardio', shortcutName: 'Cardio', routePath: '/cardio', isVisible: 1, order: 7 },
+      { shortcutKey: 'weight', shortcutName: 'Weight Tracking', routePath: '/weight', isVisible: 0, order: 8 },
+      { shortcutKey: 'blood', shortcutName: 'Blood Labs', routePath: '/blood', isVisible: 0, order: 9 },
+      { shortcutKey: 'photos', shortcutName: 'Progress Photos', routePath: '/photos', isVisible: 0, order: 10 },
+      { shortcutKey: 'thoughts', shortcutName: 'Thoughts & Reflections', routePath: '/thoughts', isVisible: 0, order: 11 },
+      { shortcutKey: 'admin', shortcutName: 'Administration', routePath: '/admin', isVisible: 0, order: 12 }
+    ];
+
+    // Insert all default shortcuts
+    for (const shortcut of defaultShortcuts) {
+      await db.insert(shortcutSettings).values(shortcut);
     }
   }
 

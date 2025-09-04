@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { type WorkoutLog, type Quote, type PersonalRecord, type UserSettings } from "@shared/schema";
+import { type WorkoutLog, type Quote, type PersonalRecord, type UserSettings, type ShortcutSettings } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import Navigation from "@/components/layout/navigation";
 import { Link } from "wouter";
@@ -46,6 +46,11 @@ export default function Home() {
   // Load user settings for current body weight
   const { data: userSettings } = useQuery<UserSettings | null>({
     queryKey: ["/api/user-settings"],
+  });
+
+  // Load visible shortcut settings for home screen
+  const { data: visibleShortcuts = [] } = useQuery<ShortcutSettings[]>({
+    queryKey: ["/api/shortcut-settings/visible"],
   });
 
   // Update user settings mutation
@@ -117,6 +122,83 @@ export default function Home() {
       case "Cardio": return "/cardio";
       default: return "/push";
     }
+  };
+
+  // Helper function to render a dynamic shortcut badge
+  const renderShortcutBadge = (shortcut: ShortcutSettings) => {
+    const iconMap: Record<string, any> = {
+      cardio: <Activity className="w-3 h-3" />,
+      photos: <Camera className="w-3 h-3" />,
+      admin: <Settings className="w-3 h-3" />,
+      thoughts: <MessageCircle className="w-3 h-3" />,
+      weight: <Scale className="w-3 h-3" />,
+    };
+
+    const colorMap: Record<string, string> = {
+      push: "bg-red-500/10 text-red-600 border-red-200 hover:bg-red-500/20",
+      pull: "bg-blue-500/10 text-blue-600 border-blue-200 hover:bg-blue-500/20",
+      legs: "bg-green-500/10 text-green-600 border-green-200 hover:bg-green-500/20",
+      push2: "bg-red-400/10 text-red-500 border-red-100 hover:bg-red-400/20",
+      pull2: "bg-blue-400/10 text-blue-500 border-blue-100 hover:bg-blue-400/20",
+      legs2: "bg-green-400/10 text-green-500 border-green-100 hover:bg-green-400/20",
+      cardio: "bg-red-500/10 text-red-600 border-red-200 hover:bg-red-500/20",
+      weight: "bg-purple-500/10 text-purple-600 border-purple-200 hover:bg-purple-500/20",
+      blood: "bg-pink-500/10 text-pink-600 border-pink-200 hover:bg-pink-500/20",
+      photos: "bg-indigo-500/10 text-indigo-600 border-indigo-200 hover:bg-indigo-500/20",
+      thoughts: "bg-cyan-500/10 text-cyan-600 border-cyan-200 hover:bg-cyan-500/20",
+      admin: "bg-gray-500/10 text-gray-600 border-gray-200 hover:bg-gray-500/20",
+    };
+
+    const icon = iconMap[shortcut.shortcutKey];
+    const colorClass = colorMap[shortcut.shortcutKey] || "bg-gray-500/10 text-gray-600 border-gray-200 hover:bg-gray-500/20";
+
+    return (
+      <Link key={shortcut.shortcutKey} to={shortcut.routePath}>
+        <Badge className={`${colorClass} transition-colors px-4 py-2 text-sm cursor-pointer ${icon ? 'flex items-center gap-1' : ''}`}>
+          {icon}
+          {shortcut.shortcutName}
+        </Badge>
+      </Link>
+    );
+  };
+
+  // Group visible shortcuts into rows for display
+  const groupShortcutsIntoRows = () => {
+    if (visibleShortcuts.length === 0) return [];
+    
+    const workoutShortcuts = visibleShortcuts.filter(s => 
+      ['push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'cardio'].includes(s.shortcutKey)
+    );
+    const otherShortcuts = visibleShortcuts.filter(s => 
+      !['push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'cardio'].includes(s.shortcutKey)
+    );
+
+    const rows = [];
+    
+    // First row: main workout days (push, pull, legs)
+    const mainWorkouts = workoutShortcuts.filter(s => ['push', 'pull', 'legs'].includes(s.shortcutKey));
+    if (mainWorkouts.length > 0) {
+      rows.push(mainWorkouts);
+    }
+
+    // Second row: day 2 workouts (push2, pull2)  
+    const day2Workouts = workoutShortcuts.filter(s => ['push2', 'pull2'].includes(s.shortcutKey));
+    if (day2Workouts.length > 0) {
+      rows.push(day2Workouts);
+    }
+
+    // Third row: cardio and other workout shortcuts
+    const cardioAndOthers = workoutShortcuts.filter(s => ['cardio', 'legs2'].includes(s.shortcutKey));
+    if (cardioAndOthers.length > 0) {
+      rows.push(cardioAndOthers);
+    }
+
+    // Additional rows for non-workout shortcuts (group by 3)
+    for (let i = 0; i < otherShortcuts.length; i += 3) {
+      rows.push(otherShortcuts.slice(i, i + 3));
+    }
+
+    return rows;
   };
 
   const getCategoryColor = (category: string) => {
@@ -311,48 +393,16 @@ export default function Home() {
           
           {/* Quick Navigation */}
           <div className="space-y-4">
-            {/* Top Row - Main Workout Days (3 buttons) */}
-            <div className="flex flex-wrap justify-center gap-3">
-              <Link to="/push">
-                <Badge className="bg-red-500/10 text-red-600 border-red-200 hover:bg-red-500/20 transition-colors px-4 py-2 text-sm cursor-pointer">
-                  Push Day
-                </Badge>
-              </Link>
-              <Link to="/pull">
-                <Badge className="bg-blue-500/10 text-blue-600 border-blue-200 hover:bg-blue-500/20 transition-colors px-4 py-2 text-sm cursor-pointer">
-                  Pull Day
-                </Badge>
-              </Link>
-              <Link to="/legs">
-                <Badge className="bg-green-500/10 text-green-600 border-green-200 hover:bg-green-500/20 transition-colors px-4 py-2 text-sm cursor-pointer">
-                  Leg Day
-                </Badge>
-              </Link>
-            </div>
-            
-            {/* Middle Row - Day 2 Options (2 buttons) */}
-            <div className="flex flex-wrap justify-center gap-3">
-              <Link to="/push2">
-                <Badge className="bg-red-400/10 text-red-500 border-red-100 hover:bg-red-400/20 transition-colors px-4 py-2 text-sm cursor-pointer">
-                  Push Day 2
-                </Badge>
-              </Link>
-              <Link to="/pull2">
-                <Badge className="bg-blue-400/10 text-blue-500 border-blue-100 hover:bg-blue-400/20 transition-colors px-4 py-2 text-sm cursor-pointer">
-                  Pull Day 2
-                </Badge>
-              </Link>
-            </div>
-            
-            {/* Bottom Row - Cardio (1 button) */}
-            <div className="flex flex-wrap justify-center gap-3 mb-4">
-              <Link to="/cardio">
-                <Badge className="bg-red-500/10 text-red-600 border-red-200 hover:bg-red-500/20 transition-colors px-4 py-2 text-sm cursor-pointer flex items-center gap-1">
-                  <Activity className="w-3 h-3" />
-                  Cardio
-                </Badge>
-              </Link>
-            </div>
+            {groupShortcutsIntoRows().map((row, rowIndex) => (
+              <div key={rowIndex} className="flex flex-wrap justify-center gap-3">
+                {row.map(renderShortcutBadge)}
+              </div>
+            ))}
+            {visibleShortcuts.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center">
+                No shortcuts configured. Visit the Administration page to manage your home screen shortcuts.
+              </p>
+            )}
           </div>
         </div>
 

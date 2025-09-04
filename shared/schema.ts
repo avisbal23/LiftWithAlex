@@ -178,6 +178,18 @@ export const personalRecords = pgTable("personal_records", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Shortcut Settings - for managing home screen shortcut visibility
+export const shortcutSettings = pgTable("shortcut_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shortcutKey: text("shortcut_key").notNull().unique(), // 'push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'cardio', 'weight', 'blood', 'photos', 'thoughts', 'admin'
+  shortcutName: text("shortcut_name").notNull(), // Display name
+  routePath: text("route_path").notNull(), // '/push', '/pull', etc.
+  isVisible: integer("is_visible").default(1), // 1 for visible, 0 for hidden
+  order: integer("order").default(0), // For custom ordering
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -246,6 +258,14 @@ export const insertUserSettingsSchema = createInsertSchema(userSettings).omit({
 
 export const updateUserSettingsSchema = insertUserSettingsSchema.partial();
 
+export const insertShortcutSettingsSchema = createInsertSchema(shortcutSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateShortcutSettingsSchema = insertShortcutSettingsSchema.partial();
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Exercise = typeof exercises.$inferSelect;
@@ -274,3 +294,6 @@ export type UpdatePersonalRecord = z.infer<typeof updatePersonalRecordSchema>;
 export type UserSettings = typeof userSettings.$inferSelect;
 export type InsertUserSettings = z.infer<typeof insertUserSettingsSchema>;
 export type UpdateUserSettings = z.infer<typeof updateUserSettingsSchema>;
+export type ShortcutSettings = typeof shortcutSettings.$inferSelect;
+export type InsertShortcutSettings = z.infer<typeof insertShortcutSettingsSchema>;
+export type UpdateShortcutSettings = z.infer<typeof updateShortcutSettingsSchema>;

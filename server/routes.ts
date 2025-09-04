@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import path from "path";
 import fs from "fs";
-import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema } from "@shared/schema";
+import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -679,6 +679,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(400).json({ message: "Invalid data", errors: error.errors });
       } else {
         res.status(500).json({ message: "Failed to save user settings" });
+      }
+    }
+  });
+
+  // Shortcut Settings API routes
+  // Get all shortcut settings
+  app.get("/api/shortcut-settings", async (req, res) => {
+    try {
+      const settings = await storage.getAllShortcutSettings();
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch shortcut settings" });
+    }
+  });
+
+  // Get visible shortcut settings
+  app.get("/api/shortcut-settings/visible", async (req, res) => {
+    try {
+      const settings = await storage.getVisibleShortcutSettings();
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch visible shortcut settings" });
+    }
+  });
+
+  // Update shortcut setting
+  app.patch("/api/shortcut-settings/:shortcutKey", async (req, res) => {
+    try {
+      const shortcutKey = req.params.shortcutKey;
+      const validatedData = updateShortcutSettingsSchema.parse(req.body);
+      const setting = await storage.updateShortcutSettings(shortcutKey, validatedData);
+      
+      if (!setting) {
+        return res.status(404).json({ message: "Shortcut setting not found" });
+      }
+      
+      res.json(setting);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update shortcut setting" });
       }
     }
   });

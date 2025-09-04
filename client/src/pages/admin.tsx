@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Upload, Database, FileText, Activity, Droplets, FileDown, MessageSquare } from "lucide-react";
-import { type Exercise, type WeightEntry, type Quote } from "@shared/schema";
+import { Download, Upload, Database, FileText, Activity, Droplets, FileDown, MessageSquare, Settings } from "lucide-react";
+import { type Exercise, type WeightEntry, type Quote, type ShortcutSettings } from "@shared/schema";
+import { Switch } from "@/components/ui/switch";
 
 export default function Admin() {
   const { toast } = useToast();
@@ -30,6 +31,38 @@ export default function Admin() {
   const { data: quotes = [] } = useQuery<Quote[]>({
     queryKey: ["/api/quotes"],
   });
+
+  const { data: shortcutSettings = [] } = useQuery<ShortcutSettings[]>({
+    queryKey: ["/api/shortcut-settings"],
+  });
+
+  const updateShortcutMutation = useMutation({
+    mutationFn: async ({ shortcutKey, isVisible }: { shortcutKey: string; isVisible: boolean }) => {
+      return apiRequest(`/api/shortcut-settings/${shortcutKey}`, {
+        method: "PATCH",
+        body: { isVisible: isVisible ? 1 : 0 }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/shortcut-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shortcut-settings/visible"] });
+      toast({
+        title: "Settings Updated",
+        description: "Shortcut visibility settings saved successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update shortcut settings",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleShortcutToggle = (shortcutKey: string, isVisible: boolean) => {
+    updateShortcutMutation.mutate({ shortcutKey, isVisible });
+  };
 
   const downloadWorkoutTemplate = () => {
     const csvHeaders = 'name,category,weight,reps,notes,duration,distance,pace,calories,rpe,createdAt';
@@ -627,6 +660,42 @@ Example:
                   ⚠️ This will replace ALL existing quotes data
                 </p>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Home Screen Shortcut Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5" />
+                Home Screen Shortcuts
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Control which shortcuts appear on the home screen. Toggle any shortcut on or off to customize your main navigation.
+              </p>
+              <div className="space-y-3">
+                {shortcutSettings.map((shortcut) => (
+                  <div key={shortcut.shortcutKey} className="flex items-center justify-between p-3 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      <span className="font-medium">{shortcut.shortcutName}</span>
+                      <span className="text-sm text-muted-foreground">({shortcut.routePath})</span>
+                    </div>
+                    <Switch
+                      checked={shortcut.isVisible === 1}
+                      onCheckedChange={(checked) => handleShortcutToggle(shortcut.shortcutKey, checked)}
+                      disabled={updateShortcutMutation.isPending}
+                      data-testid={`switch-shortcut-${shortcut.shortcutKey}`}
+                    />
+                  </div>
+                ))}
+              </div>
+              {shortcutSettings.length === 0 && (
+                <p className="text-sm text-muted-foreground italic">
+                  Loading shortcut settings...
+                </p>
+              )}
             </CardContent>
           </Card>
 
