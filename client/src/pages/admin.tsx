@@ -675,20 +675,49 @@ Example:
               <p className="text-sm text-muted-foreground">
                 Control which shortcuts appear on the home screen. Toggle any shortcut on or off to customize your main navigation.
               </p>
-              <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-4">
                 {shortcutSettings.map((shortcut) => (
-                  <div key={shortcut.shortcutKey} className="flex items-center justify-between p-3 rounded-lg border">
-                    <div className="flex items-center gap-3">
-                      <span className="font-medium">{shortcut.shortcutName}</span>
-                      <span className="text-sm text-muted-foreground">({shortcut.routePath})</span>
+                  <button
+                    key={shortcut.shortcutKey}
+                    onClick={() => handleShortcutToggle(shortcut.shortcutKey, shortcut.isVisible !== 1)}
+                    disabled={updateShortcutMutation.isPending}
+                    className={`
+                      relative p-6 rounded-xl border-2 transition-all duration-300 cursor-pointer group
+                      ${shortcut.isVisible === 1
+                        ? 'bg-green-50 dark:bg-green-950/20 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300' 
+                        : 'bg-red-50 dark:bg-red-950/20 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300'
+                      }
+                      hover:scale-105 hover:shadow-lg
+                      disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+                    `}
+                    data-testid={`button-shortcut-${shortcut.shortcutKey}`}
+                  >
+                    {/* Status indicator circle */}
+                    <div className={`
+                      absolute top-3 right-3 w-4 h-4 rounded-full border-2 transition-colors
+                      ${shortcut.isVisible === 1
+                        ? 'bg-green-500 border-green-600 shadow-green-400/50' 
+                        : 'bg-red-500 border-red-600 shadow-red-400/50'
+                      }
+                      shadow-lg
+                    `} />
+                    
+                    {/* Main content */}
+                    <div className="text-left space-y-2">
+                      <h3 className="font-semibold text-base">{shortcut.shortcutName}</h3>
+                      <p className="text-sm opacity-70">{shortcut.routePath}</p>
+                      <div className="flex items-center gap-2 text-xs font-medium">
+                        <div className={`
+                          w-2 h-2 rounded-full
+                          ${shortcut.isVisible === 1 ? 'bg-green-500' : 'bg-red-500'}
+                        `} />
+                        {shortcut.isVisible === 1 ? 'ACTIVE' : 'INACTIVE'}
+                      </div>
                     </div>
-                    <Switch
-                      checked={shortcut.isVisible === 1}
-                      onCheckedChange={(checked) => handleShortcutToggle(shortcut.shortcutKey, checked)}
-                      disabled={updateShortcutMutation.isPending}
-                      data-testid={`switch-shortcut-${shortcut.shortcutKey}`}
-                    />
-                  </div>
+                    
+                    {/* Hover effect overlay */}
+                    <div className="absolute inset-0 bg-white/10 dark:bg-black/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </button>
                 ))}
               </div>
               {shortcutSettings.length === 0 && (
