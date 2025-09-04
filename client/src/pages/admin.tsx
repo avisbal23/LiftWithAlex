@@ -391,8 +391,8 @@ export default function Admin() {
           time: row.time,
           weight: row.weight,
           bodyFat: row.bodyFat,
-          fatFreeMass: row.leanMass,
-          muscleMass: row.leanMass, // Using lean mass for muscle mass
+          fatFreeMass: row.fatFreeMass,
+          muscleMass: row.fatFreeMass, // Using lean mass for muscle mass
           bmi: 0, // Will be calculated if needed
           subcutaneousFat: 0,
           skeletalMuscle: 0,
