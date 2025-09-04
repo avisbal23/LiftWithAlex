@@ -301,24 +301,52 @@ export default function Admin() {
           throw new Error("Each line must have 5 pipe-separated values: DATE|TIME|WEIGHT|BODYFATPERCENTAGE|LEANMASS");
         }
         
-        const [date, time, weight, bodyFat, leanMass] = values;
+        const [rawDate, rawTime, weight, bodyFat, leanMass] = values;
         
-        // Validate date format (YYYY-MM-DD)
-        if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-          throw new Error(`Invalid date format "${date}". Use YYYY-MM-DD format.`);
+        // Convert date from M/D/YY to YYYY-MM-DD
+        let formattedDate = rawDate;
+        const dateMatch = rawDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
+        if (dateMatch) {
+          const [, month, day, year] = dateMatch;
+          const fullYear = parseInt(year) < 50 ? `20${year}` : `19${year}`; // Assume 00-49 is 2000s, 50-99 is 1900s
+          formattedDate = `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        } else if (!rawDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          throw new Error(`Invalid date format "${rawDate}". Use M/D/YY or YYYY-MM-DD format.`);
         }
         
-        // Validate time format (HH:MM)
-        if (!time.match(/^\d{2}:\d{2}$/)) {
-          throw new Error(`Invalid time format "${time}". Use HH:MM format.`);
+        // Convert time from 12-hour to 24-hour format
+        let formattedTime = rawTime;
+        const timeMatch = rawTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+        if (timeMatch) {
+          const [, hours, minutes, period] = timeMatch;
+          let hour24 = parseInt(hours);
+          if (period.toUpperCase() === 'PM' && hour24 !== 12) {
+            hour24 += 12;
+          } else if (period.toUpperCase() === 'AM' && hour24 === 12) {
+            hour24 = 0;
+          }
+          formattedTime = `${hour24.toString().padStart(2, '0')}:${minutes}`;
+        } else if (!rawTime.match(/^\d{2}:\d{2}$/)) {
+          throw new Error(`Invalid time format "${rawTime}". Use H:MM AM/PM or HH:MM format.`);
+        }
+        
+        // Handle null or numeric lean mass
+        let parsedLeanMass = 0;
+        if (leanMass.toLowerCase() === 'null' || leanMass === '') {
+          parsedLeanMass = 0;
+        } else {
+          parsedLeanMass = parseFloat(leanMass);
+          if (isNaN(parsedLeanMass)) {
+            throw new Error(`Invalid lean mass value "${leanMass}". Use a number or "null".`);
+          }
         }
         
         return {
-          date,
-          time,
+          date: formattedDate,
+          time: formattedTime,
           weight: parseFloat(weight),
           bodyFat: parseFloat(bodyFat),
-          leanMass: parseFloat(leanMass)
+          leanMass: parsedLeanMass
         };
       });
 
@@ -330,7 +358,7 @@ export default function Admin() {
         if (isNaN(row.bodyFat) || row.bodyFat < 0 || row.bodyFat > 100) {
           throw new Error(`Invalid body fat percentage on line ${index + 1}: "${row.bodyFat}"`);
         }
-        if (isNaN(row.leanMass) || row.leanMass <= 0) {
+        if (isNaN(row.leanMass) || row.leanMass < 0) {
           throw new Error(`Invalid lean mass value on line ${index + 1}: "${row.leanMass}"`);
         }
       });
@@ -614,7 +642,7 @@ export default function Admin() {
                 <Label htmlFor="weight-import">Import Weight Data</Label>
                 <Textarea
                   id="weight-import"
-                  placeholder="Paste your weight data here...\nFormat: DATE|TIME|WEIGHT|BODYFATPERCENTAGE|LEANMASS\nExample: 2025-01-09|08:30|185.5|15.2|150.3"
+                  placeholder="Paste your weight data here...\nFormat: DATE|TIME|WEIGHT|BODYFATPERCENTAGE|LEANMASS\nExample: 5/6/25|6:05 AM|177.4|15.7|null\nSupports: M/D/YY dates, AM/PM times, and null values"
                   value={weightImportData}
                   onChange={(e) => setWeightImportData(e.target.value)}
                   className="min-h-[80px] sm:min-h-[100px] font-mono text-xs sm:text-sm"
