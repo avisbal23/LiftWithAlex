@@ -19,6 +19,7 @@ import Thoughts from "@/pages/thoughts";
 import Admin from "@/pages/admin";
 import Header from "@/components/layout/header";
 import { PasswordGate } from "@/components/password-gate";
+import { DeveloperTag } from "@/components/DeveloperTag";
 import { useAuth } from "@/hooks/useAuth";
 
 function Router() {
@@ -47,6 +48,7 @@ function Router() {
         <Route path="/admin" component={Admin} />
         <Route component={NotFound} />
       </Switch>
+      <DeveloperTag />
     </div>
   );
 }
