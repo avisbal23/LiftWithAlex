@@ -39,22 +39,20 @@ export function UniversalNavigation() {
   // Admin page is always accessible but not controlled by tab settings
   const adminPage = { name: "Admin", path: "/admin", key: "admin", tabKey: "admin" };
   
-  // If current location is admin, show it in current page name even if not in visible pages
-  const allPagesForCurrentDisplay = [...visiblePages];
-  if (location === "/admin" && !visiblePages.some(p => p.path === "/admin")) {
-    allPagesForCurrentDisplay.push(adminPage);
-  }
-
   // Split visible pages: first 6 as buttons, rest in dropdown
   const navbarPages = visiblePages.slice(0, 6); // Home + next 5 visible
   const dropdownPages = visiblePages.slice(6); // Remaining visible pages
 
-  // Admin is ALWAYS available in dropdown menu (unless it's already in navbar)
-  if (!navbarPages.some(p => p.key === "admin")) {
-    // Add admin to dropdown, but avoid duplicates
-    if (!dropdownPages.some(p => p.key === "admin")) {
-      dropdownPages.push(adminPage);
-    }
+  // Admin is ALWAYS available in dropdown menu (regardless of database state)
+  // Admin should never be in navbar buttons, always in dropdown
+  if (!dropdownPages.some(p => p.key === "admin")) {
+    dropdownPages.push(adminPage);
+  }
+
+  // For mobile navigation and current page display, include all pages including admin
+  const allPagesForCurrentDisplay = [...visiblePages];
+  if (!allPagesForCurrentDisplay.some(p => p.path === "/admin")) {
+    allPagesForCurrentDisplay.push(adminPage);
   }
 
   const handleHomeClick = () => {
