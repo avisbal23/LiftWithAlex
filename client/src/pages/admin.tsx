@@ -760,7 +760,7 @@ Example:
               <p className="text-sm text-muted-foreground">
                 Control which shortcuts appear on the home screen. Toggle any shortcut on or off to customize your main navigation.
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
                 {shortcutSettings.map((shortcut) => (
                   <button
                     key={shortcut.shortcutKey}
@@ -832,7 +832,7 @@ Example:
               <p className="text-sm text-muted-foreground">
                 Control which navigation tabs are visible in the header. Toggle any tab on or off to customize your navigation menu.
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
                 {tabSettings.map((tab) => {
                   const isHomeTab = tab.tabKey === 'home';
                   const isAdminTab = tab.tabKey === 'admin';
