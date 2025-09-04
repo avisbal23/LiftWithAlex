@@ -569,7 +569,7 @@ export default function Admin() {
           </p>
         </div>
 
-        <div className="grid gap-4 sm:gap-6 w-full max-w-none sm:max-w-2xl">
+        <div className="grid gap-4 sm:gap-6 max-w-md sm:max-w-2xl mx-auto">
           {/* Workout Data Management */}
           <Card>
             <CardHeader>
@@ -582,7 +582,7 @@ export default function Admin() {
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-2">
                 <Button 
                   onClick={exportWorkouts}
-                  className="flex items-center justify-center gap-2 h-11 text-sm"
+                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
                   data-testid="button-export-workouts"
                 >
                   <Download className="w-4 h-4" />
@@ -591,7 +591,7 @@ export default function Admin() {
                 <Button 
                   onClick={downloadWorkoutTemplate}
                   variant="outline"
-                  className="flex items-center justify-center gap-2 h-11 text-sm"
+                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
                   data-testid="button-download-workout-template"
                 >
                   <FileDown className="w-4 h-4" />
@@ -614,7 +614,7 @@ export default function Admin() {
                 <Button 
                   onClick={importWorkouts}
                   disabled={isImporting || !workoutImportData.trim()}
-                  className="flex items-center justify-center gap-2 h-11 w-full sm:w-auto text-sm"
+                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
                   variant="outline"
                   data-testid="button-import-workouts"
                 >
@@ -636,11 +636,11 @@ export default function Admin() {
                 Weight Data Management
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 sm:space-y-4">
-              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
+            <CardContent className="space-y-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-2">
                 <Button 
                   onClick={exportWeights}
-                  className="flex items-center gap-2"
+                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
                   data-testid="button-export-weights"
                 >
                   <Download className="w-4 h-4" />
@@ -649,30 +649,30 @@ export default function Admin() {
                 <Button 
                   onClick={downloadWeightTemplate}
                   variant="outline"
-                  className="flex items-center gap-2"
+                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
                   data-testid="button-download-weight-template"
                 >
                   <FileDown className="w-4 h-4" />
                   Download Template
                 </Button>
-                <span className="text-sm text-muted-foreground flex items-center">
+                <span className="text-xs sm:text-sm text-muted-foreground flex items-center justify-center sm:justify-start px-3 py-2 sm:px-0 sm:py-0">
                   ({weightEntries.length} entries)
                 </span>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="weight-import">Import Weight Data</Label>
+              <div className="space-y-3">
+                <Label htmlFor="weight-import" className="text-sm font-medium">Import Weight Data</Label>
                 <Textarea
                   id="weight-import"
                   placeholder="Paste your weight data here...\nFormat: DATE|TIME|WEIGHT|BODYFATPERCENTAGE|LEANMASS\nExample: 5/6/25|06:05|177.4|15.7|null\nSupports: M/D/YY dates, 24-hour time, and null values"
                   value={weightImportData}
                   onChange={(e) => setWeightImportData(e.target.value)}
-                  className="min-h-[80px] sm:min-h-[100px] font-mono text-xs sm:text-sm"
+                  className="min-h-[100px] sm:min-h-[120px] font-mono text-xs sm:text-sm resize-none"
                 />
                 <Button 
                   onClick={importWeights}
                   disabled={isImporting || !weightImportData.trim()}
-                  className="flex items-center gap-2"
+                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
                   variant="outline"
                   data-testid="button-import-weights"
                 >
@@ -694,11 +694,11 @@ export default function Admin() {
                 Quotes Management
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 sm:space-y-4">
-              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
+            <CardContent className="space-y-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-2">
                 <Button 
                   onClick={exportQuotes}
-                  className="flex items-center gap-2"
+                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
                   data-testid="button-export-quotes"
                 >
                   <Download className="w-4 h-4" />
@@ -707,19 +707,19 @@ export default function Admin() {
                 <Button 
                   onClick={downloadQuotesTemplate}
                   variant="outline"
-                  className="flex items-center gap-2"
+                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
                   data-testid="button-download-quotes-template"
                 >
                   <FileDown className="w-4 h-4" />
                   Download Template
                 </Button>
-                <span className="text-sm text-muted-foreground flex items-center">
+                <span className="text-xs sm:text-sm text-muted-foreground flex items-center justify-center sm:justify-start px-3 py-2 sm:px-0 sm:py-0">
                   ({quotes.length} quotes)
                 </span>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="quotes-import">Import Quotes Data</Label>
+              <div className="space-y-3">
+                <Label htmlFor="quotes-import" className="text-sm font-medium">Import Quotes Data</Label>
                 <Textarea
                   id="quotes-import"
                   placeholder={`Paste your quotes here...
@@ -729,12 +729,12 @@ Example:
 "Fear = Fuel" - Me`}
                   value={quotesImportData}
                   onChange={(e) => setQuotesImportData(e.target.value)}
-                  className="min-h-[100px] font-mono text-sm"
+                  className="min-h-[100px] sm:min-h-[120px] font-mono text-xs sm:text-sm resize-none"
                 />
                 <Button 
                   onClick={importQuotes}
                   disabled={isImporting || !quotesImportData.trim()}
-                  className="flex items-center gap-2"
+                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
                   variant="outline"
                   data-testid="button-import-quotes"
                 >
