@@ -559,7 +559,8 @@ export default function Admin() {
   return (
     <>
       <UniversalNavigation />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8">
+      <main className="w-full py-6 sm:py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-6 sm:mb-8">
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2" data-testid="heading-admin">
             Admin Panel
@@ -959,6 +960,7 @@ Example:
               </div>
             </CardContent>
           </Card>
+        </div>
         </div>
       </main>
     </>
