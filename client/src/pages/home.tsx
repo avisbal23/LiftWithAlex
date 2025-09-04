@@ -4,7 +4,7 @@ import { type WorkoutLog, type Quote, type PersonalRecord, type UserSettings } f
 import { apiRequest } from "@/lib/queryClient";
 import Navigation from "@/components/layout/navigation";
 import { Link } from "wouter";
-import { Trophy, Calendar, Edit3, Save, X, Scale, Settings, MessageCircle, Trash2, Activity, Camera, GripVertical } from "lucide-react";
+import { Trophy, Calendar, Edit3, Save, X, Scale, Settings, MessageCircle, Trash2, Activity, Camera, GripVertical, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,7 @@ export default function Home() {
     queryKey: ["/api/workout-logs/latest"],
   });
 
-  const { data: randomQuote } = useQuery<Quote | null>({
+  const { data: randomQuote, refetch: refetchQuote, isLoading: isQuoteLoading } = useQuery<Quote | null>({
     queryKey: ["/api/quotes/random"],
     staleTime: 0,
     gcTime: 0,
@@ -258,6 +258,18 @@ export default function Home() {
               <div className="backdrop-blur-md bg-white/10 dark:bg-black/10 border border-white/20 dark:border-white/10 rounded-2xl p-6 shadow-2xl shadow-primary/20">
                 {/* Inner glow effect */}
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-50"></div>
+                
+                {/* Refresh Button */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => refetchQuote()}
+                  disabled={isQuoteLoading}
+                  className="absolute top-3 right-3 h-8 w-8 p-0 opacity-0 hover:opacity-100 transition-all duration-200 backdrop-blur-sm bg-white/20 dark:bg-gray-600/30 border border-white/30 dark:border-gray-500/40 rounded-lg hover:bg-white/30 dark:hover:bg-gray-500/40 hover:scale-110 z-20"
+                  data-testid="button-refresh-quote"
+                >
+                  <RefreshCw className={`w-3 h-3 text-foreground ${isQuoteLoading ? 'animate-spin' : ''}`} />
+                </Button>
                 
                 {/* Content */}
                 <div className="relative z-10">
