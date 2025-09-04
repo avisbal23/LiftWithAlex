@@ -1,21 +1,38 @@
 import { Link, useLocation } from "wouter";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { type TabSettings } from "@shared/schema";
 
-const tabs = [
-  { name: "Home", path: "/" },
-  { name: "Push", path: "/push" },
-  { name: "Pull", path: "/pull" },
-  { name: "Legs", path: "/legs" },
-  { name: "Push 2", path: "/push2" },
-  { name: "Pull 2", path: "/pull2" },
-  { name: "Legs 2", path: "/legs2" },
-  { name: "Cardio", path: "/cardio" },
+const allTabs = [
+  { name: "Home", path: "/", key: "home" },
+  { name: "Push", path: "/push", key: "push" },
+  { name: "Pull", path: "/pull", key: "pull" },
+  { name: "Legs", path: "/legs", key: "legs" },
+  { name: "Push 2", path: "/push2", key: "push2" },
+  { name: "Pull 2", path: "/pull2", key: "pull2" },
+  { name: "Legs 2", path: "/legs2", key: "legs2" },
+  { name: "Cardio", path: "/cardio", key: "cardio" },
 ];
 
 export default function Navigation() {
   const [location] = useLocation();
   const navRef = useRef<HTMLDivElement>(null);
+
+  // Fetch visible tab settings
+  const { data: tabSettings = [] } = useQuery<TabSettings[]>({
+    queryKey: ["/api/tab-settings/visible"],
+  });
+
+  // Create a set of visible tab keys for quick lookup
+  const visibleTabKeys = useMemo(() => {
+    return new Set(tabSettings.map(tab => tab.tabKey));
+  }, [tabSettings]);
+
+  // Filter tabs to only show visible ones
+  const tabs = useMemo(() => {
+    return allTabs.filter(tab => visibleTabKeys.has(tab.key));
+  }, [visibleTabKeys]);
 
   // Keep selected tab visible without auto-scrolling back
   useEffect(() => {

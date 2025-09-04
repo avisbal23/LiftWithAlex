@@ -1,5 +1,5 @@
-import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings } from "@shared/schema";
-import { exercises, workoutLogs, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings } from "@shared/schema";
+import { exercises, workoutLogs, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc, sql } from "drizzle-orm";
@@ -62,6 +62,11 @@ export interface IStorage {
   getVisibleShortcutSettings(): Promise<ShortcutSettings[]>;
   updateShortcutSettings(shortcutKey: string, entry: UpdateShortcutSettings): Promise<ShortcutSettings | undefined>;
   initializeDefaultShortcuts(): Promise<void>;
+  
+  getAllTabSettings(): Promise<TabSettings[]>;
+  getVisibleTabSettings(): Promise<TabSettings[]>;
+  updateTabSettings(tabKey: string, entry: UpdateTabSettings): Promise<TabSettings | undefined>;
+  initializeDefaultTabs(): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -76,6 +81,7 @@ export class MemStorage implements IStorage {
   private personalRecords: Map<string, PersonalRecord>;
   private userSettings: UserSettings | undefined;
   private shortcutSettings: Map<string, ShortcutSettings>;
+  private tabSettings: Map<string, TabSettings>;
 
   constructor() {
     this.users = new Map();
@@ -89,12 +95,14 @@ export class MemStorage implements IStorage {
     this.personalRecords = new Map();
     this.userSettings = undefined;
     this.shortcutSettings = new Map();
+    this.tabSettings = new Map();
     
     // Add some initial sample data
     this.seedData();
     this.seedBloodData();
     this.seedPersonalRecords();
     this.initializeDefaultShortcuts();
+    this.initializeDefaultTabs();
   }
 
   private seedData() {
@@ -1301,6 +1309,50 @@ export class DatabaseStorage implements IStorage {
     // Insert all default shortcuts
     for (const shortcut of defaultShortcuts) {
       await db.insert(shortcutSettings).values(shortcut);
+    }
+  }
+
+  // Tab Settings methods
+  async getAllTabSettings(): Promise<TabSettings[]> {
+    return await db.select().from(tabSettings).orderBy(asc(tabSettings.order));
+  }
+
+  async getVisibleTabSettings(): Promise<TabSettings[]> {
+    return await db.select().from(tabSettings)
+      .where(eq(tabSettings.isVisible, 1))
+      .orderBy(asc(tabSettings.order));
+  }
+
+  async updateTabSettings(tabKey: string, entry: UpdateTabSettings): Promise<TabSettings | undefined> {
+    const [updated] = await db
+      .update(tabSettings)
+      .set({ ...entry, updatedAt: new Date() })
+      .where(eq(tabSettings.tabKey, tabKey))
+      .returning();
+    return updated;
+  }
+
+  async initializeDefaultTabs(): Promise<void> {
+    // Check if tabs already exist
+    const existing = await db.select().from(tabSettings).limit(1);
+    if (existing.length > 0) {
+      return; // Already initialized
+    }
+
+    // Define all available navigation tabs with default visibility
+    const defaultTabs = [
+      { tabKey: 'push', tabName: 'Push', routePath: '/push', isVisible: 1, order: 1 },
+      { tabKey: 'pull', tabName: 'Pull', routePath: '/pull', isVisible: 1, order: 2 },
+      { tabKey: 'legs', tabName: 'Legs', routePath: '/legs', isVisible: 1, order: 3 },
+      { tabKey: 'push2', tabName: 'Push 2', routePath: '/push2', isVisible: 1, order: 4 },
+      { tabKey: 'pull2', tabName: 'Pull 2', routePath: '/pull2', isVisible: 0, order: 5 },
+      { tabKey: 'legs2', tabName: 'Legs 2', routePath: '/legs2', isVisible: 0, order: 6 },
+      { tabKey: 'cardio', tabName: 'Cardio', routePath: '/cardio', isVisible: 1, order: 7 }
+    ];
+
+    // Insert all default tabs
+    for (const tab of defaultTabs) {
+      await db.insert(tabSettings).values(tab);
     }
   }
 

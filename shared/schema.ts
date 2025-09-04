@@ -190,6 +190,18 @@ export const shortcutSettings = pgTable("shortcut_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Tab Settings - for managing navigation tab visibility
+export const tabSettings = pgTable("tab_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tabKey: text("tab_key").notNull().unique(), // 'push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'cardio'
+  tabName: text("tab_name").notNull(), // Display name
+  routePath: text("route_path").notNull(), // '/push', '/pull', etc.
+  isVisible: integer("is_visible").default(1), // 1 for visible, 0 for hidden
+  order: integer("order").default(0), // For custom ordering
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -266,6 +278,14 @@ export const insertShortcutSettingsSchema = createInsertSchema(shortcutSettings)
 
 export const updateShortcutSettingsSchema = insertShortcutSettingsSchema.partial();
 
+export const insertTabSettingsSchema = createInsertSchema(tabSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateTabSettingsSchema = insertTabSettingsSchema.partial();
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Exercise = typeof exercises.$inferSelect;
@@ -297,3 +317,6 @@ export type UpdateUserSettings = z.infer<typeof updateUserSettingsSchema>;
 export type ShortcutSettings = typeof shortcutSettings.$inferSelect;
 export type InsertShortcutSettings = z.infer<typeof insertShortcutSettingsSchema>;
 export type UpdateShortcutSettings = z.infer<typeof updateShortcutSettingsSchema>;
+export type TabSettings = typeof tabSettings.$inferSelect;
+export type InsertTabSettings = z.infer<typeof insertTabSettingsSchema>;
+export type UpdateTabSettings = z.infer<typeof updateTabSettingsSchema>;
