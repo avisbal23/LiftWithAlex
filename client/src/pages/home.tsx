@@ -393,7 +393,7 @@ export default function Home() {
           </div>
 
           {getLastWorkoutInfo() && (
-            <p className="text-sm text-muted-foreground mb-8">
+            <p className="text-sm text-muted-foreground mb-4">
               Last workout: {getLastWorkoutInfo()?.category} {
                 getLastWorkoutInfo()?.daysAgo === 0 ? "today" :
                 getLastWorkoutInfo()?.daysAgo === 1 ? "yesterday" :
