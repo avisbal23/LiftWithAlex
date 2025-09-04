@@ -254,22 +254,14 @@ export default function Home() {
           {/* Random Quote */}
           {randomQuote && (
             <div className="relative mb-6 max-w-2xl mx-auto" data-testid="random-quote">
-              {/* Glass Container */}
-              <div className="backdrop-blur-md bg-white/10 dark:bg-black/10 border border-white/20 dark:border-white/10 rounded-2xl p-6 shadow-2xl shadow-primary/20">
+              {/* Glass Container - Click to refresh quote */}
+              <div 
+                className="backdrop-blur-md bg-white/10 dark:bg-black/10 border border-white/20 dark:border-white/10 rounded-2xl p-6 shadow-2xl shadow-primary/20 cursor-pointer transition-all duration-200 hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98]"
+                onClick={() => !isQuoteLoading && refetchQuote()}
+                data-testid="button-refresh-quote"
+              >
                 {/* Inner glow effect */}
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-50"></div>
-                
-                {/* Refresh Button */}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => refetchQuote()}
-                  disabled={isQuoteLoading}
-                  className="absolute top-3 right-3 h-8 w-8 p-0 transition-all duration-200 backdrop-blur-sm bg-white/20 dark:bg-gray-600/30 border border-white/30 dark:border-gray-500/40 rounded-lg hover:bg-white/30 dark:hover:bg-gray-500/40 hover:scale-110 active:scale-95 z-20"
-                  data-testid="button-refresh-quote"
-                >
-                  <RefreshCw className={`w-3 h-3 text-foreground ${isQuoteLoading ? 'animate-spin' : ''}`} />
-                </Button>
                 
                 {/* Content */}
                 <div className="relative z-10">
