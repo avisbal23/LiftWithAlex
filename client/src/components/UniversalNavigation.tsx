@@ -2,36 +2,57 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { HomeIcon, Menu, ChevronDown } from "lucide-react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { type TabSettings } from "@shared/schema";
 
 export function UniversalNavigation() {
   const [location, navigate] = useLocation();
 
-  // Define all pages in order
-  const allPages = [
-    { name: "Home", path: "/", key: "home" },
-    { name: "Push", path: "/push", key: "push" },
-    { name: "Pull", path: "/pull", key: "pull" },
-    { name: "Legs", path: "/legs", key: "legs" },
-    { name: "Push 2", path: "/push2", key: "push2" },
-    { name: "Pull 2", path: "/pull2", key: "pull2" },
-    { name: "Legs 2", path: "/legs2", key: "legs2" },
-    { name: "Cardio", path: "/cardio", key: "cardio" },
-    { name: "Weight", path: "/weight", key: "weight" },
-    { name: "Blood Labs", path: "/blood-tracking", key: "blood" },
-    { name: "Photos", path: "/photo-progress", key: "photos" },
-    { name: "Thoughts", path: "/thoughts", key: "thoughts" },
-    { name: "Admin", path: "/admin", key: "admin" },
+  // Fetch visible tab settings from the API
+  const { data: visibleTabSettings = [] } = useQuery<TabSettings[]>({
+    queryKey: ["/api/tab-settings/visible"],
+  });
+
+  // Always include Home page as it's always visible
+  const homePage = { name: "Home", path: "/", key: "home", tabKey: "home" };
+  
+  // Map tab settings to page format and filter by visibility
+  const visiblePages = [
+    homePage,
+    ...visibleTabSettings
+      .filter(tab => tab.tabKey !== "home") // Exclude home since we already added it
+      .sort((a, b) => (a.order || 0) - (b.order || 0)) // Sort by order
+      .map(tab => ({
+        name: tab.tabName,
+        path: tab.routePath,
+        key: tab.tabKey,
+        tabKey: tab.tabKey,
+      }))
   ];
 
-  // Split pages: first 6 as buttons, rest in dropdown
-  const navbarPages = allPages.slice(0, 6); // Home + next 5
-  const dropdownPages = allPages.slice(6); // Remaining pages
+  // Admin page is always accessible but not controlled by tab settings
+  const adminPage = { name: "Admin", path: "/admin", key: "admin", tabKey: "admin" };
+  
+  // If current location is admin, show it in current page name even if not in visible pages
+  const allPagesForCurrentDisplay = [...visiblePages];
+  if (location === "/admin" && !visiblePages.some(p => p.path === "/admin")) {
+    allPagesForCurrentDisplay.push(adminPage);
+  }
+
+  // Split visible pages: first 6 as buttons, rest in dropdown
+  const navbarPages = visiblePages.slice(0, 6); // Home + next 5 visible
+  const dropdownPages = visiblePages.slice(6); // Remaining visible pages
+
+  // Add admin to dropdown if not already visible in navbar and not in visible pages
+  if (!visiblePages.some(p => p.key === "admin") && !navbarPages.some(p => p.key === "admin")) {
+    dropdownPages.push(adminPage);
+  }
 
   const handleHomeClick = () => {
     if (location === "/") {
@@ -77,7 +98,7 @@ export function UniversalNavigation() {
           {/* Current Page Indicator - Mobile */}
           <div className="flex-1 text-center">
             <span className="text-sm font-medium text-muted-foreground">
-              {allPages.find(page => page.path === location)?.name || "Home"}
+              {allPagesForCurrentDisplay.find(page => page.path === location)?.name || "Home"}
             </span>
           </div>
 
@@ -97,7 +118,7 @@ export function UniversalNavigation() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              {allPages.filter(page => page.path !== "/").map((page) => (
+              {allPagesForCurrentDisplay.filter(page => page.path !== "/").map((page) => (
                 <DropdownMenuItem
                   key={page.key}
                   onClick={() => handlePageClick(page.path)}
