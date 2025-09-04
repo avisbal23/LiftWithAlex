@@ -569,7 +569,7 @@ export default function Admin() {
           </p>
         </div>
 
-        <div className="grid gap-4 sm:gap-6">
+        <div className="grid gap-4 sm:gap-6 max-w-2xl">
           {/* Workout Data Management */}
           <Card>
             <CardHeader>
