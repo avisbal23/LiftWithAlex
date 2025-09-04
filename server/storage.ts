@@ -1302,8 +1302,8 @@ export class DatabaseStorage implements IStorage {
       { shortcutKey: 'legs2', shortcutName: 'Legs Day 2', routePath: '/legs2', isVisible: 0, order: 6 },
       { shortcutKey: 'cardio', shortcutName: 'Cardio', routePath: '/cardio', isVisible: 1, order: 7 },
       { shortcutKey: 'weight', shortcutName: 'Weight Tracking', routePath: '/weight', isVisible: 0, order: 8 },
-      { shortcutKey: 'blood', shortcutName: 'Blood Labs', routePath: '/blood', isVisible: 0, order: 9 },
-      { shortcutKey: 'photos', shortcutName: 'Progress Photos', routePath: '/photos', isVisible: 0, order: 10 },
+      { shortcutKey: 'blood', shortcutName: 'Blood Labs', routePath: '/blood-tracking', isVisible: 0, order: 9 },
+      { shortcutKey: 'photos', shortcutName: 'Progress Photos', routePath: '/photo-progress', isVisible: 0, order: 10 },
       { shortcutKey: 'thoughts', shortcutName: 'Thoughts & Reflections', routePath: '/thoughts', isVisible: 0, order: 11 },
       { shortcutKey: 'admin', shortcutName: 'Administration', routePath: '/admin', isVisible: 0, order: 12 }
     ];
@@ -1331,7 +1331,12 @@ export class DatabaseStorage implements IStorage {
       { tabKey: 'push2', tabName: 'Push 2', routePath: '/push2', isVisible: 1, order: 5 },
       { tabKey: 'pull2', tabName: 'Pull 2', routePath: '/pull2', isVisible: 1, order: 6 },
       { tabKey: 'legs2', tabName: 'Legs 2', routePath: '/legs2', isVisible: 0, order: 7 },
-      { tabKey: 'cardio', tabName: 'Cardio', routePath: '/cardio', isVisible: 1, order: 8 }
+      { tabKey: 'cardio', tabName: 'Cardio', routePath: '/cardio', isVisible: 1, order: 8 },
+      { tabKey: 'weight', tabName: 'Weight', routePath: '/weight', isVisible: 0, order: 9 },
+      { tabKey: 'blood', tabName: 'Blood', routePath: '/blood-tracking', isVisible: 0, order: 10 },
+      { tabKey: 'photos', tabName: 'Photos', routePath: '/photo-progress', isVisible: 0, order: 11 },
+      { tabKey: 'thoughts', tabName: 'Thoughts', routePath: '/thoughts', isVisible: 0, order: 12 },
+      { tabKey: 'admin', tabName: 'Admin', routePath: '/admin', isVisible: 0, order: 13 }
     ];
 
     // Insert all default tabs

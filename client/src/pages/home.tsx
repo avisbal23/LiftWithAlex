@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { type WorkoutLog, type Quote, type PersonalRecord, type UserSettings, type ShortcutSettings } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
-import Navigation from "@/components/layout/navigation";
 import { Link } from "wouter";
 import { Trophy, Calendar, Edit3, Save, X, Scale, Settings, MessageCircle, Trash2, Activity, Camera, GripVertical, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -341,7 +340,6 @@ export default function Home() {
 
   return (
     <>
-      <Navigation />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="text-center mb-12">
