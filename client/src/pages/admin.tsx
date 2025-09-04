@@ -361,7 +361,7 @@ export default function Admin() {
           time: formattedTime,
           weight: parseFloat(weight),
           bodyFat: parsedBodyFat,
-          leanMass: parsedLeanMass
+          fatFreeMass: parsedLeanMass
         };
       });
 
@@ -373,8 +373,8 @@ export default function Admin() {
         if (isNaN(row.bodyFat) || row.bodyFat < 0 || row.bodyFat > 100) {
           throw new Error(`Invalid body fat percentage on line ${index + 1}: "${row.bodyFat}"`);
         }
-        if (isNaN(row.leanMass) || row.leanMass < 0) {
-          throw new Error(`Invalid lean mass value on line ${index + 1}: "${row.leanMass}"`);
+        if (isNaN(row.fatFreeMass) || row.fatFreeMass < 0) {
+          throw new Error(`Invalid lean mass value on line ${index + 1}: "${row.fatFreeMass}"`);
         }
       });
 
