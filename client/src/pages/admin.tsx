@@ -378,10 +378,15 @@ export default function Admin() {
         }
       });
 
-      // Clear existing weight entries first
-      const deletePromises = weightEntries.map(entry => 
-        apiRequest("DELETE", `/api/weight-entries/${entry.id}`)
-      );
+      // Clear existing weight entries first (ignore 404 errors)
+      const deletePromises = weightEntries.map(async (entry) => {
+        try {
+          await apiRequest("DELETE", `/api/weight-entries/${entry.id}`);
+        } catch (error) {
+          // Ignore 404 errors - entry might already be deleted
+          console.log(`Entry ${entry.id} already deleted or not found`);
+        }
+      });
       await Promise.all(deletePromises);
 
       // Import new weight entries
