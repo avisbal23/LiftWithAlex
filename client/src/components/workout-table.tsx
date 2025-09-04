@@ -222,13 +222,13 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
   }
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex items-center justify-between mb-6">
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-2xl font-bold text-foreground" data-testid={`heading-${category}`}>
+          <h2 className="text-3xl font-bold text-foreground" data-testid={`heading-${category}`}>
             {title}
           </h2>
-          <p className="text-muted-foreground">{description}</p>
+          <p className="text-muted-foreground mt-1">{description}</p>
         </div>
         <div className="flex items-center gap-3">
           <Button 
@@ -277,50 +277,50 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                 <table className="w-full">
                   <thead className="bg-muted">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-16">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-12">
                         
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-16">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-12">
                         #
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         {isCardio ? "Activity" : "Exercise"}
                       </th>
                     {isCardio ? (
                       <>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Duration
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Distance
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Pace
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Calories
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           RPE
                         </th>
                       </>
                     ) : (
                       <>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Weight (lbs)
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Reps
                         </th>
                       </>
                     )}
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Notes
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       View
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -341,73 +341,73 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               data-testid={`row-exercise-${exercise.id}`}
                               className={snapshot.isDragging ? "opacity-75" : ""}
                             >
-                              <td className="px-6 py-4">
+                              <td className="px-3 py-2">
                                 <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
                                   <GripVertical className="w-4 h-4 text-muted-foreground" />
                                 </div>
                               </td>
-                              <td className="px-6 py-4">
+                              <td className="px-3 py-2">
                                 <Input
                                   type="number"
                                   value={editingExercises[exercise.id]?.order ?? exercise.order ?? 0}
                                   onChange={(e) => setEditingExercises(prev => ({ ...prev, [exercise.id]: { ...prev[exercise.id], order: parseInt(e.target.value) || 0 } }))}
-                                  className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-12 text-center"
+                                  className="border-none bg-transparent p-1 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-12 text-center"
                                   data-testid={`input-order-${exercise.id}`}
                                   min="1"
                                 />
                               </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-2">
                         <Input
                           type="text"
                           value={exercise.name}
                           onChange={(e) => updateExercise(exercise.id, "name", e.target.value)}
-                          className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors whitespace-normal break-words"
+                          className="border-none bg-transparent p-1 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors whitespace-normal break-words"
                           data-testid={`input-exercise-name-${exercise.id}`}
                         />
                       </td>
                       {isCardio ? (
                         <>
-                          <td className="px-6 py-4">
+                          <td className="px-3 py-2">
                             <Input
                               type="text"
                               value={exercise.duration || ""}
                               onChange={(e) => updateExercise(exercise.id, "duration", e.target.value)}
                               placeholder="28:32"
-                              className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
+                              className="border-none bg-transparent p-1 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
                               data-testid={`input-duration-${exercise.id}`}
                             />
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-3 py-2">
                             <Input
                               type="text"
                               value={exercise.distance || ""}
                               onChange={(e) => debouncedUpdate(exercise.id, "distance", e.target.value)}
                               placeholder="3.1 miles"
-                              className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-24"
+                              className="border-none bg-transparent p-1 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-24"
                               data-testid={`input-distance-${exercise.id}`}
                             />
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-3 py-2">
                             <Input
                               type="text"
                               value={exercise.pace || ""}
                               onChange={(e) => debouncedUpdate(exercise.id, "pace", e.target.value)}
                               placeholder="9:10/mile"
-                              className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-24"
+                              className="border-none bg-transparent p-1 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-24"
                               data-testid={`input-pace-${exercise.id}`}
                             />
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-3 py-2">
                             <Input
                               type="number"
                               value={exercise.calories || 0}
                               onChange={(e) => debouncedUpdate(exercise.id, "calories", parseInt(e.target.value) || 0)}
                               placeholder="320"
-                              className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
+                              className="border-none bg-transparent p-1 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
                               data-testid={`input-calories-${exercise.id}`}
                             />
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-3 py-2">
                             <Input
                               type="number"
                               value={exercise.rpe || 0}
@@ -415,44 +415,44 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               placeholder="8"
                               min="1"
                               max="10"
-                              className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-16"
+                              className="border-none bg-transparent p-1 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-16"
                               data-testid={`input-rpe-${exercise.id}`}
                             />
                           </td>
                         </>
                       ) : (
                         <>
-                          <td className="px-6 py-4">
+                          <td className="px-3 py-2">
                             <Input
                               type="number"
                               value={exercise.weight || 0}
                               onChange={(e) => debouncedUpdate(exercise.id, "weight", parseInt(e.target.value) || 0)}
-                              className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
+                              className="border-none bg-transparent p-1 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
                               data-testid={`input-weight-${exercise.id}`}
                             />
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-3 py-2">
                             <Input
                               type="number"
                               value={exercise.reps || 0}
                               onChange={(e) => debouncedUpdate(exercise.id, "reps", parseInt(e.target.value) || 0)}
-                              className="border-none bg-transparent p-2 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-16"
+                              className="border-none bg-transparent p-1 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-16"
                               data-testid={`input-reps-${exercise.id}`}
                             />
                           </td>
                         </>
                       )}
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-2">
                         <Input
                           type="text"
                           value={exercise.notes || ""}
                           onChange={(e) => debouncedUpdate(exercise.id, "notes", e.target.value)}
                           placeholder="Add notes..."
-                          className="border-none bg-transparent p-2 text-sm text-muted-foreground focus:bg-background hover:bg-accent transition-colors"
+                          className="border-none bg-transparent p-1 text-sm text-muted-foreground focus:bg-background hover:bg-accent transition-colors"
                           data-testid={`input-notes-${exercise.id}`}
                         />
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-2">
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button
@@ -520,7 +520,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                           </DialogContent>
                         </Dialog>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-2">
                         <div className="flex gap-1 items-center">
                           <Button
                             variant="ghost"
