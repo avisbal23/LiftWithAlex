@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { type WorkoutLog, type Quote, type PersonalRecord, type UserSettings, type ShortcutSettings } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
-import { Trophy, Calendar, Edit3, Save, X, Scale, Settings, MessageCircle, Trash2, Activity, Camera, GripVertical, RefreshCw } from "lucide-react";
+import { Trophy, Calendar, Edit3, Save, X, Scale, Settings, MessageCircle, Trash2, Activity, Camera, GripVertical, RefreshCw, Home as HomeIcon, Menu } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,10 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "react-beautiful-dnd";
+import { NavigationMenu } from "@/components/NavigationMenu";
 
 
 export default function Home() {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const queryClient = useQueryClient();
   
   // Load personal records from independent API
@@ -340,6 +342,24 @@ export default function Home() {
 
   return (
     <>
+      {/* Full-width Home dropdown button - below header, above quote */}
+      <div className="w-full bg-background/50 backdrop-blur-sm border-b border-border/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <Button 
+            variant="ghost"
+            onClick={() => setIsMenuOpen(true)}
+            data-testid="button-home-menu-main"
+            className="w-full relative backdrop-blur-sm bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 py-3"
+          >
+            <div className="flex items-center justify-center gap-2">
+              <HomeIcon className="h-5 w-5" />
+              <span className="font-medium">Home Menu</span>
+              <Menu className="h-4 w-4 opacity-70" />
+            </div>
+          </Button>
+        </div>
+      </div>
+      
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="text-center mb-12">
@@ -1002,6 +1022,12 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 dark:via-gray-400/30 to-transparent rounded-b-xl"></div>
       </div>
     </div>
+    
+    {/* Navigation Menu Overlay */}
+    <NavigationMenu 
+      isOpen={isMenuOpen} 
+      onClose={() => setIsMenuOpen(false)} 
+    />
     </>
   );
 }
