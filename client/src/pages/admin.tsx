@@ -390,9 +390,9 @@ export default function Admin() {
       await Promise.all(deletePromises);
 
       // Import new weight entries
-      const importPromises = rows.map((row) => 
-        apiRequest("POST", "/api/weight-entries", {
-          date: row.date,
+      const importPromises = rows.map((row) => {
+        const payload = {
+          date: row.date.toISOString(), // Convert Date to ISO string for JSON
           time: row.time,
           weight: row.weight,
           bodyFat: row.bodyFat,
@@ -407,8 +407,10 @@ export default function Admin() {
           protein: 0,
           bmr: 0,
           metabolicAge: 0
-        })
-      );
+        };
+        console.log("Sending weight entry:", payload);
+        return apiRequest("POST", "/api/weight-entries", payload);
+      });
       await Promise.all(importPromises);
 
       // Refresh data

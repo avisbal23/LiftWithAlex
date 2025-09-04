@@ -222,6 +222,9 @@ export const insertWorkoutLogSchema = createInsertSchema(workoutLogs).omit({
 export const insertWeightEntrySchema = createInsertSchema(weightEntries).omit({
   id: true,
   createdAt: true,
+}).extend({
+  // Allow string dates to be coerced to Date objects
+  date: z.string().transform((str) => new Date(str)),
 });
 
 export const updateWeightEntrySchema = insertWeightEntrySchema.partial();

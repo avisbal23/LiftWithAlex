@@ -135,13 +135,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create weight entry
   app.post("/api/weight-entries", async (req, res) => {
     try {
+      console.log("Received weight entry data:", JSON.stringify(req.body));
       const validatedData = insertWeightEntrySchema.parse(req.body);
+      console.log("Validated weight entry data:", JSON.stringify(validatedData));
       const entry = await storage.createWeightEntry(validatedData);
       res.status(201).json(entry);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.log("Validation errors:", error.errors);
         res.status(400).json({ message: "Invalid data", errors: error.errors });
       } else {
+        console.error("Server error:", error);
         res.status(500).json({ message: "Failed to create weight entry" });
       }
     }
