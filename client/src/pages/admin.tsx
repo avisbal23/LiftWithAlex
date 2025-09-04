@@ -357,7 +357,7 @@ export default function Admin() {
         }
         
         return {
-          date: formattedDate,
+          date: new Date(formattedDate),
           time: formattedTime,
           weight: parseFloat(weight),
           bodyFat: parsedBodyFat,
