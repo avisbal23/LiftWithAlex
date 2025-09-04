@@ -825,11 +825,14 @@ export class DatabaseStorage implements IStorage {
       // Check if we already have exercises (indicating the database has been seeded)
       const existingExercises = await db.select().from(exercises).limit(1);
       if (existingExercises.length > 0) {
+        // Even if exercises exist, check if shortcuts need to be initialized
+        await this.initializeDefaultShortcuts();
         return; // Already seeded
       }
 
       await this.seedSampleData();
       await this.seedPersonalRecordsData();
+      await this.initializeDefaultShortcuts();
       console.log('Database seeded with sample data');
     } catch (error) {
       console.error('Error seeding database:', error);
