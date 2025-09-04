@@ -767,7 +767,7 @@ Example:
                     onClick={() => handleShortcutToggle(shortcut.shortcutKey, shortcut.isVisible !== 1)}
                     disabled={updateShortcutMutation.isPending}
                     className={`
-                      relative p-4 sm:p-6 rounded-xl transition-all duration-300 cursor-pointer group aspect-square
+                      relative p-1 sm:p-1.5 rounded-lg transition-all duration-300 cursor-pointer group aspect-square
                       backdrop-blur-lg border shadow-2xl
                       ${shortcut.isVisible === 1
                         ? 'bg-green-100/20 dark:bg-green-950/20 border-green-300/30 dark:border-green-700/40 text-green-700 dark:text-green-300 shadow-green-400/20' 
@@ -780,7 +780,7 @@ Example:
                   >
                     {/* Status indicator circle */}
                     <div className={`
-                      absolute top-3 right-3 w-4 h-4 rounded-full border-2 transition-colors
+                      absolute top-1 right-1 w-2 h-2 rounded-full border transition-colors
                       ${shortcut.isVisible === 1
                         ? 'bg-green-500 border-green-600 shadow-green-400/50' 
                         : 'bg-red-500 border-red-600 shadow-red-400/50'
@@ -789,26 +789,26 @@ Example:
                     `} />
                     
                     {/* Main content */}
-                    <div className="text-left space-y-1 sm:space-y-2">
-                      <h3 className="font-semibold text-sm sm:text-base">{shortcut.shortcutName}</h3>
-                      <p className="text-xs sm:text-sm opacity-70">{shortcut.routePath}</p>
-                      <div className="flex items-center gap-1 sm:gap-2 text-xs font-medium">
+                    <div className="text-left space-y-0.5">
+                      <h3 className="font-semibold text-xs">{shortcut.shortcutName}</h3>
+                      <p className="text-[10px] opacity-70">{shortcut.routePath}</p>
+                      <div className="flex items-center gap-1 text-[9px] font-medium">
                         <div className={`
-                          w-2 h-2 rounded-full
+                          w-1 h-1 rounded-full
                           ${shortcut.isVisible === 1 ? 'bg-green-500' : 'bg-red-500'}
                         `} />
-                        {shortcut.isVisible === 1 ? 'ACTIVE' : 'INACTIVE'}
+                        {shortcut.isVisible === 1 ? 'ON' : 'OFF'}
                       </div>
                     </div>
                     
                     {/* 3D Glass Effect */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/15 to-black/5 dark:from-gray-300/15 dark:to-gray-700/5 rounded-xl"></div>
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/15 to-black/5 dark:from-gray-300/15 dark:to-gray-700/5 rounded-lg"></div>
                     
                     {/* Inner Glass Highlight */}
-                    <div className="absolute inset-0.5 bg-gradient-to-b from-white/20 to-transparent dark:from-gray-300/20 rounded-xl opacity-50"></div>
+                    <div className="absolute inset-0.5 bg-gradient-to-b from-white/20 to-transparent dark:from-gray-300/20 rounded-lg opacity-50"></div>
                     
                     {/* Hover effect overlay */}
-                    <div className="absolute inset-0 bg-white/10 dark:bg-black/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute inset-0 bg-white/10 dark:bg-black/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 ))}
               </div>
@@ -845,7 +845,7 @@ Example:
                     onClick={() => !isLockedTab && handleTabToggle(tab.tabKey, tab.isVisible !== 1)}
                     disabled={isDisabled}
                     className={`
-                      relative p-6 rounded-xl transition-all duration-300 group aspect-square
+                      relative p-1 sm:p-1.5 rounded-lg transition-all duration-300 group aspect-square
                       backdrop-blur-lg border shadow-2xl
                       ${tab.isVisible === 1
                         ? 'bg-green-100/20 dark:bg-green-950/20 border-green-300/30 dark:border-green-700/40 text-green-700 dark:text-green-300 shadow-green-400/20' 
@@ -859,7 +859,7 @@ Example:
                   >
                     {/* Status indicator circle */}
                     <div className={`
-                      absolute top-3 right-3 w-4 h-4 rounded-full border-2 transition-colors
+                      absolute top-1 right-1 w-2 h-2 rounded-full border transition-colors
                       ${tab.isVisible === 1
                         ? 'bg-green-500 border-green-600 shadow-green-400/50' 
                         : 'bg-red-500 border-red-600 shadow-red-400/50'
@@ -868,32 +868,32 @@ Example:
                     `} />
                     
                     {/* Main content */}
-                    <div className="text-left space-y-2">
-                      <h3 className="font-semibold text-base">{tab.tabName}</h3>
-                      <p className="text-sm opacity-70">{tab.routePath}</p>
-                      <div className="flex items-center gap-2 text-xs font-medium">
+                    <div className="text-left space-y-0.5">
+                      <h3 className="font-semibold text-xs">{tab.tabName}</h3>
+                      <p className="text-[10px] opacity-70">{tab.routePath}</p>
+                      <div className="flex items-center gap-1 text-[9px] font-medium">
                         <div className={`
-                          w-2 h-2 rounded-full
+                          w-1 h-1 rounded-full
                           ${tab.isVisible === 1 ? 'bg-green-500' : 'bg-red-500'}
                         `} />
-                        {tab.isVisible === 1 ? 'VISIBLE' : 'HIDDEN'}
+                        {tab.isVisible === 1 ? 'ON' : 'OFF'}
                         {isLockedTab && (
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground/70 ml-1">
-                            <Lock className="w-3 h-3" />
-                            (Locked)
+                          <span className="flex items-center gap-0.5 text-[8px] text-muted-foreground/70 ml-0.5">
+                            <Lock className="w-2 h-2" />
+                            🔒
                           </span>
                         )}
                       </div>
                     </div>
                     
                     {/* 3D Glass Effect */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/15 to-black/5 dark:from-gray-300/15 dark:to-gray-700/5 rounded-xl"></div>
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/15 to-black/5 dark:from-gray-300/15 dark:to-gray-700/5 rounded-lg"></div>
                     
                     {/* Inner Glass Highlight */}
-                    <div className="absolute inset-0.5 bg-gradient-to-b from-white/20 to-transparent dark:from-gray-300/20 rounded-xl opacity-50"></div>
+                    <div className="absolute inset-0.5 bg-gradient-to-b from-white/20 to-transparent dark:from-gray-300/20 rounded-lg opacity-50"></div>
                     
                     {/* Hover effect overlay */}
-                    <div className="absolute inset-0 bg-white/10 dark:bg-black/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute inset-0 bg-white/10 dark:bg-black/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                   );
                 })}
