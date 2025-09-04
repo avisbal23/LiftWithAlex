@@ -314,21 +314,14 @@ export default function Admin() {
           throw new Error(`Invalid date format "${rawDate}". Use M/D/YY or YYYY-MM-DD format.`);
         }
         
-        // Convert time from 12-hour to 24-hour format
-        let formattedTime = rawTime;
-        const timeMatch = rawTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-        if (timeMatch) {
-          const [, hours, minutes, period] = timeMatch;
-          let hour24 = parseInt(hours);
-          if (period.toUpperCase() === 'PM' && hour24 !== 12) {
-            hour24 += 12;
-          } else if (period.toUpperCase() === 'AM' && hour24 === 12) {
-            hour24 = 0;
-          }
-          formattedTime = `${hour24.toString().padStart(2, '0')}:${minutes}`;
-        } else if (!rawTime.match(/^\d{2}:\d{2}$/)) {
-          throw new Error(`Invalid time format "${rawTime}". Use H:MM AM/PM or HH:MM format.`);
+        // Validate time format (HH:MM)
+        if (!rawTime.match(/^\d{1,2}:\d{2}$/)) {
+          throw new Error(`Invalid time format "${rawTime}". Use HH:MM format.`);
         }
+        
+        // Ensure proper HH:MM format with zero padding
+        const [hours, minutes] = rawTime.split(':');
+        const formattedTime = `${hours.padStart(2, '0')}:${minutes}`;
         
         // Handle null or numeric lean mass
         let parsedLeanMass = 0;
@@ -642,7 +635,7 @@ export default function Admin() {
                 <Label htmlFor="weight-import">Import Weight Data</Label>
                 <Textarea
                   id="weight-import"
-                  placeholder="Paste your weight data here...\nFormat: DATE|TIME|WEIGHT|BODYFATPERCENTAGE|LEANMASS\nExample: 5/6/25|6:05 AM|177.4|15.7|null\nSupports: M/D/YY dates, AM/PM times, and null values"
+                  placeholder="Paste your weight data here...\nFormat: DATE|TIME|WEIGHT|BODYFATPERCENTAGE|LEANMASS\nExample: 5/6/25|06:05|177.4|15.7|null\nSupports: M/D/YY dates, 24-hour time, and null values"
                   value={weightImportData}
                   onChange={(e) => setWeightImportData(e.target.value)}
                   className="min-h-[80px] sm:min-h-[100px] font-mono text-xs sm:text-sm"
