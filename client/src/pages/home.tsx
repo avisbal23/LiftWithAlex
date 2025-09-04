@@ -350,7 +350,8 @@ export default function Home() {
             {/* Home Navigation - left side */}
             <Button 
               variant="ghost"
-onClick={() => {
+              onClick={() => {
+                console.log('Home button clicked - scrolling to top');
                 // Since we're already on home page, just scroll to top
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
@@ -367,7 +368,10 @@ onClick={() => {
             {/* Menu Dropdown - right side */}
             <Button 
               variant="ghost"
-              onClick={() => setIsMenuOpen(true)}
+              onClick={() => {
+                console.log('Menu button clicked - opening menu');
+                setIsMenuOpen(true);
+              }}
               data-testid="button-menu-dropdown"
               className="px-4 h-full flex items-center justify-center hover:bg-primary/10 rounded-r-lg"
             >
