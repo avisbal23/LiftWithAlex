@@ -307,7 +307,7 @@ export default function Home() {
           
           {/* Quick Navigation */}
           <div className="space-y-4">
-            {/* Main Days */}
+            {/* Top Row - Main Workout Days (3 buttons) */}
             <div className="flex flex-wrap justify-center gap-3">
               <Link to="/push">
                 <Badge className="bg-red-500/10 text-red-600 border-red-200 hover:bg-red-500/20 transition-colors px-4 py-2 text-sm cursor-pointer">
@@ -324,14 +324,9 @@ export default function Home() {
                   Leg Day
                 </Badge>
               </Link>
-              <Link to="/cardio">
-                <Badge className="bg-purple-500/10 text-purple-600 border-purple-200 hover:bg-purple-500/20 transition-colors px-4 py-2 text-sm cursor-pointer">
-                  Cardio
-                </Badge>
-              </Link>
             </div>
             
-            {/* Day 2 Options */}
+            {/* Middle Row - Day 2 Options (2 buttons) */}
             <div className="flex flex-wrap justify-center gap-3">
               <Link to="/push2">
                 <Badge className="bg-red-400/10 text-red-500 border-red-100 hover:bg-red-400/20 transition-colors px-4 py-2 text-sm cursor-pointer">
@@ -343,47 +338,10 @@ export default function Home() {
                   Pull Day 2
                 </Badge>
               </Link>
-              <Link to="/legs2">
-                <Badge className="bg-green-400/10 text-green-500 border-green-100 hover:bg-green-400/20 transition-colors px-4 py-2 text-sm cursor-pointer">
-                  Leg Day 2
-                </Badge>
-              </Link>
             </div>
             
-            {/* Additional Tools */}
-            <div className="flex flex-wrap justify-center gap-3">
-              <Link to="/weight">
-                <Badge className="bg-orange-500/10 text-orange-600 border-orange-200 hover:bg-orange-500/20 transition-colors px-4 py-2 text-sm cursor-pointer flex items-center gap-1">
-                  <Scale className="w-3 h-3" />
-                  Weight
-                </Badge>
-              </Link>
-              <Link to="/thoughts">
-                <Badge className="bg-pink-500/10 text-pink-600 border-pink-200 hover:bg-pink-500/20 transition-colors px-4 py-2 text-sm cursor-pointer flex items-center gap-1">
-                  <MessageCircle className="w-3 h-3" />
-                  Thoughts
-                </Badge>
-              </Link>
-            </div>
-            
-            {/* Quick Access - Blood & Photos */}
+            {/* Bottom Row - Administration (1 button) */}
             <div className="flex flex-wrap justify-center gap-3 mb-4">
-              <Link to="/blood-tracking">
-                <Badge className="bg-red-500/10 text-red-600 border-red-200 hover:bg-red-500/20 transition-colors px-4 py-2 text-sm cursor-pointer flex items-center gap-1">
-                  <Activity className="w-3 h-3" />
-                  Blood
-                </Badge>
-              </Link>
-              <Link to="/photo-progress">
-                <Badge className="bg-indigo-500/10 text-indigo-600 border-indigo-200 hover:bg-indigo-500/20 transition-colors px-4 py-2 text-sm cursor-pointer flex items-center gap-1">
-                  <Camera className="w-3 h-3" />
-                  Photos
-                </Badge>
-              </Link>
-            </div>
-            
-            {/* Administration */}
-            <div className="flex flex-wrap justify-center gap-3">
               <Link to="/admin">
                 <Badge className="bg-gray-500/10 text-gray-600 border-gray-200 hover:bg-gray-500/20 transition-colors px-4 py-2 text-sm cursor-pointer flex items-center gap-1">
                   <Settings className="w-3 h-3" />
