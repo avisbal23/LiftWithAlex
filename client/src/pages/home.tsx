@@ -344,12 +344,12 @@ export default function Home() {
               </Link>
             </div>
             
-            {/* Bottom Row - Administration (1 button) */}
+            {/* Bottom Row - Cardio (1 button) */}
             <div className="flex flex-wrap justify-center gap-3 mb-4">
-              <Link to="/admin">
-                <Badge className="bg-gray-500/10 text-gray-600 border-gray-200 hover:bg-gray-500/20 transition-colors px-4 py-2 text-sm cursor-pointer flex items-center gap-1">
-                  <Settings className="w-3 h-3" />
-                  Administration
+              <Link to="/cardio">
+                <Badge className="bg-red-500/10 text-red-600 border-red-200 hover:bg-red-500/20 transition-colors px-4 py-2 text-sm cursor-pointer flex items-center gap-1">
+                  <Activity className="w-3 h-3" />
+                  Cardio
                 </Badge>
               </Link>
             </div>
