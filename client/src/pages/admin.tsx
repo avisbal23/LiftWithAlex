@@ -559,17 +559,17 @@ export default function Admin() {
   return (
     <>
       <UniversalNavigation />
-      <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-        <div className="mb-4 sm:mb-6 lg:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2" data-testid="heading-admin">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2" data-testid="heading-admin">
             Admin Panel
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground">
             Export and import your gym data in bulk
           </p>
         </div>
 
-        <div className="grid gap-4 sm:gap-6 max-w-2xl">
+        <div className="grid gap-4 sm:gap-6 w-full max-w-none sm:max-w-2xl">
           {/* Workout Data Management */}
           <Card>
             <CardHeader>
@@ -578,11 +578,11 @@ export default function Admin() {
                 Workout Data Management
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 sm:space-y-4">
-              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
+            <CardContent className="space-y-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-2">
                 <Button 
                   onClick={exportWorkouts}
-                  className="flex items-center gap-2"
+                  className="flex items-center justify-center gap-2 h-11 text-sm"
                   data-testid="button-export-workouts"
                 >
                   <Download className="w-4 h-4" />
@@ -591,30 +591,30 @@ export default function Admin() {
                 <Button 
                   onClick={downloadWorkoutTemplate}
                   variant="outline"
-                  className="flex items-center gap-2"
+                  className="flex items-center justify-center gap-2 h-11 text-sm"
                   data-testid="button-download-workout-template"
                 >
                   <FileDown className="w-4 h-4" />
                   Download Template
                 </Button>
-                <span className="text-sm text-muted-foreground flex items-center">
+                <span className="text-xs sm:text-sm text-muted-foreground flex items-center justify-center sm:justify-start px-3 py-2 sm:px-0 sm:py-0">
                   ({exercises.length} exercises)
                 </span>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="workout-import">Import Workout Data</Label>
+              <div className="space-y-3">
+                <Label htmlFor="workout-import" className="text-sm font-medium">Import Workout Data</Label>
                 <Textarea
                   id="workout-import"
                   placeholder="Paste your workout export CSV here...\nFormat: name,category,weight,reps,notes,duration,distance,pace,calories,rpe"
                   value={workoutImportData}
                   onChange={(e) => setWorkoutImportData(e.target.value)}
-                  className="min-h-[80px] sm:min-h-[100px] font-mono text-xs sm:text-sm"
+                  className="min-h-[100px] sm:min-h-[120px] font-mono text-xs sm:text-sm resize-none"
                 />
                 <Button 
                   onClick={importWorkouts}
                   disabled={isImporting || !workoutImportData.trim()}
-                  className="flex items-center gap-2"
+                  className="flex items-center justify-center gap-2 h-11 w-full sm:w-auto text-sm"
                   variant="outline"
                   data-testid="button-import-workouts"
                 >
