@@ -632,6 +632,12 @@ onClick={() => {
           </div>
         </div>
       </main>
+      
+      {/* Navigation Menu Overlay */}
+      <NavigationMenu 
+        isOpen={isMenuOpen} 
+        onClose={() => setIsMenuOpen(false)} 
+      />
     </>
   );
 }
@@ -1040,11 +1046,6 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
       </div>
     </div>
     
-    {/* Navigation Menu Overlay */}
-    <NavigationMenu 
-      isOpen={isMenuOpen} 
-      onClose={() => setIsMenuOpen(false)} 
-    />
     </>
   );
 }
