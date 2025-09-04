@@ -485,9 +485,9 @@ export default function Admin() {
   return (
     <>
       <UniversalNavigation />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2" data-testid="heading-admin">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <div className="mb-4 sm:mb-6 lg:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2" data-testid="heading-admin">
             Admin Panel
           </h1>
           <p className="text-muted-foreground">
@@ -495,7 +495,7 @@ export default function Admin() {
           </p>
         </div>
 
-        <div className="grid gap-6">
+        <div className="grid gap-4 sm:gap-6">
           {/* Workout Data Management */}
           <Card>
             <CardHeader>
@@ -504,8 +504,8 @@ export default function Admin() {
                 Workout Data Management
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2">
+            <CardContent className="space-y-3 sm:space-y-4">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
                 <Button 
                   onClick={exportWorkouts}
                   className="flex items-center gap-2"
@@ -535,7 +535,7 @@ export default function Admin() {
                   placeholder="Paste your workout export CSV here...\nFormat: name,category,weight,reps,notes,duration,distance,pace,calories,rpe"
                   value={workoutImportData}
                   onChange={(e) => setWorkoutImportData(e.target.value)}
-                  className="min-h-[100px] font-mono text-sm"
+                  className="min-h-[80px] sm:min-h-[100px] font-mono text-xs sm:text-sm"
                 />
                 <Button 
                   onClick={importWorkouts}
@@ -562,8 +562,8 @@ export default function Admin() {
                 Weight Data Management
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2">
+            <CardContent className="space-y-3 sm:space-y-4">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
                 <Button 
                   onClick={exportWeights}
                   className="flex items-center gap-2"
@@ -620,8 +620,8 @@ export default function Admin() {
                 Quotes Management
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2">
+            <CardContent className="space-y-3 sm:space-y-4">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
                 <Button 
                   onClick={exportQuotes}
                   className="flex items-center gap-2"
@@ -686,14 +686,14 @@ Example:
               <p className="text-sm text-muted-foreground">
                 Control which shortcuts appear on the home screen. Toggle any shortcut on or off to customize your main navigation.
               </p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {shortcutSettings.map((shortcut) => (
                   <button
                     key={shortcut.shortcutKey}
                     onClick={() => handleShortcutToggle(shortcut.shortcutKey, shortcut.isVisible !== 1)}
                     disabled={updateShortcutMutation.isPending}
                     className={`
-                      relative p-6 rounded-xl transition-all duration-300 cursor-pointer group aspect-square
+                      relative p-4 sm:p-6 rounded-xl transition-all duration-300 cursor-pointer group aspect-square
                       backdrop-blur-lg border shadow-2xl
                       ${shortcut.isVisible === 1
                         ? 'bg-green-100/20 dark:bg-green-950/20 border-green-300/30 dark:border-green-700/40 text-green-700 dark:text-green-300 shadow-green-400/20' 
@@ -715,10 +715,10 @@ Example:
                     `} />
                     
                     {/* Main content */}
-                    <div className="text-left space-y-2">
-                      <h3 className="font-semibold text-base">{shortcut.shortcutName}</h3>
-                      <p className="text-sm opacity-70">{shortcut.routePath}</p>
-                      <div className="flex items-center gap-2 text-xs font-medium">
+                    <div className="text-left space-y-1 sm:space-y-2">
+                      <h3 className="font-semibold text-sm sm:text-base">{shortcut.shortcutName}</h3>
+                      <p className="text-xs sm:text-sm opacity-70">{shortcut.routePath}</p>
+                      <div className="flex items-center gap-1 sm:gap-2 text-xs font-medium">
                         <div className={`
                           w-2 h-2 rounded-full
                           ${shortcut.isVisible === 1 ? 'bg-green-500' : 'bg-red-500'}
@@ -758,7 +758,7 @@ Example:
               <p className="text-sm text-muted-foreground">
                 Control which navigation tabs are visible in the header. Toggle any tab on or off to customize your navigation menu.
               </p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {tabSettings.map((tab) => {
                   const isHomeTab = tab.tabKey === 'home';
                   const isAdminTab = tab.tabKey === 'admin';
