@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Download, Upload, Database, FileText, Activity, Droplets, FileDown, MessageSquare, Settings, Lock } from "lucide-react";
 import { type Exercise, type WeightEntry, type Quote, type ShortcutSettings, type TabSettings } from "@shared/schema";
 import { Switch } from "@/components/ui/switch";
+import { UniversalNavigation } from "@/components/UniversalNavigation";
 
 export default function Admin() {
   const { toast } = useToast();
@@ -498,6 +499,7 @@ export default function Admin() {
 
   return (
     <>
+      <UniversalNavigation />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2" data-testid="heading-admin">

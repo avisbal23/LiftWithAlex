@@ -12,12 +12,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "react-beautiful-dnd";
-import { NavigationMenu } from "@/components/NavigationMenu";
+import { UniversalNavigation } from "@/components/UniversalNavigation";
 
 
 export default function Home() {
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const queryClient = useQueryClient();
   
   // Load personal records from independent API
@@ -343,43 +342,7 @@ export default function Home() {
 
   return (
     <>
-      {/* Full-width Home dropdown button - below header, above quote */}
-      <div className="w-full bg-background/50 backdrop-blur-sm border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="w-full relative backdrop-blur-sm bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 py-3 flex items-center justify-between">
-            {/* Home Navigation - left side */}
-            <Button 
-              variant="ghost"
-              onClick={() => {
-                console.log('Home button clicked - scrolling to top');
-                // Since we're already on home page, just scroll to top
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              data-testid="button-home-nav"
-              className="flex-1 h-full flex items-center justify-center gap-2 hover:bg-primary/10 rounded-l-lg"
-            >
-              <HomeIcon className="h-5 w-5" />
-              <span className="font-medium">Home</span>
-            </Button>
-            
-            {/* Divider */}
-            <div className="w-px h-6 bg-primary/30"></div>
-            
-            {/* Menu Dropdown - right side */}
-            <Button 
-              variant="ghost"
-              onClick={() => {
-                console.log('Menu button clicked - opening menu');
-                setIsMenuOpen(true);
-              }}
-              data-testid="button-menu-dropdown"
-              className="px-4 h-full flex items-center justify-center hover:bg-primary/10 rounded-r-lg"
-            >
-              <Menu className="h-4 w-4 opacity-70" />
-            </Button>
-          </div>
-        </div>
-      </div>
+      <UniversalNavigation />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
@@ -415,9 +378,6 @@ export default function Home() {
             </div>
           )}
           
-          <p className="text-lg text-muted-foreground mb-4">
-            Track your workouts, beat your personal records
-          </p>
           
           {/* Today's Suggested Workout */}
           <div className="flex items-center justify-center gap-2 mb-8">
@@ -636,12 +596,6 @@ export default function Home() {
           </div>
         </div>
       </main>
-      
-      {/* Navigation Menu Overlay */}
-      <NavigationMenu 
-        isOpen={isMenuOpen} 
-        onClose={() => setIsMenuOpen(false)} 
-      />
     </>
   );
 }
