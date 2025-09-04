@@ -70,7 +70,7 @@ export default function Header() {
               </Button>
             </div>
             
-            {/* Right: Theme Toggle */}
+            {/* Right: Theme Toggle and Home Icon */}
             <div className="flex items-center space-x-2">
               <Button 
                 variant="ghost" 
@@ -85,6 +85,19 @@ export default function Header() {
                   <Sun className="h-5 w-5 relative z-10 text-white drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]" /> : 
                   <Moon className="h-5 w-5 relative z-10 text-white drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]" />
                 }
+              </Button>
+              
+              {/* Home Icon Button */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setIsMenuOpen(true)}
+                data-testid="button-home-icon"
+                className="relative backdrop-blur-sm bg-white/10 dark:bg-gray-600/20 border border-white/20 dark:border-gray-500/30 rounded-lg text-white hover:bg-white/20 dark:hover:bg-gray-500/30 transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+              >
+                {/* Button 3D Effect */}
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
+                <Home className="h-5 w-5 relative z-10 text-white drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]" />
               </Button>
             </div>
           </div>

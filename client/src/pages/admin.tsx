@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Upload, Database, FileText, Activity, Droplets, FileDown, MessageSquare, Settings } from "lucide-react";
+import { Download, Upload, Database, FileText, Activity, Droplets, FileDown, MessageSquare, Settings, Lock } from "lucide-react";
 import { type Exercise, type WeightEntry, type Quote, type ShortcutSettings, type TabSettings } from "@shared/schema";
 import { Switch } from "@/components/ui/switch";
 
@@ -809,8 +809,9 @@ Example:
                         `} />
                         {tab.isVisible === 1 ? 'VISIBLE' : 'HIDDEN'}
                         {isHomeTab && (
-                          <span className="text-xs text-muted-foreground/70 ml-1">
-                            (Always Active)
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground/70 ml-1">
+                            <Lock className="w-3 h-3" />
+                            (Locked)
                           </span>
                         )}
                       </div>
