@@ -53,7 +53,7 @@ export function UniversalNavigation() {
   return (
     <div className="w-full bg-background/50 backdrop-blur-sm border-b border-border/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <nav className="flex items-center justify-between gap-2">
+        <nav className="flex items-center gap-1 sm:gap-2 w-full">
           
           {/* Home Button */}
           <Button 
@@ -61,8 +61,8 @@ export function UniversalNavigation() {
             onClick={handleHomeClick}
             data-testid="button-home-nav"
             className={`
-              flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200
-              border-2 
+              flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-lg transition-all duration-200
+              border-2 flex-shrink-0
               ${location === "/" 
                 ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90" 
                 : "border-white dark:border-black bg-transparent hover:bg-muted"
@@ -70,11 +70,11 @@ export function UniversalNavigation() {
             `}
           >
             <HomeIcon className="h-4 w-4" />
-            <span className="font-medium">Home</span>
+            <span className="font-medium text-sm sm:text-base">Home</span>
           </Button>
 
-          {/* Main Navigation Pages (next 5 pages) */}
-          <div className="flex items-center gap-2">
+          {/* Main Navigation Pages (next 5 pages) - Dynamic sizing */}
+          <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
             {navbarPages.slice(1).map((page) => (
               <Button
                 key={page.key}
@@ -82,15 +82,15 @@ export function UniversalNavigation() {
                 onClick={() => handlePageClick(page.path)}
                 data-testid={`button-nav-${page.key}`}
                 className={`
-                  px-4 py-2 rounded-lg transition-all duration-200
-                  border-2
+                  px-2 sm:px-4 py-2 rounded-lg transition-all duration-200
+                  border-2 flex-1 min-w-0
                   ${location === page.path 
                     ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90" 
                     : "border-white dark:border-black bg-transparent hover:bg-muted"
                   }
                 `}
               >
-                <span className="font-medium">{page.name}</span>
+                <span className="font-medium text-sm sm:text-base truncate">{page.name}</span>
               </Button>
             ))}
           </div>
@@ -102,8 +102,8 @@ export function UniversalNavigation() {
                 variant="outline"
                 data-testid="button-menu-dropdown"
                 className="
-                  flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200
-                  border-2 border-white dark:border-black bg-transparent hover:bg-muted
+                  flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-lg transition-all duration-200
+                  border-2 border-white dark:border-black bg-transparent hover:bg-muted flex-shrink-0
                 "
               >
                 <Menu className="h-4 w-4" />
