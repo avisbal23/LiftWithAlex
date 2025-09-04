@@ -769,12 +769,14 @@ Example:
               <div className="grid grid-cols-2 gap-4">
                 {tabSettings.map((tab) => {
                   const isHomeTab = tab.tabKey === 'home';
-                  const isDisabled = updateTabMutation.isPending || isHomeTab;
+                  const isAdminTab = tab.tabKey === 'admin';
+                  const isLockedTab = isHomeTab || isAdminTab;
+                  const isDisabled = updateTabMutation.isPending || isLockedTab;
                   
                   return (
                     <button
                     key={tab.tabKey}
-                    onClick={() => !isHomeTab && handleTabToggle(tab.tabKey, tab.isVisible !== 1)}
+                    onClick={() => !isLockedTab && handleTabToggle(tab.tabKey, tab.isVisible !== 1)}
                     disabled={isDisabled}
                     className={`
                       relative p-6 rounded-xl border-2 transition-all duration-300 group
@@ -782,9 +784,9 @@ Example:
                         ? 'bg-green-50 dark:bg-green-950/20 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300' 
                         : 'bg-red-50 dark:bg-red-950/20 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300'
                       }
-                      ${!isHomeTab ? 'cursor-pointer hover:scale-105 hover:shadow-lg' : 'cursor-not-allowed'}
+                      ${!isLockedTab ? 'cursor-pointer hover:scale-105 hover:shadow-lg' : 'cursor-not-allowed'}
                       disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
-                      ${isHomeTab ? 'opacity-75' : ''}
+                      ${isLockedTab ? 'opacity-75' : ''}
                     `}
                     data-testid={`button-tab-${tab.tabKey}`}
                   >
@@ -808,7 +810,7 @@ Example:
                           ${tab.isVisible === 1 ? 'bg-green-500' : 'bg-red-500'}
                         `} />
                         {tab.isVisible === 1 ? 'VISIBLE' : 'HIDDEN'}
-                        {isHomeTab && (
+                        {isLockedTab && (
                           <span className="flex items-center gap-1 text-xs text-muted-foreground/70 ml-1">
                             <Lock className="w-3 h-3" />
                             (Locked)

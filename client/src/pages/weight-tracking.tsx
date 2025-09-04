@@ -6,7 +6,7 @@ import { format, subDays, subMonths, parseISO } from "date-fns";
 import { type WeightEntry, type InsertWeightEntry } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-
+import { UniversalNavigation } from "@/components/UniversalNavigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -247,6 +247,7 @@ export default function WeightTracking() {
 
   return (
     <>
+      <UniversalNavigation />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>

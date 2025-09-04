@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Droplets, Plus, TrendingUp, TrendingDown, Calendar, Upload, Download, AlertTriangle, CheckCircle, FileText, RotateCcw, X, Edit3, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { type BloodEntry } from "@shared/schema";
+import { UniversalNavigation } from "@/components/UniversalNavigation";
 
 export default function BloodTracking() {
   const { toast } = useToast();
@@ -703,6 +704,7 @@ export default function BloodTracking() {
 
   return (
     <>
+      <UniversalNavigation />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
