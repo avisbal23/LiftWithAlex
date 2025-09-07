@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import path from "path";
 import fs from "fs";
-import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema } from "@shared/schema";
+import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -765,6 +765,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ message: "Failed to update tab setting" });
       }
+    }
+  });
+
+  // Daily Set Progress Routes for mobile tap-to-track
+  
+  // Get daily set progress for a specific workout category
+  app.get("/api/daily-set-progress/:category", async (req, res) => {
+    try {
+      const category = req.params.category;
+      if (!["push", "pull", "legs", "push2", "pull2", "legs2", "cardio"].includes(category)) {
+        return res.status(400).json({ message: "Invalid category" });
+      }
+      
+      const today = storage.getTodaysPSTDate();
+      const progress = await storage.getDailySetProgressByCategory(category, today);
+      res.json(progress);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch daily set progress" });
+    }
+  });
+
+  // Tap to increment sets completed for an exercise
+  app.post("/api/daily-set-progress/tap/:exerciseId", async (req, res) => {
+    try {
+      const exerciseId = req.params.exerciseId;
+      const today = storage.getTodaysPSTDate();
+      
+      // Get current progress
+      const currentProgress = await storage.getDailySetProgressByExerciseId(exerciseId, today);
+      const currentSets = currentProgress?.setsCompleted || 0;
+      
+      // Increment sets, max 3
+      const newSets = Math.min(currentSets + 1, 3);
+      
+      // Create or update progress
+      const updatedProgress = await storage.createOrUpdateDailySetProgress({
+        exerciseId,
+        date: today,
+        setsCompleted: newSets
+      });
+      
+      res.json(updatedProgress);
+    } catch (error) {
+      console.error("Error updating set progress:", error);
+      res.status(500).json({ message: "Failed to update set progress" });
+    }
+  });
+
+  // Manual set count update (for potential UI controls)
+  app.patch("/api/daily-set-progress/:exerciseId", async (req, res) => {
+    try {
+      const exerciseId = req.params.exerciseId;
+      const validatedData = updateDailySetProgressSchema.parse(req.body);
+      const today = storage.getTodaysPSTDate();
+      
+      // Ensure sets are between 0-3
+      const setsCompleted = Math.max(0, Math.min(validatedData.setsCompleted || 0, 3));
+      
+      const updatedProgress = await storage.createOrUpdateDailySetProgress({
+        exerciseId,
+        date: today,
+        setsCompleted
+      });
+      
+      res.json(updatedProgress);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update set progress" });
+      }
+    }
+  });
+
+  // Manual daily reset (primarily for testing, scheduled reset will happen automatically)
+  app.post("/api/daily-set-progress/reset", async (req, res) => {
+    try {
+      await storage.resetAllDailySetProgress();
+      res.json({ message: "Daily set progress reset successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to reset daily set progress" });
     }
   });
 

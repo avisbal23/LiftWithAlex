@@ -1,5 +1,5 @@
-import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings } from "@shared/schema";
-import { exercises, workoutLogs, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress } from "@shared/schema";
+import { exercises, workoutLogs, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc, sql } from "drizzle-orm";
@@ -67,6 +67,13 @@ export interface IStorage {
   getVisibleTabSettings(): Promise<TabSettings[]>;
   updateTabSettings(tabKey: string, entry: UpdateTabSettings): Promise<TabSettings | undefined>;
   initializeDefaultTabs(): Promise<void>;
+  
+  // Daily set progress tracking
+  getDailySetProgressByExerciseId(exerciseId: string, date: Date): Promise<DailySetProgress | undefined>;
+  getDailySetProgressByCategory(category: string, date: Date): Promise<DailySetProgress[]>;
+  createOrUpdateDailySetProgress(entry: InsertDailySetProgress): Promise<DailySetProgress>;
+  resetAllDailySetProgress(): Promise<void>;
+  getTodaysPSTDate(): Date;
 }
 
 export class MemStorage implements IStorage {
@@ -1405,6 +1412,84 @@ export class DatabaseStorage implements IStorage {
     for (const pr of prData) {
       await db.insert(personalRecords).values(pr);
     }
+  }
+
+  // Daily set progress tracking methods
+  async getDailySetProgressByExerciseId(exerciseId: string, date: Date): Promise<DailySetProgress | undefined> {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    const [result] = await db.select()
+      .from(dailySetProgress)
+      .where(and(
+        eq(dailySetProgress.exerciseId, exerciseId),
+        gte(dailySetProgress.date, startOfDay),
+        lte(dailySetProgress.date, endOfDay)
+      ));
+    
+    return result;
+  }
+
+  async getDailySetProgressByCategory(category: string, date: Date): Promise<DailySetProgress[]> {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    const results = await db.select({
+      id: dailySetProgress.id,
+      exerciseId: dailySetProgress.exerciseId,
+      date: dailySetProgress.date,
+      setsCompleted: dailySetProgress.setsCompleted,
+      createdAt: dailySetProgress.createdAt,
+      updatedAt: dailySetProgress.updatedAt
+    })
+      .from(dailySetProgress)
+      .leftJoin(exercises, eq(exercises.id, dailySetProgress.exerciseId))
+      .where(and(
+        eq(exercises.category, category),
+        gte(dailySetProgress.date, startOfDay),
+        lte(dailySetProgress.date, endOfDay)
+      ));
+    
+    return results;
+  }
+
+  async createOrUpdateDailySetProgress(entry: InsertDailySetProgress): Promise<DailySetProgress> {
+    const existing = await this.getDailySetProgressByExerciseId(entry.exerciseId, entry.date);
+    
+    if (existing) {
+      const [updated] = await db.update(dailySetProgress)
+        .set({
+          setsCompleted: entry.setsCompleted,
+          updatedAt: new Date()
+        })
+        .where(eq(dailySetProgress.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(dailySetProgress)
+        .values(entry)
+        .returning();
+      return created;
+    }
+  }
+
+  async resetAllDailySetProgress(): Promise<void> {
+    await db.delete(dailySetProgress);
+  }
+
+  getTodaysPSTDate(): Date {
+    // Get current time in PST/PDT
+    const now = new Date();
+    const pstTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+    
+    // Set to start of day in PST
+    pstTime.setHours(0, 0, 0, 0);
+    
+    return pstTime;
   }
 }
 
