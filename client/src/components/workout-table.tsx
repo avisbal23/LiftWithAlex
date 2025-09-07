@@ -667,9 +667,38 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                             data-testid={`input-exercise-name-mobile-${exercise.id}`}
                           />
                           <div className="flex items-center gap-2">
-                            <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                              {keyMetric}
-                            </div>
+                            {/* Editable Key Metrics */}
+                            {isCardio ? (
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="text"
+                                  value={exercise.duration || ""}
+                                  onChange={(e) => debouncedUpdate(exercise.id, "duration", e.target.value)}
+                                  placeholder="28:32"
+                                  className="text-sm font-medium text-muted-foreground bg-transparent border-none p-0 w-16 text-center hover:bg-accent focus:bg-background transition-colors pointer-events-auto"
+                                  data-testid={`input-duration-collapsed-${exercise.id}`}
+                                />
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="number"
+                                  value={exercise.weight || 0}
+                                  onChange={(e) => debouncedUpdate(exercise.id, "weight", parseInt(e.target.value) || 0)}
+                                  className="text-sm font-medium text-muted-foreground bg-transparent border-none p-0 w-12 text-center hover:bg-accent focus:bg-background transition-colors pointer-events-auto"
+                                  data-testid={`input-weight-collapsed-${exercise.id}`}
+                                />
+                                <span className="text-sm font-medium text-muted-foreground">lbs</span>
+                                <span className="text-muted-foreground">×</span>
+                                <Input
+                                  type="number"
+                                  value={exercise.reps || 0}
+                                  onChange={(e) => debouncedUpdate(exercise.id, "reps", parseInt(e.target.value) || 0)}
+                                  className="text-sm font-medium text-muted-foreground bg-transparent border-none p-0 w-10 text-center hover:bg-accent focus:bg-background transition-colors pointer-events-auto"
+                                  data-testid={`input-reps-collapsed-${exercise.id}`}
+                                />
+                              </div>
+                            )}
                             {/* Set Progress Indicator */}
                             <div className="flex items-center gap-1">
                               {[0, 1, 2].map((setIndex) => (
