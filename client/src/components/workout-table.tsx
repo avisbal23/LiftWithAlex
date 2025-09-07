@@ -269,6 +269,164 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
     });
   };
 
+  // Export workout as iPhone lock screen optimized image
+  const exportWorkoutImage = () => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // 16:9 aspect ratio optimized for iPhone lock screen
+    const width = 1280;
+    const height = 720;
+    canvas.width = width;
+    canvas.height = height;
+
+    // Calculate safe zones (top 30%, bottom 20% clear)
+    const topSafeZone = height * 0.3;
+    const bottomSafeZone = height * 0.2;
+    const contentHeight = height - topSafeZone - bottomSafeZone;
+    const contentStartY = topSafeZone;
+
+    // Background
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, width, height);
+
+    // Header area (in safe zone)
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 36px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    const headerText = `${getCategoryDisplayName(category)} Workout`;
+    ctx.fillText(headerText, width / 2, contentStartY + 40);
+
+    // Date
+    ctx.font = '24px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
+    ctx.fillStyle = '#CCCCCC';
+    const today = new Date().toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    ctx.fillText(today, width / 2, contentStartY + 80);
+
+    // Exercise table
+    if (exercises.length > 0) {
+      const tableStartY = contentStartY + 120;
+      const tableWidth = width * 0.9;
+      const tableX = (width - tableWidth) / 2;
+      const rowHeight = Math.min(40, (contentHeight - 140) / (exercises.length + 1));
+
+      // Table headers
+      ctx.fillStyle = '#333333';
+      ctx.fillRect(tableX, tableStartY, tableWidth, rowHeight);
+      
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      
+      const colWidths = isCardio 
+        ? [tableWidth * 0.5, tableWidth * 0.25, tableWidth * 0.25]
+        : [tableWidth * 0.4, tableWidth * 0.3, tableWidth * 0.3];
+      
+      const headers = isCardio ? ['Exercise', 'Duration', 'Distance'] : ['Exercise', 'Weight', 'Reps'];
+      let currentX = tableX + 15;
+      
+      headers.forEach((header, index) => {
+        ctx.fillText(header, currentX, tableStartY + 25);
+        currentX += colWidths[index];
+      });
+
+      // Exercise rows
+      exercises.slice(0, Math.floor((contentHeight - 160) / rowHeight)).forEach((exercise, index) => {
+        const rowY = tableStartY + (index + 1) * rowHeight;
+        
+        // Alternating row colors
+        ctx.fillStyle = index % 2 === 0 ? '#1a1a1a' : '#2a2a2a';
+        ctx.fillRect(tableX, rowY, tableWidth, rowHeight);
+        
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = '16px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
+        
+        currentX = tableX + 15;
+        
+        // Exercise name
+        ctx.fillText(exercise.name.length > 20 ? exercise.name.substring(0, 20) + '...' : exercise.name, currentX, rowY + 25);
+        currentX += colWidths[0];
+        
+        if (isCardio) {
+          // Duration
+          ctx.fillText(exercise.duration || '-', currentX, rowY + 25);
+          currentX += colWidths[1];
+          // Distance
+          ctx.fillText(exercise.distance || '-', currentX, rowY + 25);
+        } else {
+          // Weight
+          ctx.fillText(exercise.weight ? `${exercise.weight} lbs` : '-', currentX, rowY + 25);
+          currentX += colWidths[1];
+          // Reps
+          ctx.fillText(exercise.reps ? `${exercise.reps}` : '-', currentX, rowY + 25);
+        }
+      });
+
+      // Progress indicators (if any exercises have progress)
+      const progressData = exercises.map(ex => {
+        const progress = getExerciseProgress(ex.id);
+        return { name: ex.name, sets: progress?.setsCompleted || 0 };
+      }).filter(p => p.sets > 0);
+
+      if (progressData.length > 0) {
+        const progressY = tableStartY + (exercises.length + 2) * rowHeight;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Today\'s Progress', width / 2, progressY);
+        
+        progressData.forEach((item, index) => {
+          const progressRowY = progressY + 30 + (index * 25);
+          ctx.font = '14px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
+          ctx.textAlign = 'left';
+          const progressText = `${item.name.substring(0, 25)}: ${item.sets}/3 sets`;
+          ctx.fillText(progressText, tableX + 15, progressRowY);
+          
+          // Progress dots
+          const dotsX = tableX + tableWidth - 100;
+          for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.arc(dotsX + (i * 20), progressRowY - 5, 6, 0, 2 * Math.PI);
+            ctx.fillStyle = i < item.sets ? '#22c55e' : '#404040';
+            ctx.fill();
+          }
+          ctx.fillStyle = '#FFFFFF';
+        });
+      }
+    } else {
+      // No exercises message
+      ctx.fillStyle = '#CCCCCC';
+      ctx.font = '24px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('No exercises added yet', width / 2, contentStartY + contentHeight / 2);
+    }
+
+    // Download the image
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${category}-workout-${new Date().toISOString().split('T')[0]}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        toast({
+          title: "Workout exported!",
+          description: "Image saved to your downloads for lock screen use.",
+        });
+      }
+    }, 'image/png');
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -290,6 +448,17 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
           <p className="text-muted-foreground mt-1">{description}</p>
         </div>
         <div className="flex items-center gap-3">
+          <Button 
+            onClick={exportWorkoutImage}
+            variant="outline"
+            className="bg-accent/50 border-accent text-accent-foreground hover:bg-accent/80"
+            data-testid={`button-export-${category}`}
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export Image
+          </Button>
           <Button 
             onClick={() => logWorkoutMutation.mutate(category)}
             disabled={logWorkoutMutation.isPending}
