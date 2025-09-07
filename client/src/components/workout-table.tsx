@@ -640,12 +640,12 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               onClick={() => handleExerciseTap(exercise.id)}
                               data-testid={`tap-area-${exercise.id}`}
                             />
-                  <CardContent className="relative z-20 p-4">
+                  <CardContent className="relative z-20 p-4 pointer-events-none">
                     {/* Collapsed Header - Always Visible */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
-                          <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing flex-shrink-0">
+                          <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing flex-shrink-0 pointer-events-auto">
                             <GripVertical className="w-4 h-4 text-muted-foreground" />
                           </div>
                           <div className="flex items-center space-x-1 flex-shrink-0">
@@ -654,7 +654,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               type="number"
                               value={editingExercises[exercise.id]?.order ?? exercise.order ?? 0}
                               onChange={(e) => setEditingExercises(prev => ({ ...prev, [exercise.id]: { ...prev[exercise.id], order: parseInt(e.target.value) || 0 } }))}
-                              className="border-none bg-transparent p-0 text-xs text-muted-foreground focus:bg-background hover:bg-accent transition-colors w-8 text-center"
+                              className="border-none bg-transparent p-0 text-xs text-muted-foreground focus:bg-background hover:bg-accent transition-colors w-8 text-center pointer-events-auto"
                               data-testid={`input-order-mobile-${exercise.id}`}
                               min="1"
                             />
@@ -663,7 +663,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                             type="text"
                             value={exercise.name}
                             onChange={(e) => updateExercise(exercise.id, "name", e.target.value)}
-                            className="font-semibold text-base border-none bg-transparent p-0 text-foreground focus:bg-background hover:bg-accent transition-colors flex-1 whitespace-normal break-words"
+                            className="font-semibold text-base border-none bg-transparent p-0 text-foreground focus:bg-background hover:bg-accent transition-colors flex-1 whitespace-normal break-words pointer-events-auto"
                             data-testid={`input-exercise-name-mobile-${exercise.id}`}
                           />
                           <div className="flex items-center gap-2">
@@ -705,7 +705,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                 setSelectedNotes({ exercise: exercise.name, notes: exercise.notes || "" });
                                 setEditingNotes(exercise.notes || "");
                               }}
-                              className="text-muted-foreground hover:text-foreground p-2"
+                              className="text-muted-foreground hover:text-foreground p-2 pointer-events-auto"
                               data-testid={`button-view-notes-mobile-${exercise.id}`}
                             >
                               <Eye className="w-4 h-4" />
@@ -799,7 +799,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                           variant="ghost"
                           size="sm"
                           onClick={() => toggleCardExpansion(exercise.id)}
-                          className="text-muted-foreground hover:text-foreground p-2"
+                          className="text-muted-foreground hover:text-foreground p-2 pointer-events-auto"
                           data-testid={`button-expand-${exercise.id}`}
                         >
                           <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
@@ -810,7 +810,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                           size="sm"
                           onClick={() => deleteExercise(exercise.id)}
                           disabled={deleteMutation.isPending}
-                          className="text-destructive hover:text-destructive/80 p-2"
+                          className="text-destructive hover:text-destructive/80 p-2 pointer-events-auto"
                           data-testid={`button-delete-mobile-${exercise.id}`}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -827,7 +827,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                             type="number"
                             value={editingExercises[exercise.id]?.order ?? exercise.order ?? 0}
                             onChange={(e) => setEditingExercises(prev => ({ ...prev, [exercise.id]: { ...prev[exercise.id], order: parseInt(e.target.value) || 0 } }))}
-                            className="text-sm h-8"
+                            className="text-sm h-8 pointer-events-auto"
                             data-testid={`input-order-expanded-${exercise.id}`}
                             min="1"
                           />
@@ -841,7 +841,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                 value={exercise.duration || ""}
                                 onChange={(e) => debouncedUpdate(exercise.id, "duration", e.target.value)}
                                 placeholder="28:32"
-                                className="text-base font-semibold"
+                                className="text-base font-semibold pointer-events-auto"
                                 data-testid={`input-duration-mobile-${exercise.id}`}
                               />
                             </div>
@@ -852,7 +852,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                 value={exercise.distance || ""}
                                 onChange={(e) => debouncedUpdate(exercise.id, "distance", e.target.value)}
                                 placeholder="3.1 miles"
-                                className="text-base font-semibold"
+                                className="text-base font-semibold pointer-events-auto"
                                 data-testid={`input-distance-mobile-${exercise.id}`}
                               />
                             </div>
@@ -863,7 +863,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                 value={exercise.pace || ""}
                                 onChange={(e) => debouncedUpdate(exercise.id, "pace", e.target.value)}
                                 placeholder="9:10/mile"
-                                className="text-base font-semibold"
+                                className="text-base font-semibold pointer-events-auto"
                                 data-testid={`input-pace-mobile-${exercise.id}`}
                               />
                             </div>
@@ -874,7 +874,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                 value={exercise.calories || 0}
                                 onChange={(e) => debouncedUpdate(exercise.id, "calories", parseInt(e.target.value) || 0)}
                                 placeholder="320"
-                                className="text-base font-semibold"
+                                className="text-base font-semibold pointer-events-auto"
                                 data-testid={`input-calories-mobile-${exercise.id}`}
                               />
                             </div>
@@ -887,7 +887,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                 placeholder="8"
                                 min="1"
                                 max="10"
-                                className="text-base font-semibold"
+                                className="text-base font-semibold pointer-events-auto"
                                 data-testid={`input-rpe-mobile-${exercise.id}`}
                               />
                             </div>
@@ -900,7 +900,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                 type="number"
                                 value={exercise.weight || 0}
                                 onChange={(e) => debouncedUpdate(exercise.id, "weight", parseInt(e.target.value) || 0)}
-                                className="text-base font-semibold"
+                                className="text-base font-semibold pointer-events-auto"
                                 data-testid={`input-weight-mobile-${exercise.id}`}
                               />
                             </div>
@@ -910,7 +910,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                 type="number"
                                 value={exercise.reps || 0}
                                 onChange={(e) => debouncedUpdate(exercise.id, "reps", parseInt(e.target.value) || 0)}
-                                className="text-base font-semibold"
+                                className="text-base font-semibold pointer-events-auto"
                                 data-testid={`input-reps-mobile-${exercise.id}`}
                               />
                             </div>
@@ -924,7 +924,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                             value={exercise.notes || ""}
                             onChange={(e) => debouncedUpdate(exercise.id, "notes", e.target.value)}
                             placeholder="Add notes..."
-                            className="text-sm"
+                            className="text-sm pointer-events-auto"
                             data-testid={`input-notes-mobile-${exercise.id}`}
                           />
                         </div>
