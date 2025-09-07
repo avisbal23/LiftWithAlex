@@ -1017,17 +1017,6 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                         >
                           <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                         </Button>
-                        
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteExercise(exercise.id)}
-                          disabled={deleteMutation.isPending}
-                          className="text-destructive hover:text-destructive/80 p-2 pointer-events-auto"
-                          data-testid={`button-delete-mobile-${exercise.id}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
                       </div>
                     </div>
                     
@@ -1140,6 +1129,21 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                             className="text-sm pointer-events-auto"
                             data-testid={`input-notes-mobile-${exercise.id}`}
                           />
+                        </div>
+                        
+                        {/* Delete Exercise Button */}
+                        <div className="flex justify-end pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => deleteExercise(exercise.id)}
+                            disabled={deleteMutation.isPending}
+                            className="text-destructive hover:text-destructive/80 border-destructive/20 hover:border-destructive/40 pointer-events-auto"
+                            data-testid={`button-delete-mobile-${exercise.id}`}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete Exercise
+                          </Button>
                         </div>
                       </div>
                     )}
