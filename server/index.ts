@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import * as cron from "node-cron";
+import { storage } from "./storage";
 
 const app = express();
 app.use(express.json());
@@ -38,6 +40,23 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+
+  // Setup daily reset scheduler for midnight PST
+  // Cron format: second minute hour day month day-of-week
+  // This runs at 00:00 (midnight) in America/Los_Angeles timezone
+  cron.schedule("0 0 * * *", async () => {
+    try {
+      log("Running daily set progress reset at midnight PST...");
+      await storage.resetAllDailySetProgress();
+      log("Daily set progress reset completed successfully");
+    } catch (error) {
+      log(`Error during daily reset: ${error}`);
+    }
+  }, {
+    timezone: "America/Los_Angeles" // PST/PDT timezone
+  });
+
+  log("Daily reset scheduler initialized for midnight PST");
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
