@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Eye, ChevronDown, GripVertical } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { type Exercise, type InsertExercise, type UpdateExercise, type InsertWorkoutLog } from "@shared/schema";
+import { type Exercise, type InsertExercise, type UpdateExercise, type InsertWorkoutLog, type DailySetProgress } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "react-beautiful-dnd";
 
@@ -29,6 +29,15 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
 
   const { data: exercises = [], isLoading } = useQuery<Exercise[]>({
     queryKey: ["/api/exercises", category],
+  });
+
+  // Fetch daily set progress for this category
+  const { data: dailyProgress = [] } = useQuery<DailySetProgress[]>({
+    queryKey: ["/api/daily-set-progress", category],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/daily-set-progress/${category}`);
+      return response.json();
+    },
   });
 
   const createMutation = useMutation({
@@ -78,6 +87,17 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
     },
   });
 
+  // Tap to increment sets for an exercise (mobile tap-to-track)
+  const tapSetMutation = useMutation({
+    mutationFn: async (exerciseId: string) => {
+      const response = await apiRequest("POST", `/api/daily-set-progress/tap/${exerciseId}`, {});
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/daily-set-progress", category] });
+    },
+  });
+
   const getCategoryDisplayName = (cat: string) => {
     switch (cat) {
       case "push": return "Push Day";
@@ -88,6 +108,29 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
       case "legs2": return "Leg Day 2";
       case "cardio": return "Cardio";
       default: return cat;
+    }
+  };
+
+  // Helper function to get set progress for an exercise
+  const getExerciseProgress = (exerciseId: string): DailySetProgress | undefined => {
+    return dailyProgress.find(progress => progress.exerciseId === exerciseId);
+  };
+
+  // Helper function to get progress percentage
+  const getProgressPercentage = (exerciseId: string): number => {
+    const progress = getExerciseProgress(exerciseId);
+    const sets = progress?.setsCompleted || 0;
+    return Math.min(sets / 3 * 100, 100);
+  };
+
+  // Helper function to handle tap/click on exercise card
+  const handleExerciseTap = (exerciseId: string) => {
+    const progress = getExerciseProgress(exerciseId);
+    const currentSets = progress?.setsCompleted || 0;
+    
+    // Only allow tapping if not already at max sets
+    if (currentSets < 3) {
+      tapSetMutation.mutate(exerciseId);
     }
   };
 
@@ -559,6 +602,10 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                   {exercises.map((exercise, index) => {
                     const isExpanded = expandedCards.has(exercise.id);
                     const keyMetric = isCardio ? exercise.duration : `${exercise.weight} lbs`;
+                    const progress = getExerciseProgress(exercise.id);
+                    const setsCompleted = progress?.setsCompleted || 0;
+                    const progressPercentage = getProgressPercentage(exercise.id);
+                    const isComplete = setsCompleted >= 3;
                     
                     return (
                       <Draggable key={exercise.id} draggableId={exercise.id} index={index}>
@@ -566,10 +613,34 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                           <Card 
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            className={`bg-card ${snapshot.isDragging ? 'opacity-75' : ''}`} 
+                            className={`relative overflow-hidden bg-card transition-all duration-300 ${
+                              snapshot.isDragging ? 'opacity-75' : ''
+                            } ${
+                              isComplete ? 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800' : ''
+                            }`} 
                             data-testid={`card-exercise-${exercise.id}`}
                           >
-                  <CardContent className="p-4">
+                            {/* Progress Bar Background */}
+                            <div className="absolute inset-0 z-0">
+                              <div 
+                                className={`h-full transition-all duration-500 ${
+                                  isComplete 
+                                    ? 'bg-green-100 dark:bg-green-900/50' 
+                                    : 'bg-blue-100 dark:bg-blue-900/30'
+                                }`}
+                                style={{ width: `${progressPercentage}%` }}
+                              />
+                            </div>
+                            
+                            {/* Tappable Area */}
+                            <div 
+                              className={`absolute inset-0 z-10 cursor-pointer transition-colors ${
+                                setsCompleted < 3 ? 'hover:bg-black/5 active:bg-black/10' : 'cursor-default'
+                              }`}
+                              onClick={() => handleExerciseTap(exercise.id)}
+                              data-testid={`tap-area-${exercise.id}`}
+                            />
+                  <CardContent className="relative z-20 p-4">
                     {/* Collapsed Header - Always Visible */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex-1 min-w-0">
@@ -595,8 +666,31 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                             className="font-semibold text-base border-none bg-transparent p-0 text-foreground focus:bg-background hover:bg-accent transition-colors flex-1 whitespace-normal break-words"
                             data-testid={`input-exercise-name-mobile-${exercise.id}`}
                           />
-                          <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                            {keyMetric}
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                              {keyMetric}
+                            </div>
+                            {/* Set Progress Indicator */}
+                            <div className="flex items-center gap-1">
+                              {[0, 1, 2].map((setIndex) => (
+                                <div
+                                  key={setIndex}
+                                  className={`w-2 h-2 rounded-full transition-colors ${
+                                    setIndex < setsCompleted 
+                                      ? (isComplete ? 'bg-green-500' : 'bg-blue-500') 
+                                      : 'bg-gray-300 dark:bg-gray-600'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            {/* Sets Text */}
+                            <span className={`text-xs font-medium ${
+                              isComplete 
+                                ? 'text-green-600 dark:text-green-400' 
+                                : 'text-muted-foreground'
+                            }`}>
+                              {setsCompleted}/3
+                            </span>
                           </div>
                         </div>
                       </div>
