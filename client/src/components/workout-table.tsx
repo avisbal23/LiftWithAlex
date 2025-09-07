@@ -56,7 +56,23 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
       const response = await apiRequest("PATCH", `/api/exercises/${id}`, data);
       return response.json();
     },
-    // Removed onSuccess cache invalidation to prevent re-renders
+    onSuccess: (updatedExercise) => {
+      // Update the cache directly with the new data to avoid full refetch
+      queryClient.setQueryData<Exercise[]>(["/api/exercises", category], (oldData) => {
+        if (!oldData) return oldData;
+        return oldData.map(exercise => 
+          exercise.id === updatedExercise.id ? updatedExercise : exercise
+        );
+      });
+      
+      // Also update the global cache if it exists
+      queryClient.setQueryData<Exercise[]>(["/api/exercises"], (oldData) => {
+        if (!oldData) return oldData;
+        return oldData.map(exercise => 
+          exercise.id === updatedExercise.id ? updatedExercise : exercise
+        );
+      });
+    },
   });
 
   const deleteMutation = useMutation({
