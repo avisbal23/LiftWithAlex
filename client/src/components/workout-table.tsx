@@ -834,7 +834,6 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                             <GripVertical className="w-4 h-4 text-muted-foreground" />
                           </div>
                           <div className="flex items-center space-x-1 flex-shrink-0">
-                            <span className="text-xs text-muted-foreground">#</span>
                             <Input
                               type="number"
                               value={editingExercises[exercise.id]?.order ?? exercise.order ?? 0}
