@@ -212,6 +212,17 @@ export const tabSettings = pgTable("tab_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Weight Change History - for tracking progressive overload
+export const exerciseWeightHistory = pgTable("exercise_weight_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  exerciseId: varchar("exercise_id").notNull(), // references exercises(id)
+  exerciseName: text("exercise_name").notNull(), // Store exercise name for reference
+  previousWeight: integer("previous_weight").notNull(), // Previous weight value
+  newWeight: integer("new_weight").notNull(), // New weight value
+  changeDate: timestamp("change_date").defaultNow(), // When the change occurred
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -307,6 +318,13 @@ export const insertTabSettingsSchema = createInsertSchema(tabSettings).omit({
 
 export const updateTabSettingsSchema = insertTabSettingsSchema.partial();
 
+export const insertExerciseWeightHistorySchema = createInsertSchema(exerciseWeightHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const updateExerciseWeightHistorySchema = insertExerciseWeightHistorySchema.partial();
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Exercise = typeof exercises.$inferSelect;
@@ -344,3 +362,6 @@ export type UpdateShortcutSettings = z.infer<typeof updateShortcutSettingsSchema
 export type TabSettings = typeof tabSettings.$inferSelect;
 export type InsertTabSettings = z.infer<typeof insertTabSettingsSchema>;
 export type UpdateTabSettings = z.infer<typeof updateTabSettingsSchema>;
+export type ExerciseWeightHistory = typeof exerciseWeightHistory.$inferSelect;
+export type InsertExerciseWeightHistory = z.infer<typeof insertExerciseWeightHistorySchema>;
+export type UpdateExerciseWeightHistory = z.infer<typeof updateExerciseWeightHistorySchema>;
