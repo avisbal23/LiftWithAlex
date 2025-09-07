@@ -157,6 +157,16 @@ export const quotes = pgTable("quotes", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Daily set progress tracking for mobile tap-to-track system
+export const dailySetProgress = pgTable("daily_set_progress", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  exerciseId: varchar("exercise_id").notNull(), // references exercises(id)
+  date: timestamp("date").notNull(), // Date in PST timezone (reset at midnight PST)
+  setsCompleted: integer("sets_completed").default(0), // 0-3 sets completed
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // User settings for storing current body weight and other preferences
 export const userSettings = pgTable("user_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -257,6 +267,14 @@ export const insertQuoteSchema = createInsertSchema(quotes).omit({
 
 export const updateQuoteSchema = insertQuoteSchema.partial();
 
+export const insertDailySetProgressSchema = createInsertSchema(dailySetProgress).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateDailySetProgressSchema = insertDailySetProgressSchema.partial();
+
 export const insertPersonalRecordSchema = createInsertSchema(personalRecords).omit({
   id: true,
   createdAt: true,
@@ -311,6 +329,9 @@ export type UpdateThought = z.infer<typeof updateThoughtSchema>;
 export type Quote = typeof quotes.$inferSelect;
 export type InsertQuote = z.infer<typeof insertQuoteSchema>;
 export type UpdateQuote = z.infer<typeof updateQuoteSchema>;
+export type DailySetProgress = typeof dailySetProgress.$inferSelect;
+export type InsertDailySetProgress = z.infer<typeof insertDailySetProgressSchema>;
+export type UpdateDailySetProgress = z.infer<typeof updateDailySetProgressSchema>;
 export type PersonalRecord = typeof personalRecords.$inferSelect;
 export type InsertPersonalRecord = z.infer<typeof insertPersonalRecordSchema>;
 export type UpdatePersonalRecord = z.infer<typeof updatePersonalRecordSchema>;
