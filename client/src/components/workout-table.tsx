@@ -23,7 +23,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
   const queryClient = useQueryClient();
   const [selectedNotes, setSelectedNotes] = useState<{ exercise: string; notes: string } | null>(null);
   const [editingNotes, setEditingNotes] = useState<string>("");
-  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const timeoutRefs = useRef<Record<string, NodeJS.Timeout>>({});
   const [editingExercises, setEditingExercises] = useState<Record<string, Partial<Exercise>>>({});
 
@@ -132,21 +133,38 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
     return dailyProgress.find(progress => progress.exerciseId === exerciseId);
   };
 
-  // Helper function to get progress percentage
+  // Helper function to get progress percentage (allow unlimited sets but cap visual at 100%)
   const getProgressPercentage = (exerciseId: string): number => {
     const progress = getExerciseProgress(exerciseId);
     const sets = progress?.setsCompleted || 0;
     return Math.min(sets / 3 * 100, 100);
   };
 
-  // Helper function to handle tap/click on exercise card
+  // Helper function to handle tap/click on exercise card (allow unlimited sets)
   const handleExerciseTap = (exerciseId: string) => {
-    const progress = getExerciseProgress(exerciseId);
-    const currentSets = progress?.setsCompleted || 0;
-    
-    // Only allow tapping if not already at max sets
-    if (currentSets < 3) {
-      tapSetMutation.mutate(exerciseId);
+    tapSetMutation.mutate(exerciseId);
+  };
+
+  // Helper function to handle long press for card flip
+  const handleLongPressStart = (exerciseId: string) => {
+    const timer = setTimeout(() => {
+      setFlippedCards((prev: Set<string>) => {
+        const newSet = new Set(prev);
+        if (newSet.has(exerciseId)) {
+          newSet.delete(exerciseId);
+        } else {
+          newSet.add(exerciseId);
+        }
+        return newSet;
+      });
+    }, 500); // 500ms long press
+    setLongPressTimer(timer);
+  };
+
+  const handleLongPressEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
     }
   };
 
@@ -217,7 +235,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
   const isCardio = category === "cardio";
 
   const toggleCardExpansion = (exerciseId: string) => {
-    setExpandedCards(prev => {
+    setFlippedCards((prev: Set<string>) => {
       const newSet = new Set(prev);
       if (newSet.has(exerciseId)) {
         newSet.delete(exerciseId);
@@ -616,7 +634,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                   {...provided.droppableProps}
                 >
                   {exercises.map((exercise, index) => {
-                    const isExpanded = expandedCards.has(exercise.id);
+                    const isFlipped = flippedCards.has(exercise.id);
                     const keyMetric = isCardio ? exercise.duration : `${exercise.weight} lbs`;
                     const progress = getExerciseProgress(exercise.id);
                     const setsCompleted = progress?.setsCompleted || 0;
@@ -629,7 +647,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                           <Card 
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            className={`relative overflow-hidden bg-card transition-all duration-300 ${
+                            className={`bg-card transition-all duration-300 ${
                               snapshot.isDragging ? 'opacity-75' : ''
                             } ${
                               isComplete ? 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800' : ''
@@ -648,334 +666,65 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               />
                             </div>
                             
-                            {/* Tappable Area */}
+                            {/* Tappable Area for Set Tracking */}
                             <div 
-                              className={`absolute inset-0 z-10 cursor-pointer transition-colors ${
-                                setsCompleted < 3 ? 'hover:bg-black/5 active:bg-black/10' : 'cursor-default'
-                              }`}
+                              className="absolute inset-0 z-10 cursor-pointer transition-colors hover:bg-black/5 active:bg-black/10"
                               onClick={() => handleExerciseTap(exercise.id)}
                               data-testid={`tap-area-${exercise.id}`}
                             />
-                  <CardContent className="relative z-20 p-4 pointer-events-none">
-                    {/* Collapsed Header - Always Visible */}
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2">
-                          <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing flex-shrink-0 pointer-events-auto">
-                            <GripVertical className="w-4 h-4 text-muted-foreground" />
-                          </div>
-                          <div className="flex items-center space-x-1 flex-shrink-0">
-                            <span className="text-xs text-muted-foreground">#</span>
-                            <Input
-                              type="number"
-                              value={editingExercises[exercise.id]?.order ?? exercise.order ?? 0}
-                              onChange={(e) => setEditingExercises(prev => ({ ...prev, [exercise.id]: { ...prev[exercise.id], order: parseInt(e.target.value) || 0 } }))}
-                              className="border-none bg-transparent p-0 text-xs text-muted-foreground focus:bg-background hover:bg-accent transition-colors w-8 text-center pointer-events-auto"
-                              data-testid={`input-order-mobile-${exercise.id}`}
-                              min="1"
-                            />
-                          </div>
-                          <Input
-                            type="text"
-                            value={exercise.name}
-                            onChange={(e) => updateExercise(exercise.id, "name", e.target.value)}
-                            className="font-semibold text-base border-none bg-transparent p-0 text-foreground focus:bg-background hover:bg-accent transition-colors flex-1 whitespace-normal break-words pointer-events-auto"
-                            data-testid={`input-exercise-name-mobile-${exercise.id}`}
-                          />
-                          <div className="flex items-center gap-2">
-                            {/* Editable Key Metrics */}
-                            {isCardio ? (
-                              <div className="flex items-center gap-1">
-                                <Input
-                                  type="text"
-                                  value={exercise.duration || ""}
-                                  onChange={(e) => debouncedUpdate(exercise.id, "duration", e.target.value)}
-                                  placeholder="28:32"
-                                  className="text-sm font-medium text-muted-foreground bg-transparent border-none p-0 w-16 text-center hover:bg-accent focus:bg-background transition-colors pointer-events-auto"
-                                  data-testid={`input-duration-collapsed-${exercise.id}`}
-                                />
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1">
-                                <Input
-                                  type="number"
-                                  value={exercise.weight || 0}
-                                  onChange={(e) => debouncedUpdate(exercise.id, "weight", parseInt(e.target.value) || 0)}
-                                  className="text-sm font-medium text-muted-foreground bg-transparent border-none p-0 w-12 text-center hover:bg-accent focus:bg-background transition-colors pointer-events-auto"
-                                  data-testid={`input-weight-collapsed-${exercise.id}`}
-                                />
-                                <span className="text-sm font-medium text-muted-foreground">lbs</span>
-                                <span className="text-muted-foreground">×</span>
-                                <Input
-                                  type="number"
-                                  value={exercise.reps || 0}
-                                  onChange={(e) => debouncedUpdate(exercise.id, "reps", parseInt(e.target.value) || 0)}
-                                  className="text-sm font-medium text-muted-foreground bg-transparent border-none p-0 w-10 text-center hover:bg-accent focus:bg-background transition-colors pointer-events-auto"
-                                  data-testid={`input-reps-collapsed-${exercise.id}`}
-                                />
-                              </div>
-                            )}
-                            {/* Set Progress Indicator */}
-                            <div className="flex items-center gap-1">
-                              {[0, 1, 2].map((setIndex) => (
-                                <div
-                                  key={setIndex}
-                                  className={`w-2 h-2 rounded-full transition-colors ${
-                                    setIndex < setsCompleted 
-                                      ? (isComplete ? 'bg-green-500' : 'bg-blue-500') 
-                                      : 'bg-gray-300 dark:bg-gray-600'
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                            {/* Sets Text */}
-                            <span className={`text-xs font-medium ${
-                              isComplete 
-                                ? 'text-green-600 dark:text-green-400' 
-                                : 'text-muted-foreground'
-                            }`}>
-                              {setsCompleted}/3
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-1 ml-2">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedNotes({ exercise: exercise.name, notes: exercise.notes || "" });
-                                setEditingNotes(exercise.notes || "");
-                              }}
-                              className="text-muted-foreground hover:text-foreground p-2 pointer-events-auto"
-                              data-testid={`button-view-notes-mobile-${exercise.id}`}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-[95vw] mx-4">
-                            <DialogHeader>
-                              <DialogTitle>Exercise Details</DialogTitle>
-                            </DialogHeader>
-                            <Card>
-                              <CardHeader>
-                                <div className="flex items-center justify-between">
-                                  <CardTitle className="text-lg">{exercise.name}</CardTitle>
-                                  <Badge variant="secondary" className="capitalize">
-                                    {category}
-                                  </Badge>
+                            
+                            <CardContent className="relative z-20 px-4 py-3 pointer-events-none">
+                              {/* SIMPLIFIED LAYOUT: TITLE → Weight → Current Set */}
+                              <div className="flex items-center justify-between">
+                                {/* Drag Handle (hidden but functional) */}
+                                <div {...provided.dragHandleProps} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 hover:opacity-50 pointer-events-auto">
+                                  <GripVertical className="w-4 h-4 text-muted-foreground" />
                                 </div>
-                              </CardHeader>
-                              <CardContent className="space-y-4">
-                                <div className="space-y-2 mb-4">
-                                  <div className="text-sm font-medium text-muted-foreground">Order</div>
-                                  <div className="text-xl font-bold text-primary">
-                                    #{exercise.order || 0}
+                                
+                                {/* Exercise Title */}
+                                <div className="flex-1 ml-8">
+                                  <h3 className="font-semibold text-lg text-foreground truncate">
+                                    {exercise.name}
+                                  </h3>
+                                </div>
+                                
+                                {/* Weight/Duration */}
+                                <div className="flex items-center gap-3 text-right">
+                                  {isCardio ? (
+                                    <span className="text-sm font-medium text-muted-foreground">
+                                      {exercise.duration || "0:00"}
+                                    </span>
+                                  ) : (
+                                    <span className="text-sm font-medium text-muted-foreground">
+                                      {exercise.weight || 0} lbs
+                                    </span>
+                                  )}
+                                  
+                                  {/* Current Set Counter */}
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1">
+                                      {[0, 1, 2].map((setIndex) => (
+                                        <div
+                                          key={setIndex}
+                                          className={`w-2 h-2 rounded-full transition-colors ${
+                                            setIndex < setsCompleted 
+                                              ? (setsCompleted >= 3 ? 'bg-green-500' : 'bg-blue-500') 
+                                              : 'bg-gray-300 dark:bg-gray-600'
+                                          }`}
+                                        />
+                                      ))}
+                                    </div>
+                                    <span className={`text-sm font-bold ${
+                                      setsCompleted >= 3
+                                        ? 'text-green-600 dark:text-green-400' 
+                                        : 'text-foreground'
+                                    }`}>
+                                      {setsCompleted}
+                                    </span>
                                   </div>
                                 </div>
-                                {isCardio ? (
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                      <div className="text-sm font-medium text-muted-foreground">Duration</div>
-                                      <div className="text-xl font-bold text-primary">
-                                        {exercise.duration || "—"}
-                                      </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                      <div className="text-sm font-medium text-muted-foreground">Distance</div>
-                                      <div className="text-xl font-bold text-primary">
-                                        {exercise.distance || "—"}
-                                      </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                      <div className="text-sm font-medium text-muted-foreground">Pace</div>
-                                      <div className="text-xl font-bold text-primary">
-                                        {exercise.pace || "—"}
-                                      </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                      <div className="text-sm font-medium text-muted-foreground">Calories</div>
-                                      <div className="text-xl font-bold text-primary">
-                                        {exercise.calories || "—"}
-                                      </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                      <div className="text-sm font-medium text-muted-foreground">RPE</div>
-                                      <div className="text-xl font-bold text-primary">
-                                        {exercise.rpe || "—"} <span className="text-sm font-normal text-muted-foreground">/10</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                      <div className="text-sm font-medium text-muted-foreground">Weight</div>
-                                      <div className="text-xl font-bold text-primary">
-                                        {exercise.weight} <span className="text-sm font-normal text-muted-foreground">lbs</span>
-                                      </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                      <div className="text-sm font-medium text-muted-foreground">Reps</div>
-                                      <div className="text-xl font-bold text-primary">
-                                        {exercise.reps || "—"}
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-                                {exercise.notes && (
-                                  <div className="space-y-2">
-                                    <div className="text-sm font-medium text-muted-foreground">Notes & Instructions</div>
-                                    <div className="p-3 bg-muted rounded-lg">
-                                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                                        {exercise.notes}
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                          </DialogContent>
-                        </Dialog>
-                        
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleCardExpansion(exercise.id)}
-                          className="text-muted-foreground hover:text-foreground p-2 pointer-events-auto"
-                          data-testid={`button-expand-${exercise.id}`}
-                        >
-                          <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                        </Button>
-                        
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteExercise(exercise.id)}
-                          disabled={deleteMutation.isPending}
-                          className="text-destructive hover:text-destructive/80 p-2 pointer-events-auto"
-                          data-testid={`button-delete-mobile-${exercise.id}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    {/* Expandable Content */}
-                    {isExpanded && (
-                      <div className="space-y-4 border-t border-border pt-4">
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Order</label>
-                          <Input
-                            type="number"
-                            value={editingExercises[exercise.id]?.order ?? exercise.order ?? 0}
-                            onChange={(e) => setEditingExercises(prev => ({ ...prev, [exercise.id]: { ...prev[exercise.id], order: parseInt(e.target.value) || 0 } }))}
-                            className="text-sm h-8 pointer-events-auto"
-                            data-testid={`input-order-expanded-${exercise.id}`}
-                            min="1"
-                          />
-                        </div>
-                        {isCardio ? (
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1 col-span-2">
-                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Duration</label>
-                              <Input
-                                type="text"
-                                value={exercise.duration || ""}
-                                onChange={(e) => debouncedUpdate(exercise.id, "duration", e.target.value)}
-                                placeholder="28:32"
-                                className="text-base font-semibold pointer-events-auto"
-                                data-testid={`input-duration-mobile-${exercise.id}`}
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Distance</label>
-                              <Input
-                                type="text"
-                                value={exercise.distance || ""}
-                                onChange={(e) => debouncedUpdate(exercise.id, "distance", e.target.value)}
-                                placeholder="3.1 miles"
-                                className="text-base font-semibold pointer-events-auto"
-                                data-testid={`input-distance-mobile-${exercise.id}`}
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pace</label>
-                              <Input
-                                type="text"
-                                value={exercise.pace || ""}
-                                onChange={(e) => debouncedUpdate(exercise.id, "pace", e.target.value)}
-                                placeholder="9:10/mile"
-                                className="text-base font-semibold pointer-events-auto"
-                                data-testid={`input-pace-mobile-${exercise.id}`}
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Calories</label>
-                              <Input
-                                type="number"
-                                value={exercise.calories || 0}
-                                onChange={(e) => debouncedUpdate(exercise.id, "calories", parseInt(e.target.value) || 0)}
-                                placeholder="320"
-                                className="text-base font-semibold pointer-events-auto"
-                                data-testid={`input-calories-mobile-${exercise.id}`}
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">RPE (1-10)</label>
-                              <Input
-                                type="number"
-                                value={exercise.rpe || 0}
-                                onChange={(e) => debouncedUpdate(exercise.id, "rpe", parseInt(e.target.value) || 0)}
-                                placeholder="8"
-                                min="1"
-                                max="10"
-                                className="text-base font-semibold pointer-events-auto"
-                                data-testid={`input-rpe-mobile-${exercise.id}`}
-                              />
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Weight (lbs)</label>
-                              <Input
-                                type="number"
-                                value={exercise.weight || 0}
-                                onChange={(e) => debouncedUpdate(exercise.id, "weight", parseInt(e.target.value) || 0)}
-                                className="text-base font-semibold pointer-events-auto"
-                                data-testid={`input-weight-mobile-${exercise.id}`}
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Reps</label>
-                              <Input
-                                type="number"
-                                value={exercise.reps || 0}
-                                onChange={(e) => debouncedUpdate(exercise.id, "reps", parseInt(e.target.value) || 0)}
-                                className="text-base font-semibold pointer-events-auto"
-                                data-testid={`input-reps-mobile-${exercise.id}`}
-                              />
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Notes</label>
-                          <Input
-                            type="text"
-                            value={exercise.notes || ""}
-                            onChange={(e) => debouncedUpdate(exercise.id, "notes", e.target.value)}
-                            placeholder="Add notes..."
-                            className="text-sm pointer-events-auto"
-                            data-testid={`input-notes-mobile-${exercise.id}`}
-                          />
-                        </div>
-                      </div>
-                    )}
-                          </CardContent>
+                              </div>
+                            </CardContent>
                           </Card>
                         )}
                       </Draggable>
