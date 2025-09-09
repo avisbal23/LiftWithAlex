@@ -275,9 +275,9 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // 16:9 aspect ratio optimized for iPhone lock screen
-    const width = 1280;
-    const height = 720;
+    // 9:16 aspect ratio optimized for iPhone portrait lock screen
+    const width = 720;
+    const height = 1280;
     canvas.width = width;
     canvas.height = height;
 
