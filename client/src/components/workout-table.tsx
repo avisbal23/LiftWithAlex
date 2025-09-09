@@ -1077,15 +1077,6 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                           </DialogContent>
                         </Dialog>
                         
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleCardExpansion(exercise.id)}
-                          className="text-muted-foreground hover:text-foreground p-2 pointer-events-auto"
-                          data-testid={`button-expand-${exercise.id}`}
-                        >
-                          <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                        </Button>
                       </div>
                     </div>
                     
