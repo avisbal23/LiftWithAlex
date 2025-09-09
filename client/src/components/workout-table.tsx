@@ -287,125 +287,217 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
     const contentHeight = height - topSafeZone - bottomSafeZone;
     const contentStartY = topSafeZone;
 
-    // Background
-    ctx.fillStyle = '#000000';
+    // Create modern gradient background
+    const gradient = ctx.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, '#0f172a'); // Dark slate
+    gradient.addColorStop(0.5, '#1e293b'); // Slate
+    gradient.addColorStop(1, '#334155'); // Light slate
+    ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
 
-    // Header area (in safe zone)
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 36px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
+    // Add subtle pattern overlay
+    ctx.globalAlpha = 0.05;
+    for (let i = 0; i < width; i += 40) {
+      for (let j = 0; j < height; j += 40) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(i, j, 1, 1);
+      }
+    }
+    ctx.globalAlpha = 1;
+
+    // Category color coding
+    const categoryColors = {
+      'push': '#ef4444', // Red
+      'pull': '#3b82f6', // Blue
+      'legs': '#22c55e', // Green
+      'push2': '#f97316', // Orange
+      'pull2': '#8b5cf6', // Purple
+      'legs2': '#06b6d4', // Cyan
+      'cardio': '#ec4899', // Pink
+    };
+    const categoryColor = categoryColors[category.toLowerCase() as keyof typeof categoryColors] || '#6b7280';
+
+    // Header card background
+    const cardX = (width - (width * 0.95)) / 2;
+    const cardY = contentStartY - 10;
+    const cardWidth = width * 0.95;
+    const cardHeight = 120;
+
+    // Draw header card with rounded corners and subtle shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    ctx.shadowBlur = 15;
+    ctx.shadowOffsetY = 5;
+    
+    // Card background
+    const cardGradient = ctx.createLinearGradient(cardX, cardY, cardX, cardY + cardHeight);
+    cardGradient.addColorStop(0, '#1f2937');
+    cardGradient.addColorStop(1, '#374151');
+    ctx.fillStyle = cardGradient;
+    ctx.roundRect(cardX, cardY, cardWidth, cardHeight, 20);
+    ctx.fill();
+
+    // Reset shadow
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    // Header accent line
+    ctx.fillStyle = categoryColor;
+    ctx.roundRect(cardX, cardY, cardWidth, 6, 3);
+    ctx.fill();
+
+    // Header text with better typography
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 42px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
     ctx.textAlign = 'center';
     const headerText = `${getCategoryDisplayName(category)} Workout`;
-    ctx.fillText(headerText, width / 2, contentStartY + 40);
+    ctx.fillText(headerText, width / 2, cardY + 55);
 
-    // Date
-    ctx.font = '24px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
-    ctx.fillStyle = '#CCCCCC';
+    // Date with accent color
+    ctx.font = '22px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
+    ctx.fillStyle = '#d1d5db';
     const today = new Date().toLocaleDateString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 
       month: 'long', 
       day: 'numeric' 
     });
-    ctx.fillText(today, width / 2, contentStartY + 80);
+    ctx.fillText(today, width / 2, cardY + 85);
 
-    // Exercise table
+    // Exercise table with modern design
     if (exercises.length > 0) {
-      const tableStartY = contentStartY + 120;
-      const tableWidth = width * 0.9;
+      const tableStartY = contentStartY + 140;
+      const tableWidth = width * 0.95;
       const tableX = (width - tableWidth) / 2;
-      const rowHeight = Math.min(40, (contentHeight - 140) / (exercises.length + 1));
+      const rowHeight = Math.min(50, (contentHeight - 160) / (exercises.length + 1));
 
-      // Table headers
-      ctx.fillStyle = '#333333';
-      ctx.fillRect(tableX, tableStartY, tableWidth, rowHeight);
+      // Table container with rounded corners
+      ctx.fillStyle = 'rgba(31, 41, 55, 0.9)';
+      ctx.roundRect(tableX, tableStartY - 10, tableWidth, (exercises.length + 1) * rowHeight + 20, 16);
+      ctx.fill();
+
+      // Table headers with gradient
+      const headerGradient = ctx.createLinearGradient(tableX, tableStartY, tableX, tableStartY + rowHeight);
+      headerGradient.addColorStop(0, categoryColor);
+      headerGradient.addColorStop(1, categoryColor + '80');
+      ctx.fillStyle = headerGradient;
+      ctx.roundRect(tableX + 5, tableStartY, tableWidth - 10, rowHeight, 12);
+      ctx.fill();
       
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
       ctx.textAlign = 'left';
       
       const colWidths = isCardio 
         ? [tableWidth * 0.5, tableWidth * 0.25, tableWidth * 0.25]
-        : [tableWidth * 0.4, tableWidth * 0.3, tableWidth * 0.3];
+        : [tableWidth * 0.45, tableWidth * 0.275, tableWidth * 0.275];
       
       const headers = isCardio ? ['Exercise', 'Duration', 'Distance'] : ['Exercise', 'Weight', 'Reps'];
-      let currentX = tableX + 15;
+      let currentX = tableX + 25;
       
       headers.forEach((header, index) => {
-        ctx.fillText(header, currentX, tableStartY + 25);
+        ctx.fillText(header, currentX, tableStartY + 32);
         currentX += colWidths[index];
       });
 
-      // Exercise rows
-      exercises.slice(0, Math.floor((contentHeight - 160) / rowHeight)).forEach((exercise, index) => {
+      // Exercise rows with better styling
+      exercises.slice(0, Math.floor((contentHeight - 180) / rowHeight)).forEach((exercise, index) => {
         const rowY = tableStartY + (index + 1) * rowHeight;
         
-        // Alternating row colors
-        ctx.fillStyle = index % 2 === 0 ? '#1a1a1a' : '#2a2a2a';
-        ctx.fillRect(tableX, rowY, tableWidth, rowHeight);
+        // Alternating row colors with subtle gradients
+        if (index % 2 === 0) {
+          ctx.fillStyle = 'rgba(55, 65, 81, 0.3)';
+          ctx.roundRect(tableX + 5, rowY, tableWidth - 10, rowHeight, 8);
+          ctx.fill();
+        }
         
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = '16px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
+        // Progress indicator for completed sets
+        const progress = getExerciseProgress(exercise.id);
+        const setsCompleted = progress?.setsCompleted || 0;
+        if (setsCompleted > 0) {
+          ctx.fillStyle = categoryColor + '40';
+          const progressWidth = (tableWidth - 10) * (setsCompleted / 3);
+          ctx.roundRect(tableX + 5, rowY, Math.min(progressWidth, tableWidth - 10), rowHeight, 8);
+          ctx.fill();
+        }
         
-        currentX = tableX + 15;
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '18px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
         
-        // Exercise name
-        ctx.fillText(exercise.name.length > 20 ? exercise.name.substring(0, 20) + '...' : exercise.name, currentX, rowY + 25);
+        currentX = tableX + 25;
+        
+        // Exercise name with better truncation
+        const exerciseName = exercise.name.length > 22 ? exercise.name.substring(0, 22) + '...' : exercise.name;
+        ctx.fillText(exerciseName, currentX, rowY + 32);
         currentX += colWidths[0];
+        
+        // Progress indicator dots
+        if (setsCompleted > 0) {
+          ctx.fillStyle = categoryColor;
+          for (let i = 0; i < setsCompleted; i++) {
+            ctx.beginPath();
+            ctx.arc(currentX - 30 + (i * 8), rowY + 25, 3, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        
+        ctx.fillStyle = '#e5e7eb';
+        ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
         
         if (isCardio) {
           // Duration
-          ctx.fillText(exercise.duration || '-', currentX, rowY + 25);
+          ctx.fillText(exercise.duration || '—', currentX, rowY + 32);
           currentX += colWidths[1];
           // Distance
-          ctx.fillText(exercise.distance || '-', currentX, rowY + 25);
+          ctx.fillText(exercise.distance || '—', currentX, rowY + 32);
         } else {
           // Weight
-          ctx.fillText(exercise.weight ? `${exercise.weight} lbs` : '-', currentX, rowY + 25);
+          ctx.fillText(exercise.weight ? `${exercise.weight} lbs` : '—', currentX, rowY + 32);
           currentX += colWidths[1];
           // Reps
-          ctx.fillText(exercise.reps ? `${exercise.reps}` : '-', currentX, rowY + 25);
+          ctx.fillText(exercise.reps ? `${exercise.reps} reps` : '—', currentX, rowY + 32);
         }
       });
 
-      // Progress indicators (if any exercises have progress)
+      // Summary stats at bottom
+      const totalExercises = exercises.length;
       const progressData = exercises.map(ex => {
         const progress = getExerciseProgress(ex.id);
-        return { name: ex.name, sets: progress?.setsCompleted || 0 };
-      }).filter(p => p.sets > 0);
-
-      if (progressData.length > 0) {
-        const progressY = tableStartY + (exercises.length + 2) * rowHeight;
-        ctx.fillStyle = '#FFFFFF';
+        return progress?.setsCompleted || 0;
+      });
+      const totalSetsCompleted = progressData.reduce((sum, sets) => sum + sets, 0);
+      
+      if (contentStartY + contentHeight - 40 > tableStartY + (exercises.length + 1) * rowHeight + 30) {
+        const statsY = tableStartY + (exercises.length + 1) * rowHeight + 50;
+        
+        // Stats background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.roundRect(tableX + (tableWidth * 0.3), statsY - 15, tableWidth * 0.4, 35, 8);
+        ctx.fill();
+        
+        ctx.fillStyle = categoryColor;
         ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('Today\'s Progress', width / 2, progressY);
-        
-        progressData.forEach((item, index) => {
-          const progressRowY = progressY + 30 + (index * 25);
-          ctx.font = '14px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
-          ctx.textAlign = 'left';
-          const progressText = `${item.name.substring(0, 25)}: ${item.sets}/3 sets`;
-          ctx.fillText(progressText, tableX + 15, progressRowY);
-          
-          // Progress dots
-          const dotsX = tableX + tableWidth - 100;
-          for (let i = 0; i < 3; i++) {
-            ctx.beginPath();
-            ctx.arc(dotsX + (i * 20), progressRowY - 5, 6, 0, 2 * Math.PI);
-            ctx.fillStyle = i < item.sets ? '#22c55e' : '#404040';
-            ctx.fill();
-          }
-          ctx.fillStyle = '#FFFFFF';
-        });
+        const statsText = `${totalSetsCompleted} sets • ${totalExercises} exercises`;
+        ctx.fillText(statsText, width / 2, statsY + 7);
       }
     } else {
-      // No exercises message
-      ctx.fillStyle = '#CCCCCC';
+      // No exercises message with better styling
+      ctx.fillStyle = 'rgba(107, 114, 128, 0.8)';
       ctx.font = '24px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('No exercises added yet', width / 2, contentStartY + contentHeight / 2);
+      
+      ctx.fillStyle = 'rgba(107, 114, 128, 0.6)';
+      ctx.font = '18px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
+      ctx.fillText('Add exercises to see your workout here', width / 2, contentStartY + contentHeight / 2 + 30);
     }
+
+    // Branding watermark
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.font = '14px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('VISBAL GYM', width - 30, height - 30);
 
     // Download the image
     canvas.toBlob((blob) => {
@@ -420,8 +512,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
         URL.revokeObjectURL(url);
         
         toast({
-          title: "Workout exported!",
-          description: "Image saved to your downloads for lock screen use.",
+          title: "Workout exported! 📱",
+          description: "Beautiful lock screen image saved to downloads.",
         });
       }
     }, 'image/png');
