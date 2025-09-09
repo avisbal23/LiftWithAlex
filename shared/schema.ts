@@ -26,6 +26,14 @@ export const exercises = pgTable("exercises", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const weightHistory = pgTable("weight_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  exerciseId: varchar("exercise_id").notNull(), // references exercises(id)
+  previousWeight: integer("previous_weight").notNull(), // Previous weight value
+  newWeight: integer("new_weight").notNull(), // New weight value
+  changedAt: timestamp("changed_at").defaultNow(), // When the change occurred
+});
+
 export const workoutLogs = pgTable("workout_logs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   category: text("category").notNull(), // 'push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'cardio'
@@ -224,6 +232,13 @@ export const insertExerciseSchema = createInsertSchema(exercises).omit({
 
 export const updateExerciseSchema = insertExerciseSchema.partial();
 
+export const insertWeightHistorySchema = createInsertSchema(weightHistory).omit({
+  id: true,
+  changedAt: true,
+});
+
+export const updateWeightHistorySchema = insertWeightHistorySchema.partial();
+
 export const insertWorkoutLogSchema = createInsertSchema(workoutLogs).omit({
   id: true,
   completedAt: true,
@@ -312,6 +327,9 @@ export type User = typeof users.$inferSelect;
 export type Exercise = typeof exercises.$inferSelect;
 export type InsertExercise = z.infer<typeof insertExerciseSchema>;
 export type UpdateExercise = z.infer<typeof updateExerciseSchema>;
+export type WeightHistory = typeof weightHistory.$inferSelect;
+export type InsertWeightHistory = z.infer<typeof insertWeightHistorySchema>;
+export type UpdateWeightHistory = z.infer<typeof updateWeightHistorySchema>;
 export type WorkoutLog = typeof workoutLogs.$inferSelect;
 export type InsertWorkoutLog = z.infer<typeof insertWorkoutLogSchema>;
 export type WeightEntry = typeof weightEntries.$inferSelect;
