@@ -23,7 +23,7 @@ export default function ThoughtsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: InsertThought) => apiRequest("/api/thoughts", "POST", data),
+    mutationFn: (data: InsertThought) => apiRequest("POST", "/api/thoughts", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/thoughts"] });
       setNewThought("");
@@ -43,7 +43,7 @@ export default function ThoughtsPage() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateThought }) =>
-      apiRequest(`/api/thoughts/${id}`, "PATCH", data),
+      apiRequest("PATCH", `/api/thoughts/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/thoughts"] });
       setEditingId(null);
@@ -63,7 +63,7 @@ export default function ThoughtsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiRequest(`/api/thoughts/${id}`, "DELETE"),
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/thoughts/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/thoughts"] });
       toast({
