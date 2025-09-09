@@ -600,9 +600,6 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                       <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-12">
                         
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-12">
-                        #
-                      </th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         {isCardio ? "Activity" : "Exercise"}
                       </th>
@@ -665,16 +662,6 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                 <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
                                   <GripVertical className="w-4 h-4 text-muted-foreground" />
                                 </div>
-                              </td>
-                              <td className="px-3 py-2">
-                                <Input
-                                  type="number"
-                                  value={editingExercises[exercise.id]?.order ?? exercise.order ?? 0}
-                                  onChange={(e) => setEditingExercises(prev => ({ ...prev, [exercise.id]: { ...prev[exercise.id], order: parseInt(e.target.value) || 0 } }))}
-                                  className="border-none bg-transparent p-1 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-12 text-center"
-                                  data-testid={`input-order-${exercise.id}`}
-                                  min="1"
-                                />
                               </td>
                       <td className="px-3 py-2">
                         <Input
@@ -924,16 +911,6 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                         <div className="flex items-center space-x-2">
                           <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing flex-shrink-0 pointer-events-auto">
                             <GripVertical className="w-4 h-4 text-muted-foreground" />
-                          </div>
-                          <div className="flex items-center space-x-1 flex-shrink-0">
-                            <Input
-                              type="number"
-                              value={editingExercises[exercise.id]?.order ?? exercise.order ?? 0}
-                              onChange={(e) => setEditingExercises(prev => ({ ...prev, [exercise.id]: { ...prev[exercise.id], order: parseInt(e.target.value) || 0 } }))}
-                              className="border-none bg-transparent p-0 text-xs text-muted-foreground focus:bg-background hover:bg-accent transition-colors w-8 text-center pointer-events-auto"
-                              data-testid={`input-order-mobile-${exercise.id}`}
-                              min="1"
-                            />
                           </div>
                           <Input
                             type="text"
