@@ -933,7 +933,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                 />
                               </div>
                             ) : (
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-0.5">
                                 <Input
                                   type="number"
                                   value={exercise.weight || 0}
