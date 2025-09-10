@@ -941,7 +941,6 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                   className="text-sm font-medium text-muted-foreground bg-transparent border-none p-0 w-12 text-center hover:bg-accent focus:bg-background transition-colors pointer-events-auto"
                                   data-testid={`input-weight-collapsed-${exercise.id}`}
                                 />
-                                <span className="text-sm font-medium text-muted-foreground">lbs</span>
                                 <span className="text-muted-foreground">×</span>
                                 <Input
                                   type="number"
