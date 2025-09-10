@@ -952,27 +952,6 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                 />
                               </div>
                             )}
-                            {/* Set Progress Indicator */}
-                            <div className="flex items-center gap-1">
-                              {[0, 1, 2].map((setIndex) => (
-                                <div
-                                  key={setIndex}
-                                  className={`w-2 h-2 rounded-full transition-colors ${
-                                    setIndex < setsCompleted 
-                                      ? (isComplete ? 'bg-green-500' : 'bg-blue-500') 
-                                      : 'bg-gray-300 dark:bg-gray-600'
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                            {/* Sets Text */}
-                            <span className={`text-xs font-medium ${
-                              isComplete 
-                                ? 'text-green-600 dark:text-green-400' 
-                                : 'text-muted-foreground'
-                            }`}>
-                              {setsCompleted}/3
-                            </span>
                           </div>
                         </div>
                       </div>
