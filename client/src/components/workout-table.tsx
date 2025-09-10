@@ -26,7 +26,6 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const timeoutRefs = useRef<Record<string, NodeJS.Timeout>>({});
   const [editingExercises, setEditingExercises] = useState<Record<string, Partial<Exercise>>>({});
-  const [swipeStates, setSwipeStates] = useState<Record<string, { x: number; isDragging: boolean; startX?: number }>>({});
 
   const { data: exercises = [], isLoading } = useQuery<Exercise[]>({
     queryKey: ["/api/exercises", category],
@@ -235,42 +234,6 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
     }
   };
 
-  // Swipe to delete handlers
-  const handleTouchStart = useCallback((e: React.TouchEvent, exerciseId: string) => {
-    const touch = e.touches[0];
-    setSwipeStates(prev => ({
-      ...prev,
-      [exerciseId]: { x: 0, isDragging: true, startX: touch.clientX }
-    }));
-  }, []);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent, exerciseId: string) => {
-    const touch = e.touches[0];
-    const swipeState = swipeStates[exerciseId];
-    if (swipeState?.isDragging && swipeState.startX !== undefined) {
-      const deltaX = touch.clientX - swipeState.startX;
-      const clampedX = Math.max(-80, Math.min(0, deltaX));
-      setSwipeStates(prev => ({
-        ...prev,
-        [exerciseId]: { ...prev[exerciseId], x: clampedX }
-      }));
-    }
-  }, [swipeStates]);
-
-  const handleTouchEnd = useCallback((exerciseId: string) => {
-    const swipeState = swipeStates[exerciseId];
-    if (swipeState) {
-      const shouldDelete = swipeState.x < -40;
-      if (shouldDelete) {
-        deleteExercise(exerciseId);
-      } else {
-        setSwipeStates(prev => ({
-          ...prev,
-          [exerciseId]: { x: 0, isDragging: false }
-        }));
-      }
-    }
-  }, [swipeStates, deleteExercise]);
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -935,15 +898,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                     return (
                       <Draggable key={exercise.id} draggableId={exercise.id} index={index}>
                         {(provided, snapshot) => {
-                          const swipeState = swipeStates[exercise.id] || { x: 0, isDragging: false };
-                          
                           return (
                             <div className="relative">
-                              {/* Swipe Background with Trash Icon */}
-                              <div className="absolute inset-0 bg-red-500 flex items-center justify-end pr-6 z-0">
-                                <Trash2 className="w-6 h-6 text-white" />
-                              </div>
-                              
                               <Card 
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
@@ -953,13 +909,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                   isComplete ? 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800' : ''
                                 }`} 
                                 style={{
-                                  transform: `translateX(${swipeState.x}px)`,
-                                  transition: swipeState.isDragging ? 'none' : 'transform 300ms ease',
                                   ...provided.draggableProps.style,
                                 }}
-                                onTouchStart={(e) => handleTouchStart(e, exercise.id)}
-                                onTouchMove={(e) => handleTouchMove(e, exercise.id)}
-                                onTouchEnd={() => handleTouchEnd(exercise.id)}
                                 data-testid={`card-exercise-${exercise.id}`}
                               >
                             {/* Progress Bar Background */}
