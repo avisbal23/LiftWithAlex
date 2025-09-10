@@ -115,7 +115,6 @@ export function UniversalNavigation() {
                 "
               >
                 <Menu className="h-4 w-4" />
-                <ChevronDown className="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -194,7 +193,6 @@ export function UniversalNavigation() {
                 "
               >
                 <Menu className="h-4 w-4" />
-                <ChevronDown className="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
