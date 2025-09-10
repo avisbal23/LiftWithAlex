@@ -791,28 +791,37 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               <CardContent className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="space-y-2">
-                                    <div className="text-sm font-medium text-muted-foreground">Weight</div>
-                                    <div className="text-2xl font-bold text-primary">
-                                      {exercise.weight} <span className="text-base font-normal text-muted-foreground">lbs</span>
-                                    </div>
+                                    <div className="text-sm font-medium text-muted-foreground">Weight (lbs)</div>
+                                    <Input
+                                      type="number"
+                                      value={exercise.weight || 0}
+                                      onChange={(e) => updateExercise(exercise.id, "weight", parseInt(e.target.value) || 0)}
+                                      className="text-2xl font-bold text-primary border border-input"
+                                      data-testid={`input-weight-detail-${exercise.id}`}
+                                    />
                                   </div>
                                   <div className="space-y-2">
                                     <div className="text-sm font-medium text-muted-foreground">Reps</div>
-                                    <div className="text-2xl font-bold text-primary">
-                                      {exercise.reps || "—"}
-                                    </div>
+                                    <Input
+                                      type="number"
+                                      value={exercise.reps || 0}
+                                      onChange={(e) => updateExercise(exercise.id, "reps", parseInt(e.target.value) || 0)}
+                                      className="text-2xl font-bold text-primary border border-input"
+                                      data-testid={`input-reps-detail-${exercise.id}`}
+                                    />
                                   </div>
                                 </div>
-                                {exercise.notes && (
-                                  <div className="space-y-2">
-                                    <div className="text-sm font-medium text-muted-foreground">Notes & Instructions</div>
-                                    <div className="p-4 bg-muted rounded-lg">
-                                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                                        {exercise.notes}
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
+                                <div className="space-y-2">
+                                  <div className="text-sm font-medium text-muted-foreground">Notes & Instructions</div>
+                                  <textarea
+                                    value={exercise.notes || ""}
+                                    onChange={(e) => updateExercise(exercise.id, "notes", e.target.value)}
+                                    placeholder="Add notes or instructions..."
+                                    className="w-full p-3 bg-muted rounded-lg border border-input text-sm leading-relaxed resize-none focus:bg-background focus:border-primary transition-colors"
+                                    rows={4}
+                                    data-testid={`textarea-notes-detail-${exercise.id}`}
+                                  />
+                                </div>
                                 <div className="text-xs text-muted-foreground pt-2 border-t">
                                   Last updated: {new Date(exercise.createdAt || new Date()).toLocaleDateString("en-US", { 
                                     month: "short", 
@@ -987,69 +996,108 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               <CardContent className="space-y-4">
                                 <div className="space-y-2 mb-4">
                                   <div className="text-sm font-medium text-muted-foreground">Order</div>
-                                  <div className="text-xl font-bold text-primary">
-                                    #{exercise.order || 0}
-                                  </div>
+                                  <Input
+                                    type="number"
+                                    value={exercise.order || 0}
+                                    onChange={(e) => updateExercise(exercise.id, "order", parseInt(e.target.value) || 0)}
+                                    className="text-xl font-bold text-primary border border-input"
+                                    data-testid={`input-order-detail-mobile-${exercise.id}`}
+                                    min="1"
+                                  />
                                 </div>
                                 {isCardio ? (
                                   <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                       <div className="text-sm font-medium text-muted-foreground">Duration</div>
-                                      <div className="text-xl font-bold text-primary">
-                                        {exercise.duration || "—"}
-                                      </div>
+                                      <Input
+                                        type="text"
+                                        value={exercise.duration || ""}
+                                        onChange={(e) => updateExercise(exercise.id, "duration", e.target.value)}
+                                        placeholder="28:32"
+                                        className="text-xl font-bold text-primary border border-input"
+                                        data-testid={`input-duration-detail-mobile-${exercise.id}`}
+                                      />
                                     </div>
                                     <div className="space-y-2">
                                       <div className="text-sm font-medium text-muted-foreground">Distance</div>
-                                      <div className="text-xl font-bold text-primary">
-                                        {exercise.distance || "—"}
-                                      </div>
+                                      <Input
+                                        type="text"
+                                        value={exercise.distance || ""}
+                                        onChange={(e) => updateExercise(exercise.id, "distance", e.target.value)}
+                                        placeholder="3.1 miles"
+                                        className="text-xl font-bold text-primary border border-input"
+                                        data-testid={`input-distance-detail-mobile-${exercise.id}`}
+                                      />
                                     </div>
                                     <div className="space-y-2">
                                       <div className="text-sm font-medium text-muted-foreground">Pace</div>
-                                      <div className="text-xl font-bold text-primary">
-                                        {exercise.pace || "—"}
-                                      </div>
+                                      <Input
+                                        type="text"
+                                        value={exercise.pace || ""}
+                                        onChange={(e) => updateExercise(exercise.id, "pace", e.target.value)}
+                                        placeholder="9:10/mile"
+                                        className="text-xl font-bold text-primary border border-input"
+                                        data-testid={`input-pace-detail-mobile-${exercise.id}`}
+                                      />
                                     </div>
                                     <div className="space-y-2">
                                       <div className="text-sm font-medium text-muted-foreground">Calories</div>
-                                      <div className="text-xl font-bold text-primary">
-                                        {exercise.calories || "—"}
-                                      </div>
+                                      <Input
+                                        type="number"
+                                        value={exercise.calories || 0}
+                                        onChange={(e) => updateExercise(exercise.id, "calories", parseInt(e.target.value) || 0)}
+                                        className="text-xl font-bold text-primary border border-input"
+                                        data-testid={`input-calories-detail-mobile-${exercise.id}`}
+                                      />
                                     </div>
                                     <div className="space-y-2">
-                                      <div className="text-sm font-medium text-muted-foreground">RPE</div>
-                                      <div className="text-xl font-bold text-primary">
-                                        {exercise.rpe || "—"} <span className="text-sm font-normal text-muted-foreground">/10</span>
-                                      </div>
+                                      <div className="text-sm font-medium text-muted-foreground">RPE (1-10)</div>
+                                      <Input
+                                        type="number"
+                                        value={exercise.rpe || 0}
+                                        onChange={(e) => updateExercise(exercise.id, "rpe", parseInt(e.target.value) || 0)}
+                                        min="1"
+                                        max="10"
+                                        className="text-xl font-bold text-primary border border-input"
+                                        data-testid={`input-rpe-detail-mobile-${exercise.id}`}
+                                      />
                                     </div>
                                   </div>
                                 ) : (
                                   <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                      <div className="text-sm font-medium text-muted-foreground">Weight</div>
-                                      <div className="text-xl font-bold text-primary">
-                                        {exercise.weight} <span className="text-sm font-normal text-muted-foreground">lbs</span>
-                                      </div>
+                                      <div className="text-sm font-medium text-muted-foreground">Weight (lbs)</div>
+                                      <Input
+                                        type="number"
+                                        value={exercise.weight || 0}
+                                        onChange={(e) => updateExercise(exercise.id, "weight", parseInt(e.target.value) || 0)}
+                                        className="text-xl font-bold text-primary border border-input"
+                                        data-testid={`input-weight-detail-mobile-${exercise.id}`}
+                                      />
                                     </div>
                                     <div className="space-y-2">
                                       <div className="text-sm font-medium text-muted-foreground">Reps</div>
-                                      <div className="text-xl font-bold text-primary">
-                                        {exercise.reps || "—"}
-                                      </div>
+                                      <Input
+                                        type="number"
+                                        value={exercise.reps || 0}
+                                        onChange={(e) => updateExercise(exercise.id, "reps", parseInt(e.target.value) || 0)}
+                                        className="text-xl font-bold text-primary border border-input"
+                                        data-testid={`input-reps-detail-mobile-${exercise.id}`}
+                                      />
                                     </div>
                                   </div>
                                 )}
-                                {exercise.notes && (
-                                  <div className="space-y-2">
-                                    <div className="text-sm font-medium text-muted-foreground">Notes & Instructions</div>
-                                    <div className="p-3 bg-muted rounded-lg">
-                                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                                        {exercise.notes}
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
+                                <div className="space-y-2">
+                                  <div className="text-sm font-medium text-muted-foreground">Notes & Instructions</div>
+                                  <textarea
+                                    value={exercise.notes || ""}
+                                    onChange={(e) => updateExercise(exercise.id, "notes", e.target.value)}
+                                    placeholder="Add notes or instructions..."
+                                    className="w-full p-3 bg-muted rounded-lg border border-input text-sm leading-relaxed resize-none focus:bg-background focus:border-primary transition-colors"
+                                    rows={4}
+                                    data-testid={`textarea-notes-detail-mobile-${exercise.id}`}
+                                  />
+                                </div>
                               </CardContent>
                             </Card>
                           </DialogContent>
