@@ -9,8 +9,8 @@ const allTabs = [
   { name: "Push", path: "/push", key: "push" },
   { name: "Pull", path: "/pull", key: "pull" },
   { name: "Legs", path: "/legs", key: "legs" },
-  { name: "Push 2", path: "/push2", key: "push2" },
-  { name: "Pull 2", path: "/pull2", key: "pull2" },
+  { name: "SHARMS", path: "/push2", key: "push2" },
+  { name: "BACK", path: "/pull2", key: "pull2" },
   { name: "Legs 2", path: "/legs2", key: "legs2" },
   { name: "Cardio", path: "/cardio", key: "cardio" },
 ];

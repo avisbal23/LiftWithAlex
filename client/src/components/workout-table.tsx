@@ -119,8 +119,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
       case "push": return "Push Day";
       case "pull": return "Pull Day";
       case "legs": return "Leg Day";
-      case "push2": return "Push Day 2";
-      case "pull2": return "Pull Day 2";
+      case "push2": return "SHARMS";
+      case "pull2": return "BACK";
       case "legs2": return "Leg Day 2";
       case "cardio": return "Cardio";
       default: return cat;
