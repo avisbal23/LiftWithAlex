@@ -8,8 +8,8 @@ export default function Push2() {
       <UniversalNavigation />
       <WorkoutTable
         category="push2"
-        title="Push 2 Workouts"
-        description="Second push workout - chest, shoulders, and triceps exercises"
+        title="SHARMS Workouts"
+        description="SHARMS workout - chest, shoulders, and triceps exercises"
       />
     </>
   );

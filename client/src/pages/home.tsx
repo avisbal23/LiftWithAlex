@@ -104,8 +104,8 @@ export default function Home() {
       case "push": return "Push Day";
       case "pull": return "Pull Day"; 
       case "legs": return "Leg Day";
-      case "push2": return "Push Day 2";
-      case "pull2": return "Pull Day 2";
+      case "push2": return "SHARMS";
+      case "pull2": return "BACK";
       case "legs2": return "Leg Day 2";
       case "cardio": return "Cardio";
       default: return category;
@@ -117,8 +117,8 @@ export default function Home() {
       case "Push Day": return "/push";
       case "Pull Day": return "/pull";
       case "Leg Day": return "/legs";
-      case "Push Day 2": return "/push2";
-      case "Pull Day 2": return "/pull2";
+      case "SHARMS": return "/push2";
+      case "BACK": return "/pull2";
       case "Leg Day 2": return "/legs2";
       case "Cardio": return "/cardio";
       default: return "/push";

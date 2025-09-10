@@ -8,8 +8,8 @@ export default function Pull2() {
       <UniversalNavigation />
       <WorkoutTable
         category="pull2"
-        title="Pull 2 Workouts"
-        description="Second pull workout - back, biceps, and rear delt exercises"
+        title="BACK Workouts"
+        description="BACK workout - back, biceps, and rear delt exercises"
       />
     </>
   );
