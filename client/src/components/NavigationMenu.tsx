@@ -18,6 +18,9 @@ export function NavigationMenu({ isOpen, onClose }: NavigationMenuProps) {
   // Fetch visible tab settings to populate menu
   const { data: tabSettings = [] } = useQuery<TabSettings[]>({
     queryKey: ["/api/tab-settings/visible"],
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
   });
 
   // Focus management and keyboard handling

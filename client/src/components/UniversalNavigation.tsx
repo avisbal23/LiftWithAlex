@@ -17,6 +17,9 @@ export function UniversalNavigation() {
   // Fetch visible tab settings from the API
   const { data: visibleTabSettings = [] } = useQuery<TabSettings[]>({
     queryKey: ["/api/tab-settings/visible"],
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
   });
 
   // Always include Home page as it's always visible

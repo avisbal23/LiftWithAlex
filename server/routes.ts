@@ -701,6 +701,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get visible shortcut settings
   app.get("/api/shortcut-settings/visible", async (req, res) => {
     try {
+      res.set('Cache-Control', 'no-store');
       const settings = await storage.getVisibleShortcutSettings();
       res.json(settings);
     } catch (error) {
@@ -741,6 +742,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/tab-settings/visible", async (req, res) => {
     try {
+      res.set('Cache-Control', 'no-store');
       const settings = await storage.getVisibleTabSettings();
       res.json(settings);
     } catch (error) {

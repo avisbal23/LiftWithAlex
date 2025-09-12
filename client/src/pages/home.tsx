@@ -52,6 +52,9 @@ export default function Home() {
   // Load visible shortcut settings for home screen
   const { data: visibleShortcuts = [] } = useQuery<ShortcutSettings[]>({
     queryKey: ["/api/shortcut-settings/visible"],
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
   });
 
   // Update user settings mutation
