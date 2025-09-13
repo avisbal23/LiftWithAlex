@@ -78,6 +78,7 @@ export interface IStorage {
   // Changes audit tracking
   getAllChangesAudit(): Promise<ChangesAudit[]>;
   createChangesAudit(entry: InsertChangesAudit): Promise<ChangesAudit>;
+  deleteChangesAudit(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -884,6 +885,10 @@ export class MemStorage implements IStorage {
     return auditEntry;
   }
 
+  async deleteChangesAudit(id: string): Promise<boolean> {
+    return this.changesAudit.delete(id);
+  }
+
 }
 
 // Database Storage Implementation
@@ -1563,6 +1568,12 @@ export class DatabaseStorage implements IStorage {
       .values(entry)
       .returning();
     return created;
+  }
+
+  async deleteChangesAudit(id: string): Promise<boolean> {
+    const result = await db.delete(changesAudit)
+      .where(eq(changesAudit.id, id));
+    return result.rowCount > 0;
   }
 }
 

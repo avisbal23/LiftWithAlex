@@ -1,15 +1,42 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { type ChangesAudit } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface ChangesAuditProps {
   category?: string; // Optional filter by workout category
 }
 
 export default function ChangesAudit({ category }: ChangesAuditProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
   const { data: auditEntries = [], isLoading } = useQuery<ChangesAudit[]>({
     queryKey: ["/api/changes-audit"],
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/changes-audit/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/changes-audit"] });
+      toast({
+        title: "Entry deleted",
+        description: "Audit entry has been removed.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete audit entry.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Filter by category if provided
@@ -91,6 +118,9 @@ export default function ChangesAudit({ category }: ChangesAuditProps) {
                 <th className="text-left py-2 px-3 font-medium text-sm text-muted-foreground" data-testid="header-change">
                   Change
                 </th>
+                <th className="text-right py-2 px-3 font-medium text-sm text-muted-foreground" data-testid="header-actions">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -117,6 +147,18 @@ export default function ChangesAudit({ category }: ChangesAuditProps) {
                     >
                       {formatPercentage(entry.percentageIncrease)}
                     </Badge>
+                  </td>
+                  <td className="py-3 px-3 text-right" data-testid={`actions-${entry.id}`}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteMutation.mutate(entry.id)}
+                      disabled={deleteMutation.isPending}
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                      data-testid={`button-delete-${entry.id}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </td>
                 </tr>
               ))}

@@ -876,6 +876,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete changes audit entry
+  app.delete("/api/changes-audit/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const deleted = await storage.deleteChangesAudit(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Changes audit entry not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete changes audit entry" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
