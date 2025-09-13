@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { OptimizedInput } from "@/components/optimized-input";
@@ -26,10 +26,20 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const timeoutRefs = useRef<Record<string, NodeJS.Timeout>>({});
   const [editingExercises, setEditingExercises] = useState<Record<string, Partial<Exercise>>>({});
+  const [weightInputs, setWeightInputs] = useState<Record<string, string>>({});
 
   const { data: exercises = [], isLoading } = useQuery<Exercise[]>({
     queryKey: ["/api/exercises", category],
   });
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(timeoutRefs.current).forEach(timeout => {
+        if (timeout) clearTimeout(timeout);
+      });
+    };
+  }, []);
 
   // Fetch daily set progress for this category
   const { data: dailyProgress = [] } = useQuery<DailySetProgress[]>({
@@ -240,14 +250,42 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
     return changes && Object.keys(changes).length > 0;
   }, [editingExercises]);
 
+  // Weight input handlers that commit on blur to prevent premature audit logging
+  const handleWeightChange = useCallback((exerciseId: string, value: string) => {
+    setWeightInputs(prev => ({ ...prev, [exerciseId]: value }));
+  }, []);
+
+  const commitWeightChange = useCallback((exerciseId: string, value: string) => {
+    const numericValue = parseInt(value) || 0;
+    updateExercise(exerciseId, "weight", numericValue);
+    // Clear the local state after committing
+    setWeightInputs(prev => {
+      const newState = { ...prev };
+      delete newState[exerciseId];
+      return newState;
+    });
+  }, [updateExercise]);
+
+  const getWeightValue = useCallback((exerciseId: string, exerciseWeight: number | null) => {
+    // Use local editing state if available, otherwise use exercise weight
+    return weightInputs[exerciseId] !== undefined ? weightInputs[exerciseId] : (exerciseWeight || 0).toString();
+  }, [weightInputs]);
+
+  // Simple debounced update for non-weight fields
   const debouncedUpdate = useCallback((id: string, field: keyof UpdateExercise, value: string | number) => {
+    if (field === "weight") {
+      // Weight fields should use the commit-on-blur approach instead
+      console.warn("Weight field should use commitWeightChange, not debouncedUpdate");
+      return;
+    }
+    
     const timeoutKey = `${id}-${field}`;
     if (timeoutRefs.current[timeoutKey]) {
       clearTimeout(timeoutRefs.current[timeoutKey]);
     }
     timeoutRefs.current[timeoutKey] = setTimeout(() => {
       updateExercise(id, field, value);
-    }, 1000); // Increased to 1 second
+    }, 1000);
   }, [updateExercise]);
 
   const isCardio = category === "cardio";
@@ -769,8 +807,15 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                           <td className="px-3 py-2">
                             <Input
                               type="number"
-                              value={exercise.weight || 0}
-                              onChange={(e) => debouncedUpdate(exercise.id, "weight", parseInt(e.target.value) || 0)}
+                              value={getWeightValue(exercise.id, exercise.weight)}
+                              onChange={(e) => handleWeightChange(exercise.id, e.target.value)}
+                              onBlur={(e) => commitWeightChange(exercise.id, e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  commitWeightChange(exercise.id, e.currentTarget.value);
+                                  e.currentTarget.blur();
+                                }
+                              }}
                               className="border-none bg-transparent p-1 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
                               data-testid={`input-weight-${exercise.id}`}
                             />
@@ -1001,8 +1046,15 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               <div className="flex items-center gap-0.5">
                                 <Input
                                   type="number"
-                                  value={exercise.weight || 0}
-                                  onChange={(e) => debouncedUpdate(exercise.id, "weight", parseInt(e.target.value) || 0)}
+                                  value={getWeightValue(exercise.id, exercise.weight)}
+                                  onChange={(e) => handleWeightChange(exercise.id, e.target.value)}
+                                  onBlur={(e) => commitWeightChange(exercise.id, e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      commitWeightChange(exercise.id, e.currentTarget.value);
+                                      e.currentTarget.blur();
+                                    }
+                                  }}
                                   className="text-sm font-medium text-muted-foreground bg-transparent border-none p-0 w-12 text-center hover:bg-accent focus:bg-background transition-colors pointer-events-auto"
                                   data-testid={`input-weight-collapsed-${exercise.id}`}
                                 />
@@ -1125,8 +1177,15 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                       <div className="text-sm font-medium text-muted-foreground">Weight (lbs)</div>
                                       <Input
                                         type="number"
-                                        value={exercise.weight || 0}
-                                        onChange={(e) => updateExercise(exercise.id, "weight", parseInt(e.target.value) || 0)}
+                                        value={getWeightValue(exercise.id, exercise.weight)}
+                                        onChange={(e) => handleWeightChange(exercise.id, e.target.value)}
+                                        onBlur={(e) => commitWeightChange(exercise.id, e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            commitWeightChange(exercise.id, e.currentTarget.value);
+                                            e.currentTarget.blur();
+                                          }
+                                        }}
                                         className="text-xl font-bold text-primary border border-input"
                                         data-testid={`input-weight-detail-mobile-${exercise.id}`}
                                       />
@@ -1256,8 +1315,15 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Weight (lbs)</label>
                               <Input
                                 type="number"
-                                value={exercise.weight || 0}
-                                onChange={(e) => debouncedUpdate(exercise.id, "weight", parseInt(e.target.value) || 0)}
+                                value={getWeightValue(exercise.id, exercise.weight)}
+                                onChange={(e) => handleWeightChange(exercise.id, e.target.value)}
+                                onBlur={(e) => commitWeightChange(exercise.id, e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    commitWeightChange(exercise.id, e.currentTarget.value);
+                                    e.currentTarget.blur();
+                                  }
+                                }}
                                 className="text-base font-semibold pointer-events-auto"
                                 data-testid={`input-weight-mobile-${exercise.id}`}
                               />
