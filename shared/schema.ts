@@ -220,6 +220,18 @@ export const tabSettings = pgTable("tab_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Changes Audit - for tracking weight changes in workout exercises
+export const changesAudit = pgTable("changes_audit", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  exerciseId: varchar("exercise_id").notNull(), // references exercises(id)
+  exerciseName: text("exercise_name").notNull(), // snapshot of exercise name at time of change
+  previousWeight: integer("previous_weight").notNull(), // previous weight value
+  newWeight: integer("new_weight").notNull(), // new weight value
+  percentageIncrease: real("percentage_increase"), // percentage change (can be negative for decreases)
+  category: text("category").notNull(), // workout category for filtering
+  changedAt: timestamp("changed_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -362,3 +374,14 @@ export type UpdateShortcutSettings = z.infer<typeof updateShortcutSettingsSchema
 export type TabSettings = typeof tabSettings.$inferSelect;
 export type InsertTabSettings = z.infer<typeof insertTabSettingsSchema>;
 export type UpdateTabSettings = z.infer<typeof updateTabSettingsSchema>;
+
+export const insertChangesAuditSchema = createInsertSchema(changesAudit).omit({
+  id: true,
+  changedAt: true,
+});
+
+export const updateChangesAuditSchema = insertChangesAuditSchema.partial();
+
+export type ChangesAudit = typeof changesAudit.$inferSelect;
+export type InsertChangesAudit = z.infer<typeof insertChangesAuditSchema>;
+export type UpdateChangesAudit = z.infer<typeof updateChangesAuditSchema>;
