@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Eye, ChevronDown, GripVertical } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { type Exercise, type InsertExercise, type UpdateExercise, type InsertWorkoutLog, type DailySetProgress } from "@shared/schema";
+import { type Exercise, type InsertExercise, type UpdateExercise, type InsertWorkoutLog, type DailySetProgress, type InsertChangesAudit } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "react-beautiful-dnd";
 
@@ -114,6 +114,17 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
     },
   });
 
+  // Mutation for logging changes to the audit table
+  const logChangeMutation = useMutation({
+    mutationFn: async (auditEntry: InsertChangesAudit) => {
+      const response = await apiRequest("POST", "/api/changes-audit", auditEntry);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/changes-audit"] });
+    },
+  });
+
   const getCategoryDisplayName = (cat: string) => {
     switch (cat) {
       case "push": return "Push Day";
@@ -166,11 +177,36 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
   };
 
   const updateExercise = useCallback((id: string, field: keyof UpdateExercise, value: string | number) => {
+    // Get current exercise data before update for audit logging
+    const currentExercise = exercises.find(ex => ex.id === id);
+    
     updateMutation.mutate({
       id,
       data: { [field]: value },
+    }, {
+      onSuccess: (updatedExercise) => {
+        // Log weight changes to audit table
+        if (field === "weight" && currentExercise && typeof value === "number") {
+          const previousWeight = currentExercise.weight || 0;
+          const newWeight = value;
+          
+          // Only log if weight actually changed
+          if (previousWeight !== newWeight && previousWeight > 0) {
+            const percentageChange = ((newWeight - previousWeight) / previousWeight) * 100;
+            
+            logChangeMutation.mutate({
+              exerciseId: id,
+              exerciseName: currentExercise.name,
+              previousWeight,
+              newWeight,
+              percentageIncrease: percentageChange,
+              category: currentExercise.category,
+            });
+          }
+        }
+      }
     });
-  }, [updateMutation]);
+  }, [updateMutation, exercises, logChangeMutation]);
 
   const saveExercise = useCallback((exerciseId: string) => {
     const changes = editingExercises[exerciseId];

@@ -1,5 +1,5 @@
-import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress } from "@shared/schema";
-import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress, type ChangesAudit, type InsertChangesAudit, type UpdateChangesAudit } from "@shared/schema";
+import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress, changesAudit } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc, sql } from "drizzle-orm";
@@ -74,6 +74,10 @@ export interface IStorage {
   createOrUpdateDailySetProgress(entry: InsertDailySetProgress): Promise<DailySetProgress>;
   resetAllDailySetProgress(): Promise<void>;
   getTodaysPSTDate(): Date;
+  
+  // Changes audit tracking
+  getAllChangesAudit(): Promise<ChangesAudit[]>;
+  createChangesAudit(entry: InsertChangesAudit): Promise<ChangesAudit>;
 }
 
 export class MemStorage implements IStorage {
@@ -89,6 +93,7 @@ export class MemStorage implements IStorage {
   private userSettings: UserSettings | undefined;
   private shortcutSettings: Map<string, ShortcutSettings>;
   private tabSettings: Map<string, TabSettings>;
+  private changesAudit: Map<string, ChangesAudit>;
 
   constructor() {
     this.users = new Map();
@@ -103,6 +108,7 @@ export class MemStorage implements IStorage {
     this.userSettings = undefined;
     this.shortcutSettings = new Map();
     this.tabSettings = new Map();
+    this.changesAudit = new Map();
     
     // Add some initial sample data
     this.seedData();
@@ -826,6 +832,58 @@ export class MemStorage implements IStorage {
     });
   }
 
+  // Daily set progress methods (stubs for MemStorage)
+  async getDailySetProgressByExerciseId(exerciseId: string, date: Date): Promise<DailySetProgress | undefined> {
+    return undefined; // Not implemented for in-memory storage
+  }
+
+  async getDailySetProgressByCategory(category: string, date: Date): Promise<DailySetProgress[]> {
+    return []; // Not implemented for in-memory storage
+  }
+
+  async createOrUpdateDailySetProgress(entry: InsertDailySetProgress): Promise<DailySetProgress> {
+    const id = randomUUID();
+    const now = new Date();
+    const progress: DailySetProgress = {
+      id,
+      ...entry,
+      createdAt: now,
+      updatedAt: now,
+    };
+    // Note: MemStorage doesn't persist this data
+    return progress;
+  }
+
+  async resetAllDailySetProgress(): Promise<void> {
+    // Not implemented for in-memory storage
+  }
+
+  getTodaysPSTDate(): Date {
+    const now = new Date();
+    const pstTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+    pstTime.setHours(0, 0, 0, 0);
+    return pstTime;
+  }
+
+  // Changes audit methods
+  async getAllChangesAudit(): Promise<ChangesAudit[]> {
+    return Array.from(this.changesAudit.values()).sort((a, b) => 
+      new Date(b.changedAt!).getTime() - new Date(a.changedAt!).getTime()
+    );
+  }
+
+  async createChangesAudit(entry: InsertChangesAudit): Promise<ChangesAudit> {
+    const id = randomUUID();
+    const now = new Date();
+    const auditEntry: ChangesAudit = {
+      id,
+      ...entry,
+      changedAt: now,
+    };
+    this.changesAudit.set(id, auditEntry);
+    return auditEntry;
+  }
+
 }
 
 // Database Storage Implementation
@@ -1490,6 +1548,21 @@ export class DatabaseStorage implements IStorage {
     pstTime.setHours(0, 0, 0, 0);
     
     return pstTime;
+  }
+
+  // Changes audit tracking
+  async getAllChangesAudit(): Promise<ChangesAudit[]> {
+    const results = await db.select()
+      .from(changesAudit)
+      .orderBy(desc(changesAudit.changedAt));
+    return results;
+  }
+
+  async createChangesAudit(entry: InsertChangesAudit): Promise<ChangesAudit> {
+    const [created] = await db.insert(changesAudit)
+      .values(entry)
+      .returning();
+    return created;
   }
 }
 

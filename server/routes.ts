@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import path from "path";
 import fs from "fs";
-import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema } from "@shared/schema";
+import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema, insertChangesAuditSchema, updateChangesAuditSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -848,6 +848,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Daily set progress reset successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to reset daily set progress" });
+    }
+  });
+
+  // Get all changes audit entries
+  app.get("/api/changes-audit", async (req, res) => {
+    try {
+      const entries = await storage.getAllChangesAudit();
+      res.json(entries);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch changes audit entries" });
+    }
+  });
+
+  // Create a new changes audit entry
+  app.post("/api/changes-audit", async (req, res) => {
+    try {
+      const validatedData = insertChangesAuditSchema.parse(req.body);
+      const entry = await storage.createChangesAudit(validatedData);
+      res.status(201).json(entry);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create changes audit entry" });
+      }
     }
   });
 
