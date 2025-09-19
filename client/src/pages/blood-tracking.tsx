@@ -31,10 +31,7 @@ export default function BloodTracking() {
   });
 
   const importMutation = useMutation({
-    mutationFn: (entry: any) => apiRequest("/api/blood-entries", {
-      method: "POST",
-      body: JSON.stringify(entry),
-    }),
+    mutationFn: (entry: any) => apiRequest("POST", "/api/blood-entries", entry),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/blood-entries"] });
     },
@@ -42,10 +39,7 @@ export default function BloodTracking() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<BloodEntry> }) => 
-      apiRequest(`/api/blood-entries/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-      }),
+      apiRequest("PATCH", `/api/blood-entries/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/blood-entries"] });
       toast({
@@ -143,7 +137,7 @@ export default function BloodTracking() {
       const mapping = markerMap[marker];
       if (mapping) {
         entry[mapping.field] = isNaN(value) ? null : value;
-        if (mapping.unitField) entry[mapping.unitField] = unit;
+        if (mapping.unitField && unit) entry[mapping.unitField] = unit;
         if (mapping.flagField && status === 'outOfRange') {
           entry[mapping.flagField] = 'high'; // Could be enhanced to detect high vs low
         }
