@@ -646,6 +646,12 @@ export default function Home() {
             <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 dark:via-gray-400/30 to-transparent rounded-b-2xl"></div>
           </div>
         </div>
+        
+        {/* PR Changes Audit Section */}
+        <div className="mt-8">
+          <PRChangesAudit />
+        </div>
+        
       </main>
     </>
   );
@@ -1054,13 +1060,6 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 dark:via-gray-400/30 to-transparent rounded-b-xl"></div>
       </div>
     </div>
-    
-    {/* PR Changes Audit Section */}
-    <div className="max-w-4xl mx-auto mt-8">
-      <PRChangesAudit />
-    </div>
-    
-    </main>
     </>
   );
 }
