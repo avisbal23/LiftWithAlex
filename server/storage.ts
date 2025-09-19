@@ -775,6 +775,41 @@ export class MemStorage implements IStorage {
       updatedAt: new Date(),
     };
     this.personalRecords.set(id, updated);
+    
+    // Create audit entries for changed fields
+    if (existing.weight !== updated.weight) {
+      await this.createPRChangesAudit({
+        personalRecordId: id,
+        exerciseName: updated.exercise,
+        category: updated.category,
+        fieldChanged: "weight",
+        previousValue: existing.weight || null,
+        newValue: updated.weight || "",
+      });
+    }
+    
+    if (existing.reps !== updated.reps) {
+      await this.createPRChangesAudit({
+        personalRecordId: id,
+        exerciseName: updated.exercise,
+        category: updated.category,
+        fieldChanged: "reps",
+        previousValue: existing.reps || null,
+        newValue: updated.reps || "",
+      });
+    }
+    
+    if (existing.time !== updated.time) {
+      await this.createPRChangesAudit({
+        personalRecordId: id,
+        exerciseName: updated.exercise,
+        category: updated.category,
+        fieldChanged: "time",
+        previousValue: existing.time || null,
+        newValue: updated.time || "",
+      });
+    }
+    
     return updated;
   }
 
@@ -1325,11 +1360,57 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updatePersonalRecord(id: string, entry: UpdatePersonalRecord): Promise<PersonalRecord | undefined> {
+    // Get existing record for audit comparison
+    const existing = await db.select().from(personalRecords).where(eq(personalRecords.id, id)).limit(1);
+    if (existing.length === 0) {
+      return undefined;
+    }
+    const existingRecord = existing[0];
+    
     const [updated] = await db.update(personalRecords)
       .set({ ...entry, updatedAt: new Date() })
       .where(eq(personalRecords.id, id))
       .returning();
-    return updated || undefined;
+    
+    if (!updated) {
+      return undefined;
+    }
+    
+    // Create audit entries for changed fields
+    if (existingRecord.weight !== updated.weight) {
+      await this.createPRChangesAudit({
+        personalRecordId: id,
+        exerciseName: updated.exercise,
+        category: updated.category,
+        fieldChanged: "weight",
+        previousValue: existingRecord.weight || null,
+        newValue: updated.weight || "",
+      });
+    }
+    
+    if (existingRecord.reps !== updated.reps) {
+      await this.createPRChangesAudit({
+        personalRecordId: id,
+        exerciseName: updated.exercise,
+        category: updated.category,
+        fieldChanged: "reps",
+        previousValue: existingRecord.reps || null,
+        newValue: updated.reps || "",
+      });
+    }
+    
+    if (existingRecord.time !== updated.time) {
+      await this.createPRChangesAudit({
+        personalRecordId: id,
+        exerciseName: updated.exercise,
+        category: updated.category,
+        fieldChanged: "time",
+        previousValue: existingRecord.time || null,
+        newValue: updated.time || "",
+      });
+    }
+    
+    return updated;
   }
 
   async deletePersonalRecord(id: string): Promise<boolean> {

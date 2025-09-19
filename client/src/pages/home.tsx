@@ -233,7 +233,7 @@ export default function Home() {
   };
 
   const updatePersonalRecordMutation = useMutation({
-    mutationFn: async ({ id, data, previousRecord }: { id: string; data: any; previousRecord?: PersonalRecord }) => {
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
       const updatedRecord = await apiRequest("PATCH", `/api/personal-records/${id}`, {
         exercise: data.exercise,
         weight: data.weight || "",
@@ -242,49 +242,6 @@ export default function Home() {
         category: data.category,
         order: data.order,
       });
-
-      // Create audit entries for changed fields
-      if (previousRecord) {
-        const changes = [];
-        
-        if (previousRecord.weight !== (data.weight || "")) {
-          changes.push({
-            personalRecordId: id,
-            exerciseName: data.exercise,
-            category: data.category,
-            fieldChanged: "weight",
-            previousValue: previousRecord.weight || null,
-            newValue: data.weight || "",
-          });
-        }
-        
-        if (previousRecord.reps !== (data.reps || "")) {
-          changes.push({
-            personalRecordId: id,
-            exerciseName: data.exercise,
-            category: data.category,
-            fieldChanged: "reps",
-            previousValue: previousRecord.reps || null,
-            newValue: data.reps || "",
-          });
-        }
-        
-        if (previousRecord.time !== (data.time || "")) {
-          changes.push({
-            personalRecordId: id,
-            exerciseName: data.exercise,
-            category: data.category,
-            fieldChanged: "time",
-            previousValue: previousRecord.time || null,
-            newValue: data.time || "",
-          });
-        }
-        
-        // Create audit entries for each change
-        for (const change of changes) {
-          await apiRequest("POST", "/api/pr-changes-audit", change);
-        }
-      }
 
       return updatedRecord;
     },
@@ -296,8 +253,7 @@ export default function Home() {
   });
   
   const handleSave = (id: string, updatedData: any) => {
-    const previousRecord = personalRecords?.find(pr => pr.id === id);
-    updatePersonalRecordMutation.mutate({ id, data: updatedData, previousRecord });
+    updatePersonalRecordMutation.mutate({ id, data: updatedData });
   };
 
   const deletePersonalRecordMutation = useMutation({
