@@ -392,10 +392,29 @@ export default function BloodTracking() {
     
     // Map edited values back to database fields
     const fieldMap: Record<string, { field: keyof BloodEntry; unitField?: keyof BloodEntry }> = {
+      // Hormones
       "Total Testosterone": { field: "totalTestosterone", unitField: "totalTestosteroneUnit" },
       "Free Testosterone": { field: "freeTestosterone", unitField: "freeTestosteroneUnit" },
       "SHBG": { field: "shbg", unitField: "shbgUnit" },
       "Estradiol": { field: "estradiol", unitField: "estradiolUnit" },
+      "Estrogens Total": { field: "estrogensTotal", unitField: "estrogensTotalUnit" },
+      
+      // Thyroid
+      "TSH": { field: "tsh", unitField: "tshUnit" },
+      "Free T3": { field: "freeT3", unitField: "freeT3Unit" },
+      "Free T4": { field: "freeT4", unitField: "freeT4Unit" },
+      
+      // Lipids
+      "LDL": { field: "ldlCalc", unitField: "ldlCalcUnit" },
+      "HDL": { field: "hdl", unitField: "hdlUnit" },
+      "Triglycerides": { field: "triglycerides", unitField: "triglyceridesUnit" },
+      "ApoB": { field: "apob", unitField: "apobUnit" },
+      
+      // Health Markers
+      "Vitamin D": { field: "vitaminD25oh", unitField: "vitaminD25ohUnit" },
+      "CRP (hs)": { field: "crpHs", unitField: "crpHsUnit" },
+      "HbA1c": { field: "hba1c", unitField: "hba1cUnit" },
+      "Ferritin": { field: "ferritin", unitField: "ferritinUnit" },
     };
     
     values.forEach(({ label }) => {
