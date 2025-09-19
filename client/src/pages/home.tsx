@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "react-beautiful-dnd";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
+import PRChangesAudit from "@/components/pr-changes-audit";
 
 
 export default function Home() {
@@ -232,8 +233,8 @@ export default function Home() {
   };
 
   const updatePersonalRecordMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      return apiRequest("PATCH", `/api/personal-records/${id}`, {
+    mutationFn: async ({ id, data, previousRecord }: { id: string; data: any; previousRecord?: PersonalRecord }) => {
+      const updatedRecord = await apiRequest("PATCH", `/api/personal-records/${id}`, {
         exercise: data.exercise,
         weight: data.weight || "",
         reps: data.reps || "",
@@ -241,15 +242,62 @@ export default function Home() {
         category: data.category,
         order: data.order,
       });
+
+      // Create audit entries for changed fields
+      if (previousRecord) {
+        const changes = [];
+        
+        if (previousRecord.weight !== (data.weight || "")) {
+          changes.push({
+            personalRecordId: id,
+            exerciseName: data.exercise,
+            category: data.category,
+            fieldChanged: "weight",
+            previousValue: previousRecord.weight || null,
+            newValue: data.weight || "",
+          });
+        }
+        
+        if (previousRecord.reps !== (data.reps || "")) {
+          changes.push({
+            personalRecordId: id,
+            exerciseName: data.exercise,
+            category: data.category,
+            fieldChanged: "reps",
+            previousValue: previousRecord.reps || null,
+            newValue: data.reps || "",
+          });
+        }
+        
+        if (previousRecord.time !== (data.time || "")) {
+          changes.push({
+            personalRecordId: id,
+            exerciseName: data.exercise,
+            category: data.category,
+            fieldChanged: "time",
+            previousValue: previousRecord.time || null,
+            newValue: data.time || "",
+          });
+        }
+        
+        // Create audit entries for each change
+        for (const change of changes) {
+          await apiRequest("POST", "/api/pr-changes-audit", change);
+        }
+      }
+
+      return updatedRecord;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/personal-records"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/pr-changes-audit"] });
       setEditingId(null);
     },
   });
   
   const handleSave = (id: string, updatedData: any) => {
-    updatePersonalRecordMutation.mutate({ id, data: updatedData });
+    const previousRecord = personalRecords?.find(pr => pr.id === id);
+    updatePersonalRecordMutation.mutate({ id, data: updatedData, previousRecord });
   };
 
   const deletePersonalRecordMutation = useMutation({
@@ -1007,6 +1055,12 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
       </div>
     </div>
     
+    {/* PR Changes Audit Section */}
+    <div className="max-w-4xl mx-auto mt-8">
+      <PRChangesAudit />
+    </div>
+    
+    </main>
     </>
   );
 }
