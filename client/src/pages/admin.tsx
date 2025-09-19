@@ -687,68 +687,6 @@ export default function Admin() {
             </CardContent>
           </Card>
 
-          {/* Quotes Management */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5" />
-                Quotes Management
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-2">
-                <Button 
-                  onClick={exportQuotes}
-                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
-                  data-testid="button-export-quotes"
-                >
-                  <Download className="w-4 h-4" />
-                  Export Quotes
-                </Button>
-                <Button 
-                  onClick={downloadQuotesTemplate}
-                  variant="outline"
-                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
-                  data-testid="button-download-quotes-template"
-                >
-                  <FileDown className="w-4 h-4" />
-                  Download Template
-                </Button>
-                <span className="text-xs sm:text-sm text-muted-foreground flex items-center justify-center sm:justify-start px-3 py-2 sm:px-0 sm:py-0">
-                  ({quotes.length} quotes)
-                </span>
-              </div>
-              
-              <div className="space-y-3">
-                <Label htmlFor="quotes-import" className="text-sm font-medium">Import Quotes Data</Label>
-                <Textarea
-                  id="quotes-import"
-                  placeholder={`Paste your quotes here...
-Format: "Quote text" - Author
-Example:
-"The only way to do great work is to love what you do." - Steve Jobs
-"Fear = Fuel" - Me`}
-                  value={quotesImportData}
-                  onChange={(e) => setQuotesImportData(e.target.value)}
-                  className="min-h-[100px] sm:min-h-[120px] font-mono text-xs sm:text-sm resize-none"
-                />
-                <Button 
-                  onClick={importQuotes}
-                  disabled={isImporting || !quotesImportData.trim()}
-                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
-                  variant="outline"
-                  data-testid="button-import-quotes"
-                >
-                  <Upload className="w-4 h-4" />
-                  {isImporting ? "Importing..." : "Import Quotes"}
-                </Button>
-                <p className="text-xs text-muted-foreground">
-                  ⚠️ This will replace ALL existing quotes data
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Home Screen Shortcut Management */}
           <Card>
             <CardHeader>
@@ -957,6 +895,68 @@ Example:
                     <li>• All imports will replace existing data - backup first if needed</li>
                   </ul>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quotes Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" />
+                Quotes Management
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-2">
+                <Button 
+                  onClick={exportQuotes}
+                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
+                  data-testid="button-export-quotes"
+                >
+                  <Download className="w-4 h-4" />
+                  Export Quotes
+                </Button>
+                <Button 
+                  onClick={downloadQuotesTemplate}
+                  variant="outline"
+                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
+                  data-testid="button-download-quotes-template"
+                >
+                  <FileDown className="w-4 h-4" />
+                  Download Template
+                </Button>
+                <span className="text-xs sm:text-sm text-muted-foreground flex items-center justify-center sm:justify-start px-3 py-2 sm:px-0 sm:py-0">
+                  ({quotes.length} quotes)
+                </span>
+              </div>
+              
+              <div className="space-y-3">
+                <Label htmlFor="quotes-import" className="text-sm font-medium">Import Quotes Data</Label>
+                <Textarea
+                  id="quotes-import"
+                  placeholder={`Paste your quotes here...
+Format: "Quote text" - Author
+Example:
+"The only way to do great work is to love what you do." - Steve Jobs
+"Fear = Fuel" - Me`}
+                  value={quotesImportData}
+                  onChange={(e) => setQuotesImportData(e.target.value)}
+                  className="min-h-[100px] sm:min-h-[120px] font-mono text-xs sm:text-sm resize-none"
+                />
+                <Button 
+                  onClick={importQuotes}
+                  disabled={isImporting || !quotesImportData.trim()}
+                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
+                  variant="outline"
+                  data-testid="button-import-quotes"
+                >
+                  <Upload className="w-4 h-4" />
+                  {isImporting ? "Importing..." : "Import Quotes"}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  ⚠️ This will replace ALL existing quotes data
+                </p>
               </div>
             </CardContent>
           </Card>
