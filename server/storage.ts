@@ -1,5 +1,5 @@
-import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress, type ChangesAudit, type InsertChangesAudit, type UpdateChangesAudit } from "@shared/schema";
-import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress, changesAudit } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress, type ChangesAudit, type InsertChangesAudit, type UpdateChangesAudit, type PRChangesAudit, type InsertPRChangesAudit } from "@shared/schema";
+import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress, changesAudit, prChangesAudit } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc, sql } from "drizzle-orm";
@@ -79,6 +79,11 @@ export interface IStorage {
   getAllChangesAudit(): Promise<ChangesAudit[]>;
   createChangesAudit(entry: InsertChangesAudit): Promise<ChangesAudit>;
   deleteChangesAudit(id: string): Promise<boolean>;
+
+  // PR Changes audit tracking
+  getAllPRChangesAudit(): Promise<PRChangesAudit[]>;
+  createPRChangesAudit(entry: InsertPRChangesAudit): Promise<PRChangesAudit>;
+  deletePRChangesAudit(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -95,6 +100,7 @@ export class MemStorage implements IStorage {
   private shortcutSettings: Map<string, ShortcutSettings>;
   private tabSettings: Map<string, TabSettings>;
   private changesAudit: Map<string, ChangesAudit>;
+  private prChangesAudit: Map<string, PRChangesAudit>;
 
   constructor() {
     this.users = new Map();
@@ -110,6 +116,7 @@ export class MemStorage implements IStorage {
     this.shortcutSettings = new Map();
     this.tabSettings = new Map();
     this.changesAudit = new Map();
+    this.prChangesAudit = new Map();
     
     // Add some initial sample data
     this.seedData();
@@ -889,6 +896,29 @@ export class MemStorage implements IStorage {
     return this.changesAudit.delete(id);
   }
 
+  // PR Changes audit methods
+  async getAllPRChangesAudit(): Promise<PRChangesAudit[]> {
+    return Array.from(this.prChangesAudit.values()).sort((a, b) => 
+      new Date(b.changedAt!).getTime() - new Date(a.changedAt!).getTime()
+    );
+  }
+
+  async createPRChangesAudit(entry: InsertPRChangesAudit): Promise<PRChangesAudit> {
+    const id = randomUUID();
+    const now = new Date();
+    const auditEntry: PRChangesAudit = {
+      id,
+      ...entry,
+      changedAt: now,
+    };
+    this.prChangesAudit.set(id, auditEntry);
+    return auditEntry;
+  }
+
+  async deletePRChangesAudit(id: string): Promise<boolean> {
+    return this.prChangesAudit.delete(id);
+  }
+
 }
 
 // Database Storage Implementation
@@ -1573,6 +1603,27 @@ export class DatabaseStorage implements IStorage {
   async deleteChangesAudit(id: string): Promise<boolean> {
     const result = await db.delete(changesAudit)
       .where(eq(changesAudit.id, id));
+    return result.rowCount > 0;
+  }
+
+  // PR Changes audit tracking
+  async getAllPRChangesAudit(): Promise<PRChangesAudit[]> {
+    const results = await db.select()
+      .from(prChangesAudit)
+      .orderBy(desc(prChangesAudit.changedAt));
+    return results;
+  }
+
+  async createPRChangesAudit(entry: InsertPRChangesAudit): Promise<PRChangesAudit> {
+    const [created] = await db.insert(prChangesAudit)
+      .values(entry)
+      .returning();
+    return created;
+  }
+
+  async deletePRChangesAudit(id: string): Promise<boolean> {
+    const result = await db.delete(prChangesAudit)
+      .where(eq(prChangesAudit.id, id));
     return result.rowCount > 0;
   }
 }
