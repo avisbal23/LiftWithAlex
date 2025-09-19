@@ -919,7 +919,7 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
                     </div>
                   </div>
                   <div className="text-sm text-muted-foreground/80 font-medium">
-                    Max {renderEditableField('reps', editData.reps, pr.reps)} reps
+                    {renderEditableField('reps', editData.reps, pr.reps)} reps
                   </div>
                   {calculateBodyWeightPercentage() && (
                     <div className="text-xs text-yellow-600 dark:text-yellow-400 font-semibold bg-yellow-100/20 dark:bg-yellow-400/10 rounded-full px-2 py-1 mt-2">
