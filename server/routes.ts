@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import path from "path";
 import fs from "fs";
-import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema, insertChangesAuditSchema, updateChangesAuditSchema } from "@shared/schema";
+import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema, insertChangesAuditSchema, updateChangesAuditSchema, insertPRChangesAuditSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -889,6 +889,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete changes audit entry" });
+    }
+  });
+
+  // Get all PR changes audit entries
+  app.get("/api/pr-changes-audit", async (req, res) => {
+    try {
+      const entries = await storage.getAllPRChangesAudit();
+      res.json(entries);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch PR changes audit entries" });
+    }
+  });
+
+  // Create a new PR changes audit entry
+  app.post("/api/pr-changes-audit", async (req, res) => {
+    try {
+      const validatedData = insertPRChangesAuditSchema.parse(req.body);
+      const entry = await storage.createPRChangesAudit(validatedData);
+      res.status(201).json(entry);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create PR changes audit entry" });
+      }
+    }
+  });
+
+  // Delete PR changes audit entry
+  app.delete("/api/pr-changes-audit/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const deleted = await storage.deletePRChangesAudit(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "PR changes audit entry not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete PR changes audit entry" });
     }
   });
 
