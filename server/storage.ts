@@ -1477,13 +1477,13 @@ export class DatabaseStorage implements IStorage {
       { shortcutKey: 'legs', shortcutName: 'Legs Day', routePath: '/legs', isVisible: 1, order: 3 },
       { shortcutKey: 'push2', shortcutName: 'SHARMS', routePath: '/push2', isVisible: 1, order: 4 },
       { shortcutKey: 'pull2', shortcutName: 'BACK', routePath: '/pull2', isVisible: 1, order: 5 },
-      { shortcutKey: 'legs2', shortcutName: 'Legs Day 2', routePath: '/legs2', isVisible: 0, order: 6 },
+      { shortcutKey: 'legs2', shortcutName: 'Legs 2', routePath: '/legs2', isVisible: 0, order: 6 },
       { shortcutKey: 'cardio', shortcutName: 'Cardio', routePath: '/cardio', isVisible: 1, order: 7 },
-      { shortcutKey: 'weight', shortcutName: 'Weight Tracking', routePath: '/weight', isVisible: 0, order: 8 },
-      { shortcutKey: 'blood', shortcutName: 'Blood Labs', routePath: '/blood-tracking', isVisible: 0, order: 9 },
-      { shortcutKey: 'photos', shortcutName: 'Progress Photos', routePath: '/photo-progress', isVisible: 0, order: 10 },
-      { shortcutKey: 'thoughts', shortcutName: 'Thoughts & Reflections', routePath: '/thoughts', isVisible: 0, order: 11 },
-      { shortcutKey: 'admin', shortcutName: 'Administration', routePath: '/admin', isVisible: 0, order: 12 }
+      { shortcutKey: 'weight', shortcutName: 'Weight', routePath: '/weight', isVisible: 0, order: 8 },
+      { shortcutKey: 'blood', shortcutName: 'Blood', routePath: '/blood-tracking', isVisible: 0, order: 9 },
+      { shortcutKey: 'photos', shortcutName: 'Photos', routePath: '/photo-progress', isVisible: 0, order: 10 },
+      { shortcutKey: 'thoughts', shortcutName: 'Thoughts', routePath: '/thoughts', isVisible: 0, order: 11 },
+      { shortcutKey: 'admin', shortcutName: 'Admin', routePath: '/admin', isVisible: 0, order: 12 }
     ];
 
     // Insert all default shortcuts
