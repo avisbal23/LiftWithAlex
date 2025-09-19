@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { type WorkoutLog, type Quote, type PersonalRecord, type UserSettings, type ShortcutSettings } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
-import { Trophy, Calendar, Edit3, Save, X, Scale, Settings, MessageCircle, Trash2, Activity, Camera, GripVertical, RefreshCw, Home as HomeIcon, Menu } from "lucide-react";
+import { Trophy, Calendar, Edit3, Save, X, Scale, Settings, MessageCircle, Trash2, Activity, Camera, GripVertical, RefreshCw, Home as HomeIcon, Menu, Check, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { DragDropContext, Droppable, Draggable, type DropResult } from "react-beautiful-dnd";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
 import PRChangesAudit from "@/components/pr-changes-audit";
+import { motion, AnimatePresence } from "framer-motion";
 
 
 export default function Home() {
@@ -92,14 +93,14 @@ export default function Home() {
     if (!latestWorkoutLog) return null;
     
     const daysDiff = Math.floor(
-      (new Date().getTime() - new Date(latestWorkoutLog.completedAt).getTime()) / 
+      (new Date().getTime() - new Date(latestWorkoutLog.completedAt || '').getTime()) / 
       (1000 * 60 * 60 * 24)
     );
     
     return {
       category: getCategoryDisplayName(latestWorkoutLog.category),
       daysAgo: daysDiff,
-      date: new Date(latestWorkoutLog.completedAt)
+      date: new Date(latestWorkoutLog.completedAt || '')
     };
   };
 
@@ -179,8 +180,10 @@ export default function Home() {
         shortcutName: 'Administration',
         routePath: '/admin',
         isVisible: 1,
-        order: 1
-      }];
+        order: 1,
+        createdAt: null,
+        updatedAt: null
+      }] as ShortcutSettings[];
     }
     
     const workoutShortcuts = shortcuts.filter(s => 
@@ -252,8 +255,8 @@ export default function Home() {
     },
   });
   
-  const handleSave = (id: string, updatedData: any) => {
-    updatePersonalRecordMutation.mutate({ id, data: updatedData });
+  const handleSave = async (id: string, updatedData: any): Promise<void> => {
+    await updatePersonalRecordMutation.mutateAsync({ id, data: updatedData });
   };
 
   const deletePersonalRecordMutation = useMutation({
@@ -586,6 +589,7 @@ export default function Home() {
                             onDelete={() => handleDelete(pr.id)}
                             onCancel={() => setEditingId(null)}
                             dragHandleProps={provided.dragHandleProps}
+                            queryClient={queryClient}
                           />
                         </div>
                       )}
@@ -613,18 +617,26 @@ export default function Home() {
   );
 }
 
-function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, onCancel, dragHandleProps }: {
+function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, onCancel, dragHandleProps, queryClient }: {
   pr: any;
   currentBodyWeight: number;
   isEditing: boolean;
   onEdit: () => void;
-  onSave: (data: any) => void;
+  onSave: (data: any) => Promise<void>;
   onDelete: () => void;
   onCancel: () => void;
   dragHandleProps?: any;
+  queryClient: any;
 }) {
   const [editData, setEditData] = useState(() => ({ ...pr }));
   const [isFlipped, setIsFlipped] = useState(false);
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+  const weightInputRef = useRef<HTMLInputElement>(null);
+  const repsInputRef = useRef<HTMLInputElement>(null);
+  const timeInputRef = useRef<HTMLInputElement>(null);
+  const exerciseInputRef = useRef<HTMLInputElement>(null);
 
   const calculateBodyWeightPercentage = () => {
     const prWeight = parseFloat(pr.weight);
@@ -634,125 +646,162 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
     return null;
   };
 
-  const handleSave = () => {
-    onSave(editData);
+  const autoSave = useCallback(async (fieldName: string, value: string) => {
+    if (value === pr[fieldName]) return; // No changes to save
+    
+    const updatedData = { ...editData, [fieldName]: value };
+    
+    // Optimistic update - immediately update the local state
+    setEditData(updatedData);
+    setIsSaving(true);
+    
+    // Apply optimistic update to the query cache for the specific PR
+    const currentPRs = queryClient.getQueryData(['/api/personal-records']) as PersonalRecord[];
+    if (currentPRs) {
+      const optimisticPRs = currentPRs.map(record => 
+        record.id === pr.id ? { ...record, [fieldName]: value } : record
+      );
+      queryClient.setQueryData(['/api/personal-records'], optimisticPRs);
+    }
+    
+    try {
+      await onSave(updatedData);
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 1000);
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+      // Rollback optimistic update on error
+      if (currentPRs) {
+        queryClient.setQueryData(['/api/personal-records'], currentPRs);
+      }
+      // Reset to original value
+      setEditData((prev: any) => ({ ...prev, [fieldName]: pr[fieldName] }));
+    } finally {
+      setIsSaving(false);
+    }
+  }, [editData, onSave, pr, queryClient]);
+
+  const handleFieldEdit = (fieldName: string) => {
+    setEditingField(fieldName);
+    // Focus the input after a brief delay to ensure it's rendered
+    setTimeout(() => {
+      if (fieldName === 'weight' && weightInputRef.current) {
+        weightInputRef.current.focus();
+        weightInputRef.current.select();
+      } else if (fieldName === 'reps' && repsInputRef.current) {
+        repsInputRef.current.focus();
+        repsInputRef.current.select();
+      } else if (fieldName === 'time' && timeInputRef.current) {
+        timeInputRef.current.focus();
+        timeInputRef.current.select();
+      } else if (fieldName === 'exercise' && exerciseInputRef.current) {
+        exerciseInputRef.current.focus();
+        exerciseInputRef.current.select();
+      }
+    }, 100);
+  };
+
+  const handleFieldBlur = (fieldName: string, value: string) => {
+    setEditingField(null);
+    if (value !== pr[fieldName]) {
+      autoSave(fieldName, value);
+    }
+  };
+
+  const handleFieldKeyDown = (e: React.KeyboardEvent, fieldName: string, value: string) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleFieldBlur(fieldName, value);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setEditingField(null);
+      setEditData((prev: any) => ({ ...prev, [fieldName]: pr[fieldName] })); // Reset to original value
+    }
   };
 
   const handleFlip = () => {
-    if (!isEditing) {
+    if (!isEditing && !editingField) {
       setIsFlipped(!isFlipped);
     }
   };
 
-  if (isEditing) {
+  const renderEditableField = (fieldName: string, value: string, displayValue: string, className: string = "") => {
+    const isFieldEditing = editingField === fieldName;
+    const isFieldSaving = isSaving && editingField === fieldName;
+    
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 dark:bg-black/40 backdrop-blur-sm p-4">
-        <Card className="border-primary flex flex-col shadow-2xl dark:shadow-white/30 shadow-black/20 bg-background w-full max-w-md">
-          <CardContent className="p-6 space-y-4">
-            <div className="text-center mb-4">
-              <h3 className="text-lg font-semibold text-foreground">Edit PR Record</h3>
-            </div>
-          
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="exercise" className="text-sm font-medium text-foreground">Exercise Name</Label>
-              <Input
-                id="exercise"
-                value={editData.exercise}
-                onChange={(e) => setEditData(prev => ({ ...prev, exercise: e.target.value }))}
-                className="mt-1"
-                placeholder="Enter exercise name"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="category" className="text-sm font-medium text-foreground">Category</Label>
-              <select
-                id="category"
-                value={editData.category}
-                onChange={(e) => setEditData(prev => ({ ...prev, category: e.target.value }))}
-                className="w-full px-3 py-2 mt-1 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="Push">Push</option>
-                <option value="Pull">Pull</option>
-                <option value="Legs">Legs</option>
-                <option value="Cardio">Cardio</option>
-              </select>
-            </div>
-            
-            <div>
-              <Label htmlFor="order" className="text-sm font-medium text-foreground">Position (Order)</Label>
-              <Input
-                id="order"
-                type="number"
-                min="1"
-                value={editData.order || ""}
-                onChange={(e) => setEditData(prev => ({ ...prev, order: parseInt(e.target.value) || 1 }))}
-                className="mt-1"
-                placeholder="Enter position number"
-              />
-            </div>
-            
-            {editData.category === "Cardio" ? (
-              <div>
-                <Label htmlFor="time" className="text-sm font-medium text-foreground">Best Time</Label>
-                <Input
-                  id="time"
-                  value={editData.time || ""}
-                  onChange={(e) => setEditData(prev => ({ ...prev, time: e.target.value }))}
-                  placeholder="e.g., 22:30"
-                  className="mt-1"
-                />
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="weight" className="text-sm font-medium text-foreground">Weight (lbs)</Label>
-                  <Input
-                    id="weight"
-                    value={editData.weight || ""}
-                    onChange={(e) => setEditData(prev => ({ ...prev, weight: e.target.value }))}
-                    placeholder="Weight"
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="reps" className="text-sm font-medium text-foreground">Max Reps</Label>
-                  <Input
-                    id="reps"
-                    value={editData.reps || ""}
-                    onChange={(e) => setEditData(prev => ({ ...prev, reps: e.target.value }))}
-                    placeholder="Reps"
-                    className="mt-1"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <div className="flex gap-2 pt-4 border-t border-border">
-            <Button onClick={handleSave} className="flex-1">
-              <Save className="w-4 h-4 mr-2" />
-              Save Changes
-            </Button>
-            <Button variant="outline" onClick={onCancel} className="flex-1">
-              <X className="w-4 h-4 mr-2" />
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={onDelete}
-              className="px-4"
-              data-testid={`button-delete-pr-${pr.id}`}
+      <motion.div
+        layout
+        className={`relative group ${className}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!isFieldEditing) {
+            handleFieldEdit(fieldName);
+          }
+        }}
+      >
+        <AnimatePresence mode="wait">
+          {isFieldEditing ? (
+            <motion.div
+              key="editing"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="relative"
             >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-      </div>
+              <Input
+                ref={fieldName === 'weight' ? weightInputRef : 
+                     fieldName === 'reps' ? repsInputRef : 
+                     fieldName === 'time' ? timeInputRef :
+                     fieldName === 'exercise' ? exerciseInputRef : null}
+                value={editData[fieldName] || ''}
+                onChange={(e) => setEditData((prev: any) => ({ ...prev, [fieldName]: e.target.value }))}
+                onBlur={(e) => handleFieldBlur(fieldName, e.target.value)}
+                onKeyDown={(e) => handleFieldKeyDown(e, fieldName, e.currentTarget.value)}
+                className="text-center bg-white/20 dark:bg-gray-600/20 border-2 border-primary/50 focus:border-primary backdrop-blur-sm"
+                placeholder={fieldName === 'weight' ? 'Weight' : 
+                           fieldName === 'reps' ? 'Reps' : 
+                           fieldName === 'time' ? 'Time' :
+                           fieldName === 'exercise' ? 'Exercise' : ''}
+                data-testid={`input-edit-${fieldName}-${pr.id}`}
+              />
+              {isFieldSaving && (
+                <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                </div>
+              )}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="display"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className={`cursor-pointer hover:bg-white/10 dark:hover:bg-gray-600/10 rounded px-2 py-1 transition-all duration-200 ${justSaved ? 'ring-2 ring-green-400/50 bg-green-400/10' : 'hover:ring-2 hover:ring-primary/30'} relative`}
+              data-testid={`field-display-${fieldName}-${pr.id}`}
+            >
+              {displayValue}
+              {justSaved && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0 }}
+                  className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center"
+                >
+                  <Check className="w-3 h-3 text-white" />
+                </motion.div>
+              )}
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                <Edit3 className="w-3 h-3 text-primary/70" />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     );
-  }
+  };
 
   return (
     <>
@@ -764,8 +813,9 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
         />
       )}
       
-      <div 
-        className={`relative group cursor-pointer transition-all duration-300 ${
+      <motion.div 
+        layout
+        className={`relative group transition-all duration-300 ${
           isFlipped 
             ? "fixed z-50" 
             : "hover:-translate-y-1 hover:scale-105"
@@ -780,73 +830,46 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
           maxWidth: '90vw',
           maxHeight: '80vh'
         } : {}}
+        whileHover={!isFlipped && !editingField ? { y: -4, scale: 1.02 } : {}}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
       {/* 3D Glassmorphism Card */}
-      <div className={`backdrop-blur-lg bg-black/20 dark:bg-gray-200/15 border border-white/30 dark:border-gray-600/40 rounded-xl shadow-2xl transition-all duration-300 ${
-        isFlipped 
-          ? "shadow-3xl ring-4 ring-white/20 dark:ring-gray-400/20 w-full h-full" 
-          : "group-hover:shadow-3xl"
-      }`}>
+      <motion.div 
+        layout
+        className={`backdrop-blur-lg bg-black/20 dark:bg-gray-200/15 border border-white/30 dark:border-gray-600/40 rounded-xl shadow-2xl transition-all duration-300 ${
+          isFlipped 
+            ? "shadow-3xl ring-4 ring-white/20 dark:ring-gray-400/20 w-full h-full" 
+            : "group-hover:shadow-3xl"
+        } ${editingField ? 'ring-2 ring-primary/50' : ''}`}
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+      >
         {/* 3D Glass Effect */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/15 to-black/5 dark:from-gray-300/15 dark:to-gray-700/5 rounded-xl"></div>
         
         {/* Inner Glass Highlight */}
         <div className="absolute inset-0.5 bg-gradient-to-b from-white/20 to-transparent dark:from-gray-300/20 rounded-xl opacity-50"></div>
         <div className="relative flex-1 flex flex-col justify-center items-center p-6 aspect-square">
-          {/* 3D Glass Edit/Save/Cancel Buttons */}
-          {!isEditing ? (
+          {/* Action Buttons - Always visible for inline editing */}
+          <div className="absolute top-3 right-3 flex gap-1">
             <Button
               size="sm"
               variant="ghost"
               onClick={(e) => {
                 e.stopPropagation();
-                onEdit();
+                onDelete();
               }}
-              className="absolute top-3 right-3 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-all duration-200 backdrop-blur-sm bg-white/20 dark:bg-gray-600/30 border border-white/30 dark:border-gray-500/40 rounded-lg hover:bg-white/30 dark:hover:bg-gray-500/40 hover:scale-110"
-              data-testid={`button-edit-pr-${pr.id}`}
+              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-all duration-200 backdrop-blur-sm bg-red-500/20 dark:bg-red-400/20 border border-red-500/30 dark:border-red-400/30 rounded-lg hover:bg-red-500/30 dark:hover:bg-red-400/30 hover:scale-110"
+              data-testid={`button-delete-pr-${pr.id}`}
             >
-              <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/20 to-transparent dark:from-gray-400/20"></div>
-              <Edit3 className="w-3 h-3 relative z-10 text-foreground" />
+              <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-red-400/20 to-transparent"></div>
+              <Trash2 className="w-3 h-3 relative z-10 text-red-600 dark:text-red-400" />
             </Button>
-          ) : (
-            <div className="absolute top-3 right-3 flex gap-1">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSave?.({
-                    exercise: editData.exercise,
-                    weight: editData.weight,
-                    reps: editData.reps,
-                    time: editData.time,
-                    category: editData.category
-                  });
-                }}
-                className="h-8 w-8 p-0 transition-all duration-200 backdrop-blur-sm bg-green-500/20 dark:bg-green-400/20 border border-green-500/30 dark:border-green-400/30 rounded-lg hover:bg-green-500/30 dark:hover:bg-green-400/30 hover:scale-110"
-                data-testid={`button-save-pr-${pr.id}`}
-              >
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-green-400/20 to-transparent"></div>
-                <Save className="w-3 h-3 relative z-10 text-green-600 dark:text-green-400" />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onCancel();
-                }}
-                className="h-8 w-8 p-0 transition-all duration-200 backdrop-blur-sm bg-red-500/20 dark:bg-red-400/20 border border-red-500/30 dark:border-red-400/30 rounded-lg hover:bg-red-500/30 dark:hover:bg-red-400/30 hover:scale-110"
-                data-testid={`button-cancel-pr-${pr.id}`}
-              >
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-red-400/20 to-transparent"></div>
-                <X className="w-3 h-3 relative z-10 text-red-600 dark:text-red-400" />
-              </Button>
-            </div>
-          )}
+          </div>
 
           {!isFlipped ? (
-            // Front side - 3D Glassmorphism view
+            // Front side - 3D Glassmorphism view with inline editing
             <div className="text-center space-y-4 relative">
               {/* Drag Handle for Front Side */}
               <div 
@@ -857,40 +880,46 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
                 <GripVertical className="w-4 h-4" />
               </div>
               
-              {/* 3D Glass Badge */}
+              {/* 3D Glass Badge - Editable Exercise Name */}
               <div className="relative inline-block">
                 <div className="backdrop-blur-sm bg-white/20 dark:bg-gray-600/25 border border-white/30 dark:border-gray-500/40 rounded-full px-4 py-2 shadow-lg">
                   <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/20 to-transparent dark:from-gray-400/20"></div>
-                  <span className="relative z-10 text-base font-medium text-foreground">{pr.exercise}</span>
+                  <div className="relative z-10 text-base font-medium text-foreground">
+                    {renderEditableField('exercise', editData.exercise, pr.exercise)}
+                  </div>
                 </div>
               </div>
               
               {pr.category === "Cardio" ? (
                 <div className="text-center space-y-2">
-                  {/* 3D Text Effect */}
+                  {/* 3D Text Effect - Editable Time */}
                   <div className="relative">
                     <div className="absolute inset-0 text-black/20 dark:text-gray-600/30 transform translate-x-0.5 translate-y-0.5 blur-sm text-3xl font-bold">
-                      {pr.time}
+                      {editingField === 'time' ? '' : pr.time}
                     </div>
                     <div className="relative text-3xl font-bold bg-gradient-to-b from-foreground to-foreground/70 bg-clip-text text-transparent">
-                      {pr.time}
+                      {renderEditableField('time', editData.time, pr.time)}
                     </div>
                   </div>
                   <div className="text-sm text-muted-foreground/80 font-medium">Best Time</div>
                 </div>
               ) : (
                 <div className="text-center space-y-2">
-                  {/* 3D Weight Text */}
+                  {/* 3D Weight Text - Editable */}
                   <div className="relative">
                     <div className="absolute inset-0 text-black/20 dark:text-gray-600/30 transform translate-x-0.5 translate-y-0.5 blur-sm text-3xl font-bold">
-                      {pr.weight} lbs
+                      {editingField === 'weight' ? '' : `${pr.weight} lbs`}
                     </div>
                     <div className="relative text-3xl font-bold bg-gradient-to-b from-foreground to-foreground/70 bg-clip-text text-transparent">
-                      {pr.weight} lbs
+                      {editingField === 'weight' ? (
+                        renderEditableField('weight', editData.weight, pr.weight)
+                      ) : (
+                        renderEditableField('weight', editData.weight, `${pr.weight} lbs`)
+                      )}
                     </div>
                   </div>
                   <div className="text-sm text-muted-foreground/80 font-medium">
-                    Max {pr.reps} reps
+                    Max {renderEditableField('reps', editData.reps, pr.reps)} reps
                   </div>
                   {calculateBodyWeightPercentage() && (
                     <div className="text-xs text-yellow-600 dark:text-yellow-400 font-semibold bg-yellow-100/20 dark:bg-yellow-400/10 rounded-full px-2 py-1 mt-2">
@@ -903,20 +932,12 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
           ) : (
             // Back side - Compass-style layout
             <div className="w-full p-6 space-y-6">
-              {/* Workout Title with Matching Emojis and Drag Handle */}
+              {/* Workout Title with Matching Emojis */}
               <div className="text-center relative">
                 <div className="flex items-center justify-center space-x-3">
                   <span className="text-xl">🏋️</span>
                   <span className="text-lg font-bold text-foreground">{pr.exercise}</span>
                   <span className="text-xl">🏋️</span>
-                </div>
-                {/* Drag Handle */}
-                <div 
-                  {...dragHandleProps}
-                  className="absolute top-0 right-0 p-1 cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-foreground/80 transition-colors"
-                  data-testid={`drag-handle-${pr.id}`}
-                >
-                  <GripVertical className="w-4 h-4" />
                 </div>
               </div>
               
@@ -984,17 +1005,21 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
                         )}
                       </div>
                       
-                      {/* Quadrant 2 - Weight */}
+                      {/* Quadrant 2 - Weight - Editable */}
                       <div className="flex items-center justify-center p-3">
                         <div className="text-center">
-                          <div className="text-sm font-medium text-foreground">{pr.weight} lbs</div>
+                          <div className="text-sm font-medium text-foreground">
+                            {renderEditableField('weight', editData.weight, `${pr.weight} lbs`)}
+                          </div>
                         </div>
                       </div>
                       
-                      {/* Quadrant 3 - Reps */}
+                      {/* Quadrant 3 - Reps - Editable */}
                       <div className="flex items-center justify-center p-3">
                         <div className="text-center">
-                          <div className="text-sm font-medium text-foreground">{pr.reps} reps</div>
+                          <div className="text-sm font-medium text-foreground">
+                            {renderEditableField('reps', editData.reps, `${pr.reps} reps`)}
+                          </div>
                         </div>
                       </div>
                       
@@ -1014,8 +1039,8 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
         
         {/* Bottom Glass Highlight */}
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 dark:via-gray-400/30 to-transparent rounded-b-xl"></div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
     </>
   );
 }
