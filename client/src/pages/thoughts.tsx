@@ -85,7 +85,6 @@ export default function ThoughtsPage() {
     
     createMutation.mutate({
       content: newThought.trim(),
-      mood: "neutral",
       tags: [],
     });
   };
@@ -104,31 +103,6 @@ export default function ThoughtsPage() {
     });
   };
 
-  const getMoodEmoji = (mood: string) => {
-    switch (mood) {
-      case "happy": return "😊";
-      case "sad": return "😢";
-      case "excited": return "🎉";
-      case "frustrated": return "😤";
-      case "grateful": return "🙏";
-      case "motivated": return "💪";
-      case "contemplative": return "🤔";
-      default: return "💭";
-    }
-  };
-
-  const getMoodColor = (mood: string) => {
-    switch (mood) {
-      case "happy": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
-      case "sad": return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
-      case "excited": return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
-      case "frustrated": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
-      case "grateful": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-      case "motivated": return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
-      case "contemplative": return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
-    }
-  };
 
   if (isLoading) {
     return (
@@ -245,19 +219,16 @@ export default function ThoughtsPage() {
                         {thought.content}
                       </p>
 
-                      {/* Mood & Tags */}
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge className={getMoodColor(thought.mood || "neutral")}>
-                          {getMoodEmoji(thought.mood || "neutral")} {thought.mood || "neutral"}
-                        </Badge>
-                        {thought.tags && thought.tags.length > 0 && (
-                          thought.tags.map((tag, index) => (
+                      {/* Tags */}
+                      {thought.tags && thought.tags.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          {thought.tags.map((tag, index) => (
                             <Badge key={index} variant="outline">
                               #{tag}
                             </Badge>
-                          ))
-                        )}
-                      </div>
+                          ))}
+                        </div>
+                      )}
 
                       {/* Timestamp & Actions */}
                       <div className="flex justify-between items-center pt-2 border-t border-gray-100 dark:border-gray-800">
