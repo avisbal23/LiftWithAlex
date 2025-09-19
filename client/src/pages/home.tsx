@@ -931,7 +931,7 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
                     <div className="absolute inset-0 text-black/20 dark:text-gray-600/30 transform translate-x-0.5 translate-y-0.5 blur-sm text-3xl font-bold">
                       {editingField === 'time' ? '' : pr.time}
                     </div>
-                    <div className="relative text-3xl font-bold bg-gradient-to-b from-foreground to-foreground/70 bg-clip-text text-transparent">
+                    <div className="relative text-3xl font-bold text-foreground">
                       {renderEditableField('time', editData.time, pr.time)}
                     </div>
                   </div>
