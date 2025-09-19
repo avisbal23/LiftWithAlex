@@ -700,6 +700,45 @@ export default function Admin() {
                 Control which shortcuts appear on the home screen. Toggle any shortcut on or off to customize your main navigation.
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
+                {/* Always show Home shortcut as locked placeholder */}
+                <button
+                  key="home"
+                  disabled={true}
+                  className={`
+                    relative p-1 sm:p-1.5 rounded-lg transition-all duration-300 group aspect-square
+                    backdrop-blur-lg border shadow-2xl cursor-not-allowed opacity-75
+                    bg-green-100/20 dark:bg-green-950/20 border-green-300/30 dark:border-green-700/40 text-green-700 dark:text-green-300 shadow-green-400/20
+                    disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0
+                  `}
+                  data-testid="button-shortcut-home"
+                >
+                  {/* Status indicator circle */}
+                  <div className="absolute top-1 right-1 w-2 h-2 rounded-full border transition-colors bg-green-500 border-green-600 shadow-green-400/50 shadow-lg" />
+                  
+                  {/* Main content */}
+                  <div className="text-left space-y-0.5">
+                    <h3 className="font-semibold text-xs">Home</h3>
+                    <p className="text-[10px] opacity-70">/</p>
+                    <div className="flex items-center gap-1 text-[9px] font-medium">
+                      <div className="w-1 h-1 rounded-full bg-green-500" />
+                      ON
+                      <span className="flex items-center gap-0.5 text-[8px] text-muted-foreground/70 ml-0.5">
+                        <Lock className="w-2 h-2" />
+                        🔒
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* 3D Glass Effect */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/15 to-black/5 dark:from-gray-300/15 dark:to-gray-700/5 rounded-lg"></div>
+                  
+                  {/* Inner Glass Highlight */}
+                  <div className="absolute inset-0.5 bg-gradient-to-b from-white/20 to-transparent dark:from-gray-300/20 rounded-lg opacity-50"></div>
+                  
+                  {/* Hover effect overlay */}
+                  <div className="absolute inset-0 bg-white/10 dark:bg-black/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+                
                 {shortcutSettings.map((shortcut) => (
                   <button
                     key={shortcut.shortcutKey}
