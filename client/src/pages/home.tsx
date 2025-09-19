@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { type WorkoutLog, type Quote, type PersonalRecord, type UserSettings, type ShortcutSettings } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
-import { Trophy, Calendar, Edit3, Save, X, Scale, Settings, MessageCircle, Trash2, Activity, Camera, GripVertical, RefreshCw, Home as HomeIcon, Menu, Check, Loader2 } from "lucide-react";
+import { Trophy, Calendar, Edit3, Save, X, Scale, Settings, MessageCircle, Trash2, Activity, Camera, GripVertical, RefreshCw, Home as HomeIcon, Menu, Check, Loader2, Copy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -336,6 +336,25 @@ export default function Home() {
     addPersonalRecordMutation.mutate(newPR);
   };
 
+  const duplicatePersonalRecordMutation = useMutation({
+    mutationFn: async (prData: PersonalRecord) => {
+      return apiRequest("POST", "/api/personal-records", {
+        exercise: `${prData.exercise} (Copy)`,
+        weight: prData.weight,
+        reps: prData.reps,
+        time: prData.time,
+        category: prData.category,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/personal-records"] });
+    },
+  });
+
+  const handleDuplicate = (pr: PersonalRecord) => {
+    duplicatePersonalRecordMutation.mutate(pr);
+  };
+
   // Use PersonalRecords directly for display, sorted by order
   const prs = (personalRecords || [])
     .sort((a, b) => (a.order || 0) - (b.order || 0))
@@ -587,6 +606,7 @@ export default function Home() {
                             onEdit={() => handleEdit(pr.id)}
                             onSave={(updatedData) => handleSave(pr.id, updatedData)}
                             onDelete={() => handleDelete(pr.id)}
+                            onDuplicate={() => handleDuplicate(pr)}
                             onCancel={() => setEditingId(null)}
                             dragHandleProps={provided.dragHandleProps}
                             queryClient={queryClient}
@@ -617,13 +637,14 @@ export default function Home() {
   );
 }
 
-function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, onCancel, dragHandleProps, queryClient }: {
+function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, onDuplicate, onCancel, dragHandleProps, queryClient }: {
   pr: any;
   currentBodyWeight: number;
   isEditing: boolean;
   onEdit: () => void;
   onSave: (data: any) => Promise<void>;
   onDelete: () => void;
+  onDuplicate: () => void;
   onCancel: () => void;
   dragHandleProps?: any;
   queryClient: any;
@@ -853,6 +874,19 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
         <div className="relative flex-1 flex flex-col justify-center items-center p-6 aspect-square">
           {/* Action Buttons - Always visible for inline editing */}
           <div className="absolute top-3 right-3 flex gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDuplicate();
+              }}
+              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-all duration-200 backdrop-blur-sm bg-blue-500/20 dark:bg-blue-400/20 border border-blue-500/30 dark:border-blue-400/30 rounded-lg hover:bg-blue-500/30 dark:hover:bg-blue-400/30 hover:scale-110"
+              data-testid={`button-duplicate-pr-${pr.id}`}
+            >
+              <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-blue-400/20 to-transparent"></div>
+              <Copy className="w-3 h-3 relative z-10 text-blue-600 dark:text-blue-400" />
+            </Button>
             <Button
               size="sm"
               variant="ghost"
