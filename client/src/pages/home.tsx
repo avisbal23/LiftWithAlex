@@ -870,7 +870,7 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
 
           {!isFlipped ? (
             // Front side - 3D Glassmorphism view with inline editing
-            <div className="text-center space-y-2 relative">
+            <div className="text-center space-y-1 relative">
               {/* Drag Handle for Front Side */}
               <div 
                 {...dragHandleProps}
@@ -891,7 +891,7 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
               </div>
               
               {pr.category === "Cardio" ? (
-                <div className="text-center space-y-1">
+                <div className="text-center space-y-0.5">
                   {/* 3D Text Effect - Editable Time */}
                   <div className="relative">
                     <div className="absolute inset-0 text-black/20 dark:text-gray-600/30 transform translate-x-0.5 translate-y-0.5 blur-sm text-3xl font-bold">
@@ -904,13 +904,13 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
                   <div className="text-sm text-muted-foreground/80 font-medium">Best Time</div>
                 </div>
               ) : (
-                <div className="text-center space-y-1">
+                <div className="text-center space-y-0.5">
                   {/* 3D Weight Text - Editable */}
                   <div className="relative">
-                    <div className="absolute inset-0 text-black/20 dark:text-gray-600/30 transform translate-x-0.5 translate-y-0.5 blur-sm text-3xl font-bold">
+                    <div className="absolute inset-0 text-black/20 dark:text-gray-600/30 transform translate-x-0.5 translate-y-0.5 blur-sm text-2xl font-bold">
                       {editingField === 'weight' ? '' : `${pr.weight} lbs`}
                     </div>
-                    <div className="relative text-3xl font-bold text-foreground">
+                    <div className="relative text-2xl font-bold text-foreground">
                       {editingField === 'weight' ? (
                         renderEditableField('weight', editData.weight, pr.weight)
                       ) : (
@@ -922,7 +922,7 @@ function PRCard({ pr, currentBodyWeight, isEditing, onEdit, onSave, onDelete, on
                     {renderEditableField('reps', editData.reps, pr.reps)} reps
                   </div>
                   {calculateBodyWeightPercentage() && (
-                    <div className="text-xs text-yellow-600 dark:text-yellow-400 font-semibold bg-yellow-100/20 dark:bg-yellow-400/10 rounded-full px-2 py-1 mt-1">
+                    <div className="text-xs text-yellow-600 dark:text-yellow-400 font-semibold bg-yellow-100/20 dark:bg-yellow-400/10 rounded-full px-2 py-1 mt-0.5">
                       {calculateBodyWeightPercentage()}% BW
                     </div>
                   )}
