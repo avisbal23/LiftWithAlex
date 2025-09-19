@@ -1107,10 +1107,7 @@ export class DatabaseStorage implements IStorage {
 
     // Sample thought
     const thoughtSample = {
-      title: "First Workout Complete",
-      content: "Completed my first push day at the gym today. Feeling motivated and ready to build this habit!",
-      mood: "motivated",
-      tags: ["workout", "motivation", "push-day"]
+      content: "Completed my first push day at the gym today. Feeling motivated and ready to build this habit!"
     };
     await db.insert(thoughts).values([thoughtSample]);
 

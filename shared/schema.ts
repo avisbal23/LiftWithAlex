@@ -151,7 +151,6 @@ export const photoProgress = pgTable("photo_progress", {
 export const thoughts = pgTable("thoughts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   content: text("content").notNull(),
-  tags: text("tags").array().default(sql`ARRAY[]::text[]`), // Array of tag strings
   createdAt: timestamp("created_at").defaultNow(),
 });
 

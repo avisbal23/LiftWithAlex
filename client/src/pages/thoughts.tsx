@@ -85,7 +85,6 @@ export default function ThoughtsPage() {
     
     createMutation.mutate({
       content: newThought.trim(),
-      tags: [],
     });
   };
 
@@ -219,16 +218,6 @@ export default function ThoughtsPage() {
                         {thought.content}
                       </p>
 
-                      {/* Tags */}
-                      {thought.tags && thought.tags.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-2">
-                          {thought.tags.map((tag, index) => (
-                            <Badge key={index} variant="outline">
-                              #{tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
 
                       {/* Timestamp & Actions */}
                       <div className="flex justify-between items-center pt-2 border-t border-gray-100 dark:border-gray-800">
