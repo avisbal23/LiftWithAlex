@@ -232,6 +232,18 @@ export const changesAudit = pgTable("changes_audit", {
   changedAt: timestamp("changed_at").defaultNow(),
 });
 
+// PR Changes Audit - for tracking changes to Personal Records
+export const prChangesAudit = pgTable("pr_changes_audit", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  personalRecordId: varchar("personal_record_id").notNull(), // references personalRecords(id)
+  exerciseName: text("exercise_name").notNull(), // snapshot of exercise name at time of change
+  category: text("category").notNull(), // PR category for filtering
+  fieldChanged: text("field_changed").notNull(), // 'weight', 'reps', 'time'
+  previousValue: text("previous_value"), // previous value (can be null for new records)
+  newValue: text("new_value").notNull(), // new value
+  changedAt: timestamp("changed_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -382,6 +394,16 @@ export const insertChangesAuditSchema = createInsertSchema(changesAudit).omit({
 
 export const updateChangesAuditSchema = insertChangesAuditSchema.partial();
 
+export const insertPRChangesAuditSchema = createInsertSchema(prChangesAudit).omit({
+  id: true,
+  changedAt: true,
+});
+
+export const updatePRChangesAuditSchema = insertPRChangesAuditSchema.partial();
+
 export type ChangesAudit = typeof changesAudit.$inferSelect;
 export type InsertChangesAudit = z.infer<typeof insertChangesAuditSchema>;
 export type UpdateChangesAudit = z.infer<typeof updateChangesAuditSchema>;
+export type PRChangesAudit = typeof prChangesAudit.$inferSelect;
+export type InsertPRChangesAudit = z.infer<typeof insertPRChangesAuditSchema>;
+export type UpdatePRChangesAudit = z.infer<typeof updatePRChangesAuditSchema>;
