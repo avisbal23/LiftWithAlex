@@ -1056,9 +1056,12 @@ export class MemStorage implements IStorage {
   }
 
   async getOrCreateExerciseTemplate(name: string): Promise<ExerciseTemplate> {
-    // Look for existing template with this name
+    // Normalize the name for consistency
+    const normalizedName = name.trim();
+    
+    // Look for existing template with this name (case-insensitive)
     const existing = Array.from(this.exerciseTemplates.values())
-      .find(template => template.name.toLowerCase() === name.toLowerCase());
+      .find(template => template.name.toLowerCase().trim() === normalizedName.toLowerCase());
     
     if (existing) {
       // Update last used timestamp
@@ -1067,7 +1070,7 @@ export class MemStorage implements IStorage {
     }
     
     // Create new template
-    return await this.createExerciseTemplate({ name });
+    return await this.createExerciseTemplate({ name: normalizedName });
   }
 
 }
@@ -1938,23 +1941,48 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getOrCreateExerciseTemplate(name: string): Promise<ExerciseTemplate> {
-    // Look for existing template with this name (case-insensitive)
-    const [existing] = await db.select()
-      .from(exerciseTemplates)
-      .where(sql`LOWER(${exerciseTemplates.name}) = LOWER(${name})`)
-      .limit(1);
+    // Normalize the name for consistency
+    const normalizedName = name.trim();
     
-    if (existing) {
-      // Update last used timestamp
-      const [updated] = await db.update(exerciseTemplates)
-        .set({ lastUsed: new Date() })
-        .where(eq(exerciseTemplates.id, existing.id))
-        .returning();
-      return updated;
+    try {
+      // Look for existing template with this name (case-insensitive and trimmed)
+      const [existing] = await db.select()
+        .from(exerciseTemplates)
+        .where(sql`LOWER(TRIM(${exerciseTemplates.name})) = LOWER(${normalizedName})`)
+        .limit(1);
+      
+      if (existing) {
+        // Update last used timestamp
+        const [updated] = await db.update(exerciseTemplates)
+          .set({ lastUsed: new Date() })
+          .where(eq(exerciseTemplates.id, existing.id))
+          .returning();
+        return updated;
+      }
+      
+      // Create new template
+      return await this.createExerciseTemplate({ name: normalizedName });
+    } catch (error) {
+      // Handle race condition where another request creates the same template
+      if (error?.message?.includes('unique') || error?.code === '23505') {
+        // Try to fetch the existing template that was just created
+        const [existing] = await db.select()
+          .from(exerciseTemplates)
+          .where(sql`LOWER(TRIM(${exerciseTemplates.name})) = LOWER(${normalizedName})`)
+          .limit(1);
+        
+        if (existing) {
+          // Update last used timestamp on the existing one
+          const [updated] = await db.update(exerciseTemplates)
+            .set({ lastUsed: new Date() })
+            .where(eq(exerciseTemplates.id, existing.id))
+            .returning();
+          return updated;
+        }
+      }
+      
+      throw error; // Re-throw if it's not a uniqueness issue
     }
-    
-    // Create new template
-    return await this.createExerciseTemplate({ name });
   }
 }
 

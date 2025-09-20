@@ -1034,11 +1034,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/exercise-templates", async (req, res) => {
     try {
       const data = insertExerciseTemplateSchema.parse(req.body);
-      const created = await storage.createExerciseTemplate(data);
+      // Normalize the name (trim and maintain original case for display)
+      const normalizedData = {
+        ...data,
+        name: data.name.trim()
+      };
+      const created = await storage.createExerciseTemplate(normalizedData);
       res.status(201).json(created);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      // Handle unique constraint violation
+      if (error?.message?.includes('unique') || error?.code === '23505') {
+        return res.status(409).json({ message: "Exercise template with this name already exists" });
       }
       res.status(500).json({ message: "Failed to create exercise template" });
     }
@@ -1048,7 +1057,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = req.params.id;
       const data = updateExerciseTemplateSchema.parse(req.body);
-      const updated = await storage.updateExerciseTemplate(id, data);
+      // Normalize the name if provided
+      const normalizedData = data.name ? {
+        ...data,
+        name: data.name.trim()
+      } : data;
+      const updated = await storage.updateExerciseTemplate(id, normalizedData);
       
       if (!updated) {
         return res.status(404).json({ message: "Exercise template not found" });
@@ -1058,6 +1072,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      // Handle unique constraint violation
+      if (error?.message?.includes('unique') || error?.code === '23505') {
+        return res.status(409).json({ message: "Exercise template with this name already exists" });
       }
       res.status(500).json({ message: "Failed to update exercise template" });
     }
@@ -1085,7 +1103,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Exercise name is required" });
       }
       
-      const template = await storage.getOrCreateExerciseTemplate(name);
+      // Normalize the name
+      const normalizedName = name.trim();
+      if (!normalizedName) {
+        return res.status(400).json({ message: "Exercise name cannot be empty" });
+      }
+      
+      const template = await storage.getOrCreateExerciseTemplate(normalizedName);
       res.json(template);
     } catch (error) {
       res.status(500).json({ message: "Failed to get or create exercise template" });
