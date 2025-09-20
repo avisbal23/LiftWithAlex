@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp, FileText, Save } from "lucide-react";
+import { ChevronDown, ChevronUp, FileText } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
@@ -42,10 +41,6 @@ export default function WorkoutNotes({ category }: WorkoutNotesProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/workout-notes", category] });
-      toast({
-        title: "Notes saved!",
-        description: "Your workout prep & notes have been saved.",
-      });
     },
     onError: () => {
       toast({
@@ -56,8 +51,13 @@ export default function WorkoutNotes({ category }: WorkoutNotesProps) {
     },
   });
 
-  const handleSave = () => {
-    saveNotesMutation.mutate(notes);
+  // Auto-save when collapsing
+  const handleCollapseChange = (open: boolean) => {
+    if (!open && notes !== (notesData?.notes || "")) {
+      // Save when collapsing and notes have changed
+      saveNotesMutation.mutate(notes);
+    }
+    setIsCollapsed(!open);
   };
 
   const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -66,7 +66,7 @@ export default function WorkoutNotes({ category }: WorkoutNotesProps) {
 
   return (
     <Card className="mb-6 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200/30 dark:border-blue-800/30">
-      <Collapsible open={!isCollapsed} onOpenChange={(open) => setIsCollapsed(!open)}>
+      <Collapsible open={!isCollapsed} onOpenChange={handleCollapseChange}>
         <CollapsibleTrigger asChild>
           <CardHeader className="cursor-pointer hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-colors">
             <CardTitle className="flex items-center justify-between text-blue-700 dark:text-blue-300">
@@ -85,30 +85,14 @@ export default function WorkoutNotes({ category }: WorkoutNotesProps) {
         
         <CollapsibleContent>
           <CardContent className="pt-0">
-            <div className="space-y-4">
-              <div>
-                <Textarea
-                  placeholder="Add your workout prep notes, goals, or thoughts here..."
-                  value={notes}
-                  onChange={handleNotesChange}
-                  className="min-h-[120px] resize-none bg-white/80 dark:bg-gray-900/80 border-blue-200/50 dark:border-blue-800/50 focus:border-blue-400 dark:focus:border-blue-600"
-                  disabled={isLoading}
-                  data-testid={`textarea-notes-${category}`}
-                />
-              </div>
-              
-              <div className="flex justify-end">
-                <Button
-                  onClick={handleSave}
-                  disabled={saveNotesMutation.isPending || isLoading}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                  data-testid={`button-save-notes-${category}`}
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  {saveNotesMutation.isPending ? "Saving..." : "Save Notes"}
-                </Button>
-              </div>
-            </div>
+            <Textarea
+              placeholder="Add your workout prep notes, goals, or thoughts here..."
+              value={notes}
+              onChange={handleNotesChange}
+              className="min-h-[120px] resize-none bg-white/80 dark:bg-gray-900/80 border-blue-200/50 dark:border-blue-800/50 focus:border-blue-400 dark:focus:border-blue-600"
+              disabled={isLoading}
+              data-testid={`textarea-notes-${category}`}
+            />
           </CardContent>
         </CollapsibleContent>
       </Collapsible>
