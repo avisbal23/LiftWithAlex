@@ -12,6 +12,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { type Exercise, type InsertExercise, type UpdateExercise, type InsertWorkoutLog, type DailySetProgress, type InsertChangesAudit } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "react-beautiful-dnd";
+import * as XLSX from 'xlsx';
 
 interface WorkoutTableProps {
   category: string;
@@ -391,18 +392,60 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
     });
   };
 
-  // Import workout from CSV
-  const importWorkoutCSV = () => {
+  // Parse data from different file types
+  const parseFileData = async (file: File): Promise<string[]> => {
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    
+    if (fileExtension === 'xlsx') {
+      // Handle XLSX files
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            const arrayBuffer = e.target?.result as ArrayBuffer;
+            const workbook = XLSX.read(arrayBuffer);
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            
+            // Convert to array of arrays, then to pipe-delimited strings
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+            const lines = jsonData
+              .filter(row => row && row.length > 0) // Filter empty rows
+              .map(row => {
+                // Ensure we have 5 columns, fill missing ones with empty strings
+                const paddedRow = [...row];
+                while (paddedRow.length < 5) {
+                  paddedRow.push('');
+                }
+                return paddedRow.slice(0, 5).join('|');
+              });
+            
+            resolve(lines);
+          } catch (error) {
+            reject(error);
+          }
+        };
+        reader.onerror = () => reject(new Error('Failed to read XLSX file'));
+        reader.readAsArrayBuffer(file);
+      });
+    } else {
+      // Handle CSV and TXT files as text
+      const text = await file.text();
+      return text.split('\n').filter(line => line.trim() !== '');
+    }
+  };
+
+  // Import workout from CSV, TXT, or XLSX
+  const importWorkoutFile = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.csv';
+    input.accept = '.csv,.txt,.xlsx';
     input.onchange = async (event) => {
       const file = (event.target as HTMLInputElement).files?.[0];
       if (!file) return;
 
       try {
-        const text = await file.text();
-        const lines = text.split('\n').filter(line => line.trim() !== '');
+        const lines = await parseFileData(file);
         
         if (lines.length === 0) {
           toast({
@@ -429,7 +472,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
         // Show loading toast
         toast({
           title: "Importing...",
-          description: `Processing ${dataLines.length} exercises.`,
+          description: `Processing ${dataLines.length} exercises from ${file.name}.`,
         });
 
         let successCount = 0;
@@ -437,7 +480,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
         const errors: string[] = [];
 
         // Process imports with better error handling
-        for (const [index, line] of dataLines.entries()) {
+        for (let index = 0; index < dataLines.length; index++) {
+          const line = dataLines[index];
           try {
             const parts = line.split('|');
             if (parts.length < 5) {
@@ -546,9 +590,9 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                 <Download className="w-4 h-4 mr-2" />
                 Export CSV
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={importWorkoutCSV} data-testid={`menu-import-${category}`}>
+              <DropdownMenuItem onClick={importWorkoutFile} data-testid={`menu-import-${category}`}>
                 <Upload className="w-4 h-4 mr-2" />
-                Import CSV
+                Import File (CSV, TXT, XLSX)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
