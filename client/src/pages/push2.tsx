@@ -10,8 +10,8 @@ export default function Push2() {
     <>
       <UniversalNavigation />
       <div className="container mx-auto px-4 pb-6">
-        <WorkoutNotes category="push2" />
         <WorkoutStopwatch />
+        <WorkoutNotes category="push2" />
         <WorkoutTable
           category="push2"
           title="SHARMS Workouts"

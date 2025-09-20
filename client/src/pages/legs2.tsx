@@ -10,8 +10,8 @@ export default function Legs2() {
     <>
       <UniversalNavigation />
       <div className="container mx-auto px-4 pb-6">
-        <WorkoutNotes category="legs2" />
         <WorkoutStopwatch />
+        <WorkoutNotes category="legs2" />
         <WorkoutTable
           category="legs2"
           title="Legs 2 Workouts"

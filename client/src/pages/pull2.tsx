@@ -10,8 +10,8 @@ export default function Pull2() {
     <>
       <UniversalNavigation />
       <div className="container mx-auto px-4 pb-6">
-        <WorkoutNotes category="pull2" />
         <WorkoutStopwatch />
+        <WorkoutNotes category="pull2" />
         <WorkoutTable
           category="pull2"
           title="BACK Workouts"
