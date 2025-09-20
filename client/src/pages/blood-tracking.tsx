@@ -932,18 +932,6 @@ export default function BloodTracking() {
                       change: previous ? getValueChange(entry.tsh, previous.tsh) : null
                     },
                     { 
-                      label: "Free T3", 
-                      value: entry.freeT3, 
-                      unit: entry.freeT3Unit,
-                      change: previous ? getValueChange(entry.freeT3, previous.freeT3) : null
-                    },
-                    { 
-                      label: "Free T4", 
-                      value: entry.freeT4, 
-                      unit: entry.freeT4Unit,
-                      change: previous ? getValueChange(entry.freeT4, previous.freeT4) : null
-                    },
-                    { 
                       label: "LDL", 
                       value: entry.ldlCalc, 
                       unit: entry.ldlCalcUnit, 
@@ -986,12 +974,6 @@ export default function BloodTracking() {
                       value: entry.hba1c, 
                       unit: entry.hba1cUnit,
                       change: previous ? getValueChange(entry.hba1c, previous.hba1c) : null
-                    },
-                    { 
-                      label: "Ferritin", 
-                      value: entry.ferritin, 
-                      unit: entry.ferritinUnit,
-                      change: previous ? getValueChange(entry.ferritin, previous.ferritin) : null
                     },
                   ],
                   entry.id
