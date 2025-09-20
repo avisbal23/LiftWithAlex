@@ -129,10 +129,6 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
         console.error("Failed to update workout status:", error);
       }
       
-      toast({
-        title: "Workout logged!",
-        description: `Completed ${getCategoryDisplayName(category)} workout`,
-      });
     },
   });
 
