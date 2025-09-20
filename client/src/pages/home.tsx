@@ -74,7 +74,7 @@ export default function Home() {
     }
 
     // Define the workout cycle
-    const workoutCycle = ["push", "pull", "legs", "push2", "pull2", "legs2"];
+    const workoutCycle = ["push", "pull", "legs"];
     const currentIndex = workoutCycle.indexOf(latestWorkoutLog.category);
     
     if (currentIndex === -1) {
