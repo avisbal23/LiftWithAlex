@@ -851,6 +851,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Daily Workout Status Routes
+  
+  // Get daily workout status for a specific category
+  app.get("/api/daily-workout-status/:category", async (req, res) => {
+    try {
+      const category = req.params.category;
+      if (!["push", "pull", "legs", "push2", "pull2", "legs2", "cardio"].includes(category)) {
+        return res.status(400).json({ message: "Invalid category" });
+      }
+      
+      const today = storage.getTodaysPSTDate();
+      const status = await storage.getDailyWorkoutStatus(category, today);
+      res.json({ isCompleted: status?.isCompleted === 1 ? true : false });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch daily workout status" });
+    }
+  });
+
+  // Set daily workout status for a category
+  app.post("/api/daily-workout-status/:category", async (req, res) => {
+    try {
+      const category = req.params.category;
+      if (!["push", "pull", "legs", "push2", "pull2", "legs2", "cardio"].includes(category)) {
+        return res.status(400).json({ message: "Invalid category" });
+      }
+      
+      const { isCompleted } = req.body;
+      if (typeof isCompleted !== "boolean") {
+        return res.status(400).json({ message: "isCompleted must be a boolean" });
+      }
+      
+      const today = storage.getTodaysPSTDate();
+      const status = await storage.setDailyWorkoutStatus(category, today, isCompleted);
+      res.json({ isCompleted: status.isCompleted === 1 });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to set daily workout status" });
+    }
+  });
+
+  // Manual daily workout status reset (primarily for testing)
+  app.post("/api/daily-workout-status/reset", async (req, res) => {
+    try {
+      await storage.resetAllDailyWorkoutStatus();
+      res.json({ message: "Daily workout status reset successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to reset daily workout status" });
+    }
+  });
+
   // Get all changes audit entries
   app.get("/api/changes-audit", async (req, res) => {
     try {
