@@ -5,7 +5,8 @@ import { OptimizedInput } from "@/components/optimized-input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Eye, ChevronDown, GripVertical } from "lucide-react";
+import { Plus, Trash2, Eye, ChevronDown, GripVertical, Download, Upload, FileText } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { type Exercise, type InsertExercise, type UpdateExercise, type InsertWorkoutLog, type DailySetProgress, type InsertChangesAudit } from "@shared/schema";
@@ -362,254 +363,95 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
     });
   };
 
-  // Export workout as iPhone lock screen optimized image
-  const exportWorkoutImage = () => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  // Export workout as CSV in ORDER|TITLE|WEIGHT|REPS|NOTES format
+  const exportWorkoutCSV = () => {
+    const sortedExercises = exercises
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-    // 9:16 aspect ratio optimized for iPhone portrait lock screen
-    const width = 720;
-    const height = 1280;
-    canvas.width = width;
-    canvas.height = height;
+    const csvContent = [
+      "ORDER|TITLE|WEIGHT|REPS|NOTES",
+      ...sortedExercises.map(exercise => 
+        `${exercise.order || 0}|${exercise.name}|${exercise.weight || 0}|${exercise.reps || 0}|${exercise.notes || ""}`
+      )
+    ].join('\n');
 
-    // Calculate safe zones (top 30%, bottom 20% clear)
-    const topSafeZone = height * 0.3;
-    const bottomSafeZone = height * 0.2;
-    const contentHeight = height - topSafeZone - bottomSafeZone;
-    const contentStartY = topSafeZone;
-
-    // Create modern gradient background
-    const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, '#0f172a'); // Dark slate
-    gradient.addColorStop(0.5, '#1e293b'); // Slate
-    gradient.addColorStop(1, '#334155'); // Light slate
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
-
-    // Add subtle pattern overlay
-    ctx.globalAlpha = 0.05;
-    for (let i = 0; i < width; i += 40) {
-      for (let j = 0; j < height; j += 40) {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(i, j, 1, 1);
-      }
-    }
-    ctx.globalAlpha = 1;
-
-    // Category color coding
-    const categoryColors = {
-      'push': '#ef4444', // Red
-      'pull': '#3b82f6', // Blue
-      'legs': '#22c55e', // Green
-      'push2': '#f97316', // Orange
-      'pull2': '#8b5cf6', // Purple
-      'legs2': '#06b6d4', // Cyan
-      'cardio': '#ec4899', // Pink
-    };
-    const categoryColor = categoryColors[category.toLowerCase() as keyof typeof categoryColors] || '#6b7280';
-
-    // Header card background
-    const cardX = (width - (width * 0.95)) / 2;
-    const cardY = contentStartY - 10;
-    const cardWidth = width * 0.95;
-    const cardHeight = 120;
-
-    // Draw header card with rounded corners and subtle shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-    ctx.shadowBlur = 15;
-    ctx.shadowOffsetY = 5;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${category}-workout-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
     
-    // Card background
-    const cardGradient = ctx.createLinearGradient(cardX, cardY, cardX, cardY + cardHeight);
-    cardGradient.addColorStop(0, '#1f2937');
-    cardGradient.addColorStop(1, '#374151');
-    ctx.fillStyle = cardGradient;
-    ctx.roundRect(cardX, cardY, cardWidth, cardHeight, 20);
-    ctx.fill();
-
-    // Reset shadow
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-
-    // Header accent line
-    ctx.fillStyle = categoryColor;
-    ctx.roundRect(cardX, cardY, cardWidth, 6, 3);
-    ctx.fill();
-
-    // Header text with better typography
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 42px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    const headerText = `${getCategoryDisplayName(category)} Workout`;
-    ctx.fillText(headerText, width / 2, cardY + 55);
-
-    // Date with accent color
-    ctx.font = '22px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
-    ctx.fillStyle = '#d1d5db';
-    const today = new Date().toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    toast({
+      title: "Workout exported!",
+      description: "CSV file saved to downloads.",
     });
-    ctx.fillText(today, width / 2, cardY + 85);
+  };
 
-    // Exercise table with modern design
-    if (exercises.length > 0) {
-      const tableStartY = contentStartY + 140;
-      const tableWidth = width * 0.95;
-      const tableX = (width - tableWidth) / 2;
-      const rowHeight = Math.min(50, (contentHeight - 160) / (exercises.length + 1));
+  // Import workout from CSV
+  const importWorkoutCSV = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+    input.onchange = async (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (!file) return;
 
-      // Table container with rounded corners
-      ctx.fillStyle = 'rgba(31, 41, 55, 0.9)';
-      ctx.roundRect(tableX, tableStartY - 10, tableWidth, (exercises.length + 1) * rowHeight + 20, 16);
-      ctx.fill();
-
-      // Table headers with gradient
-      const headerGradient = ctx.createLinearGradient(tableX, tableStartY, tableX, tableStartY + rowHeight);
-      headerGradient.addColorStop(0, categoryColor);
-      headerGradient.addColorStop(1, categoryColor + '80');
-      ctx.fillStyle = headerGradient;
-      ctx.roundRect(tableX + 5, tableStartY, tableWidth - 10, rowHeight, 12);
-      ctx.fill();
-      
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
-      ctx.textAlign = 'left';
-      
-      const colWidths = isCardio 
-        ? [tableWidth * 0.5, tableWidth * 0.25, tableWidth * 0.25]
-        : [tableWidth * 0.45, tableWidth * 0.275, tableWidth * 0.275];
-      
-      const headers = isCardio ? ['Exercise', 'Duration', 'Distance'] : ['Exercise', 'Weight', 'Reps'];
-      let currentX = tableX + 25;
-      
-      headers.forEach((header, index) => {
-        ctx.fillText(header, currentX, tableStartY + 32);
-        currentX += colWidths[index];
-      });
-
-      // Exercise rows with better styling
-      exercises.slice(0, Math.floor((contentHeight - 180) / rowHeight)).forEach((exercise, index) => {
-        const rowY = tableStartY + (index + 1) * rowHeight;
+      try {
+        const text = await file.text();
+        const lines = text.split('\n').filter(line => line.trim() !== '');
         
-        // Alternating row colors with subtle gradients
-        if (index % 2 === 0) {
-          ctx.fillStyle = 'rgba(55, 65, 81, 0.3)';
-          ctx.roundRect(tableX + 5, rowY, tableWidth - 10, rowHeight, 8);
-          ctx.fill();
+        if (lines.length === 0) {
+          toast({
+            title: "Error",
+            description: "File is empty.",
+            variant: "destructive",
+          });
+          return;
         }
-        
-        // Progress indicator for completed sets
-        const progress = getExerciseProgress(exercise.id);
-        const setsCompleted = progress?.setsCompleted || 0;
-        if (setsCompleted > 0) {
-          ctx.fillStyle = categoryColor + '40';
-          const progressWidth = (tableWidth - 10) * (setsCompleted / 3);
-          ctx.roundRect(tableX + 5, rowY, Math.min(progressWidth, tableWidth - 10), rowHeight, 8);
-          ctx.fill();
-        }
-        
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '18px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
-        
-        currentX = tableX + 25;
-        
-        // Exercise name with better truncation
-        const exerciseName = exercise.name.length > 22 ? exercise.name.substring(0, 22) + '...' : exercise.name;
-        ctx.fillText(exerciseName, currentX, rowY + 32);
-        currentX += colWidths[0];
-        
-        // Progress indicator dots
-        if (setsCompleted > 0) {
-          ctx.fillStyle = categoryColor;
-          for (let i = 0; i < setsCompleted; i++) {
-            ctx.beginPath();
-            ctx.arc(currentX - 30 + (i * 8), rowY + 25, 3, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        }
-        
-        ctx.fillStyle = '#e5e7eb';
-        ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
-        
-        if (isCardio) {
-          // Duration
-          ctx.fillText(exercise.duration || '—', currentX, rowY + 32);
-          currentX += colWidths[1];
-          // Distance
-          ctx.fillText(exercise.distance || '—', currentX, rowY + 32);
-        } else {
-          // Weight
-          ctx.fillText(exercise.weight ? `${exercise.weight} lbs` : '—', currentX, rowY + 32);
-          currentX += colWidths[1];
-          // Reps
-          ctx.fillText(exercise.reps ? `${exercise.reps} reps` : '—', currentX, rowY + 32);
-        }
-      });
 
-      // Summary stats at bottom
-      const totalExercises = exercises.length;
-      const progressData = exercises.map(ex => {
-        const progress = getExerciseProgress(ex.id);
-        return progress?.setsCompleted || 0;
-      });
-      const totalSetsCompleted = progressData.reduce((sum, sets) => sum + sets, 0);
-      
-      if (contentStartY + contentHeight - 40 > tableStartY + (exercises.length + 1) * rowHeight + 30) {
-        const statsY = tableStartY + (exercises.length + 1) * rowHeight + 50;
-        
-        // Stats background
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-        ctx.roundRect(tableX + (tableWidth * 0.3), statsY - 15, tableWidth * 0.4, 35, 8);
-        ctx.fill();
-        
-        ctx.fillStyle = categoryColor;
-        ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
-        ctx.textAlign = 'center';
-        const statsText = `${totalSetsCompleted} sets • ${totalExercises} exercises`;
-        ctx.fillText(statsText, width / 2, statsY + 7);
-      }
-    } else {
-      // No exercises message with better styling
-      ctx.fillStyle = 'rgba(107, 114, 128, 0.8)';
-      ctx.font = '24px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('No exercises added yet', width / 2, contentStartY + contentHeight / 2);
-      
-      ctx.fillStyle = 'rgba(107, 114, 128, 0.6)';
-      ctx.font = '18px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
-      ctx.fillText('Add exercises to see your workout here', width / 2, contentStartY + contentHeight / 2 + 30);
-    }
+        // Skip header line if it exists
+        const startIndex = lines[0].includes('ORDER|TITLE|WEIGHT|REPS|NOTES') ? 1 : 0;
+        const dataLines = lines.slice(startIndex);
 
-    // Branding watermark
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.font = '14px -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText('VISBAL GYM', width - 30, height - 30);
+        for (const line of dataLines) {
+          const [orderStr, title, weightStr, repsStr, notes] = line.split('|');
+          
+          if (!title?.trim()) continue; // Skip empty titles
 
-    // Download the image
-    canvas.toBlob((blob) => {
-      if (blob) {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${category}-workout-${new Date().toISOString().split('T')[0]}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+          const exerciseData: InsertExercise = {
+            name: title.trim(),
+            category,
+            weight: parseFloat(weightStr) || 0,
+            reps: parseInt(repsStr) || 0,
+            notes: notes?.trim() || "",
+            order: parseInt(orderStr) || 0,
+          };
+
+          await apiRequest("POST", "/api/exercises", exerciseData);
+        }
+
+        queryClient.invalidateQueries({ queryKey: ["/api/exercises", category] });
         
         toast({
-          title: "Workout exported! 📱",
-          description: "Beautiful lock screen image saved to downloads.",
+          title: "Workout imported!",
+          description: `Successfully imported ${dataLines.length} exercises.`,
+        });
+
+      } catch (error) {
+        console.error('Import error:', error);
+        toast({
+          title: "Import failed",
+          description: "Please check the file format and try again.",
+          variant: "destructive",
         });
       }
-    }, 'image/png');
+    };
+    
+    input.click();
   };
 
   if (isLoading) {
@@ -633,16 +475,27 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
           <p className="text-muted-foreground mt-1">{description}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button 
-            onClick={exportWorkoutImage}
-            variant="outline"
-            className="bg-accent/50 border-accent text-accent-foreground hover:bg-accent/80"
-            data-testid={`button-export-${category}`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline"
+                className="bg-accent/50 border-accent text-accent-foreground hover:bg-accent/80"
+                data-testid={`button-import-export-${category}`}
+              >
+                <FileText className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={exportWorkoutCSV} data-testid={`menu-export-${category}`}>
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={importWorkoutCSV} data-testid={`menu-import-${category}`}>
+                <Upload className="w-4 h-4 mr-2" />
+                Import CSV
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button 
             onClick={() => logWorkoutMutation.mutate(category)}
             disabled={logWorkoutMutation.isPending}
