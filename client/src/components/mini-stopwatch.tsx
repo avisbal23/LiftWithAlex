@@ -134,11 +134,6 @@ export default function MiniStopwatch({ storageKey = "workout-stopwatch" }: Mini
   const totalTime = getTotalTime();
   const isRunning = state.isRunning;
 
-  // Don't show if no time recorded
-  if (totalTime === 0) {
-    return null;
-  }
-
   return (
     <div className="flex items-center space-x-2 px-3 py-1 rounded-md backdrop-blur-sm bg-white/10 dark:bg-gray-600/20 border border-white/20 dark:border-gray-500/30">
       <Timer className={`w-4 h-4 ${isRunning ? 'text-green-400' : 'text-white'} drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]`} />
