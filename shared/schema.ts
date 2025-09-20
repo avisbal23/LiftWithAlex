@@ -173,6 +173,15 @@ export const dailySetProgress = pgTable("daily_set_progress", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const dailyWorkoutStatus = pgTable("daily_workout_status", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  category: text("category").notNull(), // 'push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'cardio'
+  date: timestamp("date").notNull(), // Date in PST timezone (reset at midnight PST)
+  isCompleted: integer("is_completed").default(0), // 1 for completed, 0 for not completed
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // User settings for storing current body weight and other preferences
 export const userSettings = pgTable("user_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -312,6 +321,14 @@ export const insertDailySetProgressSchema = createInsertSchema(dailySetProgress)
 
 export const updateDailySetProgressSchema = insertDailySetProgressSchema.partial();
 
+export const insertDailyWorkoutStatusSchema = createInsertSchema(dailyWorkoutStatus).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateDailyWorkoutStatusSchema = insertDailyWorkoutStatusSchema.partial();
+
 export const insertPersonalRecordSchema = createInsertSchema(personalRecords).omit({
   id: true,
   createdAt: true,
@@ -372,6 +389,9 @@ export type UpdateQuote = z.infer<typeof updateQuoteSchema>;
 export type DailySetProgress = typeof dailySetProgress.$inferSelect;
 export type InsertDailySetProgress = z.infer<typeof insertDailySetProgressSchema>;
 export type UpdateDailySetProgress = z.infer<typeof updateDailySetProgressSchema>;
+export type DailyWorkoutStatus = typeof dailyWorkoutStatus.$inferSelect;
+export type InsertDailyWorkoutStatus = z.infer<typeof insertDailyWorkoutStatusSchema>;
+export type UpdateDailyWorkoutStatus = z.infer<typeof updateDailyWorkoutStatusSchema>;
 export type PersonalRecord = typeof personalRecords.$inferSelect;
 export type InsertPersonalRecord = z.infer<typeof insertPersonalRecordSchema>;
 export type UpdatePersonalRecord = z.infer<typeof updatePersonalRecordSchema>;
