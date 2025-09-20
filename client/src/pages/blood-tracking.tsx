@@ -456,82 +456,24 @@ export default function BloodTracking() {
   };
 
   const getCardExplanation = (title: string) => {
-    switch (title) {
-      case "Hormones":
-        return {
-          description: "Critical hormones for muscle growth, strength, libido, and masculine vitality. These markers directly impact your ability to build muscle, maintain energy, and perform sexually.",
-          keyPoints: [
-            "Total Testosterone: Drives muscle protein synthesis, strength gains, libido, and confidence",
-            "Free Testosterone: Bioavailable portion that enters muscle cells for growth and recovery",
-            "SHBG: Lower levels mean more free testosterone available for muscle building",
-            "Estrogens: Balance prevents muscle loss and supports bone strength for heavy lifting"
-          ],
-          optimalRanges: [
-            "Total Testosterone: 650-900 ng/dL",
-            "Free Testosterone: 20-35 pg/mL",
-            "SHBG: 20-40 nmol/L",
-            "Estradiol (Sensitive): 20-35 pg/mL",
-            "Testosterone:Estrogen Ratio: 15-30"
-          ]
-        };
-      case "Thyroid":
-        return {
-          description: "Your metabolic engine that controls fat burning, energy for training, and mental sharpness. Optimal thyroid function maximizes muscle growth and athletic performance.",
-          keyPoints: [
-            "TSH: Lower optimal range supports aggressive fat loss and lean muscle retention",
-            "Free T3: Powers intense training sessions and accelerates muscle recovery",
-            "Free T4: Maintains steady energy for consistent gym performance and mental focus",
-            "Optimal thyroid = explosive workouts, faster recovery, sharper mind"
-          ],
-          optimalRanges: [
-            "TSH: 0.8-2.0 uIU/mL",
-            "Free T3: 3.3-4.4 pg/mL",
-            "Free T4: 1.1-1.6 ng/dL"
-          ]
-        };
-      case "Lipids":
-        return {
-          description: "Cardiovascular markers that determine your capacity for intense training and long-term performance. Poor lipids limit blood flow to muscles and organs.",
-          keyPoints: [
-            "LDL: High levels reduce blood flow to muscles during training",
-            "HDL: Higher levels improve oxygen delivery and exercise capacity",
-            "Triglycerides: Lower levels support better insulin sensitivity and muscle building",
-            "ApoB: Key marker for maintaining peak cardiovascular performance under stress"
-          ],
-          optimalRanges: [
-            "Total Cholesterol: 160-200 mg/dL",
-            "HDL: 50-80 mg/dL",
-            "LDL (Calculated): 60-100 mg/dL",
-            "Triglycerides: 50-90 mg/dL",
-            "TG:HDL Ratio: 0.5-1.5",
-            "ApoB: 60-80 mg/dL",
-            "Non-HDL Cholesterol: 80-110 mg/dL"
-          ]
-        };
-      case "Health Markers":
-        return {
-          description: "Foundation markers for peak male performance - controlling inflammation, energy production, and nutrient status that fuel muscle growth and mental clarity.",
-          keyPoints: [
-            "Vitamin D: Boosts testosterone production, bone strength, and training recovery",
-            "CRP (hs): Low inflammation means faster muscle recovery and better sleep",
-            "HbA1c: Stable blood sugar optimizes muscle building and prevents energy crashes",
-            "Ferritin: Adequate iron ensures oxygen delivery for intense training and mental focus"
-          ],
-          optimalRanges: [
-            "Vitamin D (25-OH): 50-70 ng/mL",
-            "CRP (hs): 0.0-0.7 mg/L",
-            "Insulin (Fasting): 2-5 uIU/mL",
-            "HbA1c: 4.8-5.2%",
-            "Albumin: 4.3-5.0 g/dL",
-            "Ferritin: 80-160 ng/mL"
-          ]
-        };
-      default:
-        return {
-          description: "Health markers and lab values",
-          keyPoints: []
-        };
+    if (title === "Blood Lab Results") {
+      return {
+        description: "Complete blood panel results for tracking overall health and performance markers.",
+        keyPoints: [
+          "Track all your key blood markers in one place",
+          "Monitor changes over time with previous comparisons",
+          "View flags for out-of-range values"
+        ],
+        optimalRanges: [
+          "Values vary by individual and lab reference ranges"
+        ]
+      };
     }
+    return {
+      description: "Blood lab results",
+      keyPoints: [],
+      optimalRanges: []
+    };
   };
 
   const renderPanelCard = (title: string, icon: React.ReactNode, values: Array<{ label: string; value: number | null; unit: string | null; flag?: string | null; change?: number | null }>, entryId: string) => {
@@ -925,135 +867,107 @@ export default function BloodTracking() {
                   {index === 0 && <Badge>Latest</Badge>}
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* Hormone Balance */}
-                  {renderPanelCard(
-                    "Hormones",
-                    <Droplets className="w-4 h-4 text-blue-500" />,
-                    [
-                      { 
-                        label: "Total Testosterone", 
-                        value: entry.totalTestosterone, 
-                        unit: entry.totalTestosteroneUnit,
-                        change: previous ? getValueChange(entry.totalTestosterone, previous.totalTestosterone) : null
-                      },
-                      { 
-                        label: "Free Testosterone", 
-                        value: entry.freeTestosterone, 
-                        unit: entry.freeTestosteroneUnit,
-                        change: previous ? getValueChange(entry.freeTestosterone, previous.freeTestosterone) : null
-                      },
-                      { 
-                        label: "SHBG", 
-                        value: entry.shbg, 
-                        unit: entry.shbgUnit,
-                        change: previous ? getValueChange(entry.shbg, previous.shbg) : null
-                      },
-                      { 
-                        label: "Estrogens Total", 
-                        value: entry.estrogensTotal, 
-                        unit: entry.estrogensTotalUnit,
-                        change: previous ? getValueChange(entry.estrogensTotal, previous.estrogensTotal) : null
-                      },
-                    ],
-                    entry.id
-                  )}
-
-                  {/* Thyroid */}
-                  {renderPanelCard(
-                    "Thyroid", 
-                    <AlertTriangle className="w-4 h-4 text-orange-500" />,
-                    [
-                      { 
-                        label: "TSH", 
-                        value: entry.tsh, 
-                        unit: entry.tshUnit,
-                        change: previous ? getValueChange(entry.tsh, previous.tsh) : null
-                      },
-                      { 
-                        label: "Free T3", 
-                        value: entry.freeT3, 
-                        unit: entry.freeT3Unit,
-                        change: previous ? getValueChange(entry.freeT3, previous.freeT3) : null
-                      },
-                      { 
-                        label: "Free T4", 
-                        value: entry.freeT4, 
-                        unit: entry.freeT4Unit,
-                        change: previous ? getValueChange(entry.freeT4, previous.freeT4) : null
-                      },
-                    ],
-                    entry.id
-                  )}
-
-                  {/* Lipids */}
-                  {renderPanelCard(
-                    "Lipids",
-                    <TrendingUp className="w-4 h-4 text-red-500" />,
-                    [
-                      { 
-                        label: "LDL", 
-                        value: entry.ldlCalc, 
-                        unit: entry.ldlCalcUnit, 
-                        flag: entry.ldlCalcFlag,
-                        change: previous ? getValueChange(entry.ldlCalc, previous.ldlCalc) : null
-                      },
-                      { 
-                        label: "HDL", 
-                        value: entry.hdl, 
-                        unit: entry.hdlUnit,
-                        change: previous ? getValueChange(entry.hdl, previous.hdl) : null
-                      },
-                      { 
-                        label: "Triglycerides", 
-                        value: entry.triglycerides, 
-                        unit: entry.triglyceridesUnit,
-                        change: previous ? getValueChange(entry.triglycerides, previous.triglycerides) : null
-                      },
-                      { 
-                        label: "ApoB", 
-                        value: entry.apob, 
-                        unit: entry.apobUnit, 
-                        flag: entry.apobFlag,
-                        change: previous ? getValueChange(entry.apob, previous.apob) : null
-                      },
-                    ],
-                    entry.id
-                  )}
-
-                  {/* Vitamins & Health */}
-                  {renderPanelCard(
-                    "Health Markers",
-                    <CheckCircle className="w-4 h-4 text-green-500" />,
-                    [
-                      { 
-                        label: "Vitamin D", 
-                        value: entry.vitaminD25oh, 
-                        unit: entry.vitaminD25ohUnit,
-                        change: previous ? getValueChange(entry.vitaminD25oh, previous.vitaminD25oh) : null
-                      },
-                      { 
-                        label: "CRP (hs)", 
-                        value: entry.crpHs, 
-                        unit: entry.crpHsUnit,
-                        change: previous ? getValueChange(entry.crpHs, previous.crpHs) : null
-                      },
-                      { 
-                        label: "HbA1c", 
-                        value: entry.hba1c, 
-                        unit: entry.hba1cUnit,
-                        change: previous ? getValueChange(entry.hba1c, previous.hba1c) : null
-                      },
-                      { 
-                        label: "Ferritin", 
-                        value: entry.ferritin, 
-                        unit: entry.ferritinUnit,
-                        change: previous ? getValueChange(entry.ferritin, previous.ferritin) : null
-                      },
-                    ],
-                    entry.id
-                  )}
-                </div>
+                {/* Single consolidated blood markers card */}
+                {renderPanelCard(
+                  "Blood Lab Results",
+                  <Droplets className="w-4 h-4 text-blue-500" />,
+                  [
+                    // All markers consolidated into one list
+                    { 
+                      label: "Total Testosterone", 
+                      value: entry.totalTestosterone, 
+                      unit: entry.totalTestosteroneUnit,
+                      change: previous ? getValueChange(entry.totalTestosterone, previous.totalTestosterone) : null
+                    },
+                    { 
+                      label: "Free Testosterone", 
+                      value: entry.freeTestosterone, 
+                      unit: entry.freeTestosteroneUnit,
+                      change: previous ? getValueChange(entry.freeTestosterone, previous.freeTestosterone) : null
+                    },
+                    { 
+                      label: "SHBG", 
+                      value: entry.shbg, 
+                      unit: entry.shbgUnit,
+                      change: previous ? getValueChange(entry.shbg, previous.shbg) : null
+                    },
+                    { 
+                      label: "Estrogens Total", 
+                      value: entry.estrogensTotal, 
+                      unit: entry.estrogensTotalUnit,
+                      change: previous ? getValueChange(entry.estrogensTotal, previous.estrogensTotal) : null
+                    },
+                    { 
+                      label: "TSH", 
+                      value: entry.tsh, 
+                      unit: entry.tshUnit,
+                      change: previous ? getValueChange(entry.tsh, previous.tsh) : null
+                    },
+                    { 
+                      label: "Free T3", 
+                      value: entry.freeT3, 
+                      unit: entry.freeT3Unit,
+                      change: previous ? getValueChange(entry.freeT3, previous.freeT3) : null
+                    },
+                    { 
+                      label: "Free T4", 
+                      value: entry.freeT4, 
+                      unit: entry.freeT4Unit,
+                      change: previous ? getValueChange(entry.freeT4, previous.freeT4) : null
+                    },
+                    { 
+                      label: "LDL", 
+                      value: entry.ldlCalc, 
+                      unit: entry.ldlCalcUnit, 
+                      flag: entry.ldlCalcFlag,
+                      change: previous ? getValueChange(entry.ldlCalc, previous.ldlCalc) : null
+                    },
+                    { 
+                      label: "HDL", 
+                      value: entry.hdl, 
+                      unit: entry.hdlUnit,
+                      change: previous ? getValueChange(entry.hdl, previous.hdl) : null
+                    },
+                    { 
+                      label: "Triglycerides", 
+                      value: entry.triglycerides, 
+                      unit: entry.triglyceridesUnit,
+                      change: previous ? getValueChange(entry.triglycerides, previous.triglycerides) : null
+                    },
+                    { 
+                      label: "ApoB", 
+                      value: entry.apob, 
+                      unit: entry.apobUnit, 
+                      flag: entry.apobFlag,
+                      change: previous ? getValueChange(entry.apob, previous.apob) : null
+                    },
+                    { 
+                      label: "Vitamin D", 
+                      value: entry.vitaminD25oh, 
+                      unit: entry.vitaminD25ohUnit,
+                      change: previous ? getValueChange(entry.vitaminD25oh, previous.vitaminD25oh) : null
+                    },
+                    { 
+                      label: "CRP (hs)", 
+                      value: entry.crpHs, 
+                      unit: entry.crpHsUnit,
+                      change: previous ? getValueChange(entry.crpHs, previous.crpHs) : null
+                    },
+                    { 
+                      label: "HbA1c", 
+                      value: entry.hba1c, 
+                      unit: entry.hba1cUnit,
+                      change: previous ? getValueChange(entry.hba1c, previous.hba1c) : null
+                    },
+                    { 
+                      label: "Ferritin", 
+                      value: entry.ferritin, 
+                      unit: entry.ferritinUnit,
+                      change: previous ? getValueChange(entry.ferritin, previous.ferritin) : null
+                    },
+                  ],
+                  entry.id
+                )}
                 
                 {index < sortedEntries.length - 1 && <div className="border-b border-border mt-8" />}
               </div>
