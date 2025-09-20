@@ -475,12 +475,19 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
           description: `Clearing existing workouts and importing ${dataLines.length} exercises from ${file.name}.`,
         });
 
-        // First, delete all existing exercises in this category
+        // First, capture existing weights before deletion for delta tracking
+        let existingWeights = new Map<string, number>();
         try {
           const existingExercises = await queryClient.fetchQuery({
             queryKey: ["/api/exercises", category],
           }) as Exercise[];
 
+          // Store existing weights by exercise name for comparison
+          existingExercises.forEach(exercise => {
+            existingWeights.set(exercise.name, exercise.weight || 0);
+          });
+
+          // Delete all existing exercises in this category
           for (const exercise of existingExercises) {
             await apiRequest("DELETE", `/api/exercises/${exercise.id}`);
           }
@@ -497,6 +504,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
         let successCount = 0;
         let errorCount = 0;
         const errors: string[] = [];
+        const importedExercises: Exercise[] = [];
 
         // Process imports with better error handling
         for (let index = 0; index < dataLines.length; index++) {
@@ -526,7 +534,9 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
               order: parseInt(orderStr) || 0,
             };
 
-            await apiRequest("POST", "/api/exercises", exerciseData);
+            const response = await apiRequest("POST", "/api/exercises", exerciseData);
+            const newExercise = await response.json() as Exercise;
+            importedExercises.push(newExercise);
             successCount++;
           } catch (error) {
             console.error(`Error importing line ${index + 1}:`, error);
@@ -535,19 +545,49 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
           }
         }
 
-        // Refresh the exercises list
+        // Track weight changes and log to audit table
+        let auditEntriesCount = 0;
+        for (const newExercise of importedExercises) {
+          const previousWeight = existingWeights.get(newExercise.name);
+          
+          if (previousWeight && newExercise.weight && newExercise.weight > previousWeight) {
+            try {
+              const percentageIncrease = ((newExercise.weight - previousWeight) / previousWeight) * 100;
+              await apiRequest("POST", "/api/changes-audit", {
+                exerciseId: newExercise.id,
+                exerciseName: newExercise.name,
+                previousWeight: previousWeight,
+                newWeight: newExercise.weight,
+                percentageIncrease: percentageIncrease,
+                category: category
+              });
+              auditEntriesCount++;
+            } catch (error) {
+              console.error(`Error logging audit for ${newExercise.name}:`, error);
+            }
+          }
+        }
+
+        // Refresh both exercises and audit queries
         await queryClient.invalidateQueries({ queryKey: ["/api/exercises", category] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/changes-audit"] });
         
-        // Show results
+        // Show results with audit tracking information
         if (successCount > 0 && errorCount === 0) {
+          const auditMessage = auditEntriesCount > 0 
+            ? ` ${auditEntriesCount} weight increases tracked in audit.`
+            : "";
           toast({
             title: "Import successful!",
-            description: `Successfully imported ${successCount} exercises.`,
+            description: `Successfully imported ${successCount} exercises.${auditMessage}`,
           });
         } else if (successCount > 0 && errorCount > 0) {
+          const auditMessage = auditEntriesCount > 0 
+            ? ` ${auditEntriesCount} weight increases tracked.`
+            : "";
           toast({
             title: "Partial import",
-            description: `Imported ${successCount} exercises. ${errorCount} failed.`,
+            description: `Imported ${successCount} exercises. ${errorCount} failed.${auditMessage}`,
             variant: "destructive",
           });
           console.log("Import errors:", errors);
