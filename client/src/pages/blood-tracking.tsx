@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Droplets, Plus, TrendingUp, TrendingDown, Calendar, Upload, Download, AlertTriangle, CheckCircle, FileText, RotateCcw, X, Edit3, Save } from "lucide-react";
+import { Droplets, Plus, TrendingUp, TrendingDown, Calendar, Upload, Download, AlertTriangle, CheckCircle, FileText, RotateCcw, X, Edit3, Save, ChevronDown, ChevronUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { type BloodEntry } from "@shared/schema";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
@@ -25,6 +25,7 @@ export default function BloodTracking() {
   const [showCallout, setShowCallout] = useState(true);
   const [editingValues, setEditingValues] = useState<Record<string, { value: string; unit: string }>>({});
   const [editingCard, setEditingCard] = useState<string | null>(null);
+  const [collapsedRecords, setCollapsedRecords] = useState<Record<string, boolean>>({});
 
   const { data: bloodEntries = [] } = useQuery<BloodEntry[]>({
     queryKey: ["/api/blood-entries"],
@@ -438,6 +439,13 @@ export default function BloodTracking() {
   const cancelEditing = () => {
     setEditingCard(null);
     setEditingValues({});
+  };
+
+  const toggleRecordCollapse = (entryId: string) => {
+    setCollapsedRecords(prev => ({
+      ...prev,
+      [entryId]: !prev[entryId]
+    }));
   };
 
   const renderValueWithFlag = (value: number | null, unit: string | null, flag: string | null = null) => {
@@ -856,19 +864,39 @@ export default function BloodTracking() {
           </div>
         ) : (
           <div className="space-y-6">
-            {sortedEntries.map((entry, index) => (
-              <div key={entry.id} className="space-y-4">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-medium">{formatDate(entry.asOf)}</span>
+            {sortedEntries.map((entry, index) => {
+              const isCollapsed = collapsedRecords[entry.id];
+              const previous = index < sortedEntries.length - 1 ? sortedEntries[index + 1] : null;
+              
+              return (
+                <div key={entry.id} className="space-y-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <span className="font-medium">{formatDate(entry.asOf)}</span>
+                      </div>
+                      <Badge variant="outline">{entry.source.replace('_', ' ')}</Badge>
+                      {index === 0 && <Badge>Latest</Badge>}
+                    </div>
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleRecordCollapse(entry.id)}
+                      className="h-8 w-8 p-0 transition-all duration-200"
+                      data-testid={`button-toggle-record-${entry.id}`}
+                    >
+                      {isCollapsed ? (
+                        <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ChevronUp className="w-4 h-4" />
+                      )}
+                    </Button>
                   </div>
-                  <Badge variant="outline">{entry.source.replace('_', ' ')}</Badge>
-                  {index === 0 && <Badge>Latest</Badge>}
-                </div>
                 
                 {/* Single consolidated blood markers card */}
-                {renderPanelCard(
+                {!isCollapsed && renderPanelCard(
                   "Blood Lab Results",
                   <Droplets className="w-4 h-4 text-blue-500" />,
                   [
@@ -971,7 +999,8 @@ export default function BloodTracking() {
                 
                 {index < sortedEntries.length - 1 && <div className="border-b border-border mt-8" />}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
