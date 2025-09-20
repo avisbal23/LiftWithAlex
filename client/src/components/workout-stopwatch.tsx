@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,15 +9,110 @@ interface LapTime {
   id: number;
   lapTime: string;
   lapTimeMs: number;
+  startedAtMs: number;
 }
 
-export default function WorkoutStopwatch() {
-  const [isRunning, setIsRunning] = useState(false);
-  const [time, setTime] = useState(0);
-  const [laps, setLaps] = useState<LapTime[]>([]);
-  const [lastLapTime, setLastLapTime] = useState(0);
+interface StopwatchState {
+  isRunning: boolean;
+  sessionStartEpochMs: number;
+  lapStartEpochMs: number;
+  elapsedBeforeStartMs: number;
+  lapElapsedBeforeStartMs: number;
+  laps: LapTime[];
+  dateKey: string;
+  autoResetDaily: boolean;
+}
+
+interface WorkoutStopwatchProps {
+  storageKey?: string;
+}
+
+export default function WorkoutStopwatch({ storageKey = window.location.pathname }: WorkoutStopwatchProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [currentTime, setCurrentTime] = useState(Date.now());
+  const animationRef = useRef<number | null>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Get today's date key for daily reset
+  const getTodayKey = (): string => {
+    return new Date().toDateString();
+  };
+
+  // Default state
+  const getDefaultState = (): StopwatchState => ({
+    isRunning: false,
+    sessionStartEpochMs: 0,
+    lapStartEpochMs: 0,
+    elapsedBeforeStartMs: 0,
+    lapElapsedBeforeStartMs: 0,
+    laps: [],
+    dateKey: getTodayKey(),
+    autoResetDaily: true
+  });
+
+  // Load state from localStorage
+  const loadState = (): StopwatchState => {
+    try {
+      const saved = localStorage.getItem(`stopwatch-${storageKey}`);
+      if (!saved) return getDefaultState();
+
+      const state: StopwatchState = JSON.parse(saved);
+      
+      // Check if we need to reset daily
+      if (state.autoResetDaily && state.dateKey !== getTodayKey()) {
+        return getDefaultState();
+      }
+
+      return state;
+    } catch (error) {
+      console.warn('Failed to load stopwatch state:', error);
+      return getDefaultState();
+    }
+  };
+
+  const [state, setState] = useState<StopwatchState>(loadState);
+
+  // Save state to localStorage
+  const saveStateToStorage = useCallback((newState: StopwatchState) => {
+    try {
+      localStorage.setItem(`stopwatch-${storageKey}`, JSON.stringify(newState));
+    } catch (error) {
+      console.warn('Failed to save stopwatch state:', error);
+    }
+  }, [storageKey]);
+
+  // Save state (throttled for non-critical updates)
+  const saveState = useCallback((newState: StopwatchState, immediate = false) => {
+    setState(newState);
+    
+    if (immediate) {
+      // Critical actions save immediately
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
+      }
+      saveStateToStorage(newState);
+    } else {
+      // Throttled saves for animations/UI updates
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      
+      saveTimeoutRef.current = setTimeout(() => {
+        saveStateToStorage(newState);
+      }, 100);
+    }
+  }, [saveStateToStorage]);
+
+  // Flush any pending saves immediately
+  const flushSave = useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+      // Save current state immediately
+      saveStateToStorage(state);
+    }
+  }, [saveStateToStorage, state]);
 
   // Format time display (MM:SS.ms)
   const formatTime = (timeInMs: number): string => {
@@ -27,91 +122,142 @@ export default function WorkoutStopwatch() {
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`;
   };
 
-  // Start/stop timer
-  const toggleTimer = () => {
-    if (isRunning) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    } else {
-      intervalRef.current = setInterval(() => {
-        setTime(prev => prev + 10);
-      }, 10);
-    }
-    setIsRunning(!isRunning);
+  // Calculate total elapsed time
+  const getTotalElapsedTime = (): number => {
+    const now = currentTime;
+    const runningTime = state.isRunning ? Math.max(0, now - state.sessionStartEpochMs) : 0;
+    return runningTime + state.elapsedBeforeStartMs;
   };
 
-  // Reset timer
-  const resetTimer = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    setIsRunning(false);
-    setTime(0);
-    setLaps([]);
-    setLastLapTime(0);
+  // Calculate current lap time
+  const getCurrentLapTime = (): number => {
+    const now = currentTime;
+    const runningLapTime = state.isRunning ? Math.max(0, now - state.lapStartEpochMs) : 0;
+    return runningLapTime + state.lapElapsedBeforeStartMs;
   };
 
   // Calculate total time across all laps
   const getTotalTime = (): number => {
-    return laps.reduce((total, lap) => total + lap.lapTimeMs, 0);
+    return state.laps.reduce((total, lap) => total + lap.lapTimeMs, 0);
   };
 
-  // Get current lap time (time since last lap)
-  const getCurrentLapTime = (): number => {
-    return time - lastLapTime;
-  };
-
-  // Add lap - restart timer from zero
-  const addLap = () => {
-    if (getCurrentLapTime() > 0) {
-      const lapTimeMs = time - lastLapTime;
-      const newLap: LapTime = {
-        id: laps.length + 1,
-        lapTime: formatTime(lapTimeMs),
-        lapTimeMs: lapTimeMs
-      };
-      setLaps(prev => [newLap, ...prev]);
-      setLastLapTime(time);
+  // Start/stop timer
+  const toggleTimer = () => {
+    const now = Date.now();
+    
+    if (state.isRunning) {
+      // Pause: save elapsed time and stop
+      const runningTime = Math.max(0, now - state.sessionStartEpochMs);
+      const runningLapTime = Math.max(0, now - state.lapStartEpochMs);
+      
+      saveState({
+        ...state,
+        isRunning: false,
+        elapsedBeforeStartMs: state.elapsedBeforeStartMs + runningTime,
+        lapElapsedBeforeStartMs: state.lapElapsedBeforeStartMs + runningLapTime
+      }, true); // immediate save
+    } else {
+      // Start: begin timing from now
+      saveState({
+        ...state,
+        isRunning: true,
+        sessionStartEpochMs: now,
+        lapStartEpochMs: now
+      }, true); // immediate save
     }
   };
 
-  // Auto-clear at midnight
-  useEffect(() => {
-    const checkMidnight = () => {
-      const now = new Date();
-      const midnight = new Date();
-      midnight.setHours(24, 0, 0, 0);
-      
-      const timeUntilMidnight = midnight.getTime() - now.getTime();
-      
-      setTimeout(() => {
-        resetTimer();
-        // Set up next midnight check
-        const nextCheck = setInterval(() => {
-          const currentTime = new Date();
-          if (currentTime.getHours() === 0 && currentTime.getMinutes() === 0) {
-            resetTimer();
-          }
-        }, 60000); // Check every minute after midnight
-        
-        return () => clearInterval(nextCheck);
-      }, timeUntilMidnight);
-    };
+  // Reset timer
+  const resetTimer = () => {
+    saveState(getDefaultState(), true); // immediate save
+  };
 
-    checkMidnight();
-  }, []);
+  // Add lap
+  const addLap = () => {
+    const currentLapTime = getCurrentLapTime();
+    if (currentLapTime > 0) {
+      const now = Date.now();
+      const newLap: LapTime = {
+        id: state.laps.length + 1,
+        lapTime: formatTime(currentLapTime),
+        lapTimeMs: currentLapTime,
+        startedAtMs: now - currentLapTime
+      };
 
-  // Cleanup interval on unmount
+      saveState({
+        ...state,
+        laps: [newLap, ...state.laps],
+        lapStartEpochMs: now,
+        lapElapsedBeforeStartMs: 0
+      }, true); // immediate save
+    }
+  };
+
+  // Animation loop for smooth UI updates
   useEffect(() => {
+    if (state.isRunning) {
+      const animate = () => {
+        setCurrentTime(Date.now());
+        animationRef.current = requestAnimationFrame(animate);
+      };
+      animationRef.current = requestAnimationFrame(animate);
+    } else {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+    }
+
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
       }
     };
-  }, []);
+  }, [state.isRunning]);
+
+  // Listen for storage events (cross-tab sync)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === `stopwatch-${storageKey}` && e.newValue) {
+        try {
+          const newState: StopwatchState = JSON.parse(e.newValue);
+          setState(newState);
+        } catch (error) {
+          console.warn('Failed to sync stopwatch state:', error);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [storageKey]);
+
+  // Add event listeners for tab close/visibility change to flush saves
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      flushSave();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        flushSave();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [flushSave]);
+
+  const currentLapTime = getCurrentLapTime();
+  const totalTime = getTotalTime();
 
   return (
     <Card className="mt-6 mb-6 backdrop-blur-sm bg-white/90 dark:bg-gray-900/90 border border-white/30 dark:border-gray-700/50">
@@ -127,7 +273,7 @@ export default function WorkoutStopwatch() {
               </div>
               <div className="flex items-center gap-3">
                 <span className="font-mono text-xl font-bold text-blue-600 dark:text-blue-400">
-                  {formatTime(getCurrentLapTime())}
+                  {formatTime(currentLapTime)}
                 </span>
                 {isCollapsed ? (
                   <ChevronDown className="w-4 h-4" />
@@ -146,10 +292,10 @@ export default function WorkoutStopwatch() {
               <Button
                 onClick={toggleTimer}
                 size="sm"
-                className={isRunning ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}
+                className={state.isRunning ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}
                 data-testid="button-timer-toggle"
               >
-                {isRunning ? (
+                {state.isRunning ? (
                   <>
                     <Pause className="w-4 h-4 mr-2" />
                     Pause
@@ -166,7 +312,7 @@ export default function WorkoutStopwatch() {
                 onClick={addLap}
                 size="sm"
                 variant="outline"
-                disabled={getCurrentLapTime() === 0}
+                disabled={currentLapTime === 0}
                 data-testid="button-lap"
                 className="backdrop-blur-sm bg-white/50 dark:bg-gray-700/50 border-white/30 dark:border-gray-500/40"
               >
@@ -178,7 +324,7 @@ export default function WorkoutStopwatch() {
                 onClick={resetTimer}
                 size="sm"
                 variant="outline"
-                disabled={getCurrentLapTime() === 0 && laps.length === 0}
+                disabled={currentLapTime === 0 && state.laps.length === 0}
                 data-testid="button-reset"
                 className="backdrop-blur-sm bg-white/50 dark:bg-gray-700/50 border-white/30 dark:border-gray-500/40"
               >
@@ -188,16 +334,16 @@ export default function WorkoutStopwatch() {
             </div>
 
             {/* Lap Times */}
-            {laps.length > 0 && (
+            {state.laps.length > 0 && (
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <h3 className="text-sm font-medium text-muted-foreground">Lap Times</h3>
                   <div className="text-sm font-mono font-medium text-blue-600 dark:text-blue-400">
-                    Total: {formatTime(getTotalTime())}
+                    Total: {formatTime(totalTime)}
                   </div>
                 </div>
                 <div className="max-h-32 overflow-y-auto space-y-1">
-                  {laps.map((lap) => (
+                  {state.laps.map((lap) => (
                     <div
                       key={lap.id}
                       className="flex justify-between items-center p-2 rounded-md backdrop-blur-sm bg-white/20 dark:bg-gray-600/20 border border-white/20 dark:border-gray-500/30"
