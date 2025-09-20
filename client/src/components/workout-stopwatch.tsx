@@ -114,12 +114,18 @@ export default function WorkoutStopwatch({ storageKey = window.location.pathname
     }
   }, [saveStateToStorage, state]);
 
-  // Format time display (MM:SS.ms)
+  // Format time display (HH:MM:SS.ms or MM:SS.ms)
   const formatTime = (timeInMs: number): string => {
-    const minutes = Math.floor(timeInMs / 60000);
+    const hours = Math.floor(timeInMs / 3600000);
+    const minutes = Math.floor((timeInMs % 3600000) / 60000);
     const seconds = Math.floor((timeInMs % 60000) / 1000);
     const milliseconds = Math.floor((timeInMs % 1000) / 10);
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`;
+    
+    if (hours > 0) {
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`;
+    } else {
+      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`;
+    }
   };
 
   // Calculate total elapsed time
@@ -136,9 +142,11 @@ export default function WorkoutStopwatch({ storageKey = window.location.pathname
     return runningLapTime + state.lapElapsedBeforeStartMs;
   };
 
-  // Calculate total time across all laps
+  // Calculate total time across all laps (including current lap)
   const getTotalTime = (): number => {
-    return state.laps.reduce((total, lap) => total + lap.lapTimeMs, 0);
+    const completedLapsTime = state.laps.reduce((total, lap) => total + lap.lapTimeMs, 0);
+    const currentLapTime = getCurrentLapTime();
+    return completedLapsTime + currentLapTime;
   };
 
   // Start/stop timer
