@@ -1,5 +1,5 @@
-import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress, type DailyWorkoutStatus, type InsertDailyWorkoutStatus, type UpdateDailyWorkoutStatus, type WorkoutNotes, type InsertWorkoutNotes, type UpdateWorkoutNotes, type ChangesAudit, type InsertChangesAudit, type UpdateChangesAudit, type PRChangesAudit, type InsertPRChangesAudit } from "@shared/schema";
-import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress, dailyWorkoutStatus, workoutNotes, changesAudit, prChangesAudit } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress, type DailyWorkoutStatus, type InsertDailyWorkoutStatus, type UpdateDailyWorkoutStatus, type WorkoutNotes, type InsertWorkoutNotes, type UpdateWorkoutNotes, type ExerciseTemplate, type InsertExerciseTemplate, type UpdateExerciseTemplate, type ChangesAudit, type InsertChangesAudit, type UpdateChangesAudit, type PRChangesAudit, type InsertPRChangesAudit } from "@shared/schema";
+import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress, dailyWorkoutStatus, workoutNotes, exerciseTemplates, changesAudit, prChangesAudit } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc, sql } from "drizzle-orm";
@@ -53,6 +53,13 @@ export interface IStorage {
   createPersonalRecord(entry: InsertPersonalRecord): Promise<PersonalRecord>;
   updatePersonalRecord(id: string, entry: UpdatePersonalRecord): Promise<PersonalRecord | undefined>;
   deletePersonalRecord(id: string): Promise<boolean>;
+
+  // Exercise Templates methods
+  getAllExerciseTemplates(): Promise<ExerciseTemplate[]>;
+  createExerciseTemplate(entry: InsertExerciseTemplate): Promise<ExerciseTemplate>;
+  updateExerciseTemplate(id: string, entry: UpdateExerciseTemplate): Promise<ExerciseTemplate | undefined>;
+  deleteExerciseTemplate(id: string): Promise<boolean>;
+  getOrCreateExerciseTemplate(name: string): Promise<ExerciseTemplate>;
   reorderPersonalRecords(reorderData: Array<{ id: string; order: number }>): Promise<void>;
   
   getUserSettings(): Promise<UserSettings | undefined>;
@@ -108,6 +115,7 @@ export class MemStorage implements IStorage {
   private userSettings: UserSettings | undefined;
   private shortcutSettings: Map<string, ShortcutSettings>;
   private tabSettings: Map<string, TabSettings>;
+  private exerciseTemplates: Map<string, ExerciseTemplate>;
   private changesAudit: Map<string, ChangesAudit>;
   private prChangesAudit: Map<string, PRChangesAudit>;
 
@@ -124,6 +132,7 @@ export class MemStorage implements IStorage {
     this.userSettings = undefined;
     this.shortcutSettings = new Map();
     this.tabSettings = new Map();
+    this.exerciseTemplates = new Map();
     this.changesAudit = new Map();
     this.prChangesAudit = new Map();
     
@@ -1007,6 +1016,60 @@ export class MemStorage implements IStorage {
     return this.prChangesAudit.delete(id);
   }
 
+  // Exercise Templates methods
+  async getAllExerciseTemplates(): Promise<ExerciseTemplate[]> {
+    return Array.from(this.exerciseTemplates.values()).sort((a, b) => 
+      new Date(b.lastUsed!).getTime() - new Date(a.lastUsed!).getTime()
+    );
+  }
+
+  async createExerciseTemplate(entry: InsertExerciseTemplate): Promise<ExerciseTemplate> {
+    const id = randomUUID();
+    const now = new Date();
+    const template: ExerciseTemplate = {
+      id,
+      ...entry,
+      lastUsed: now,
+      createdAt: now,
+    };
+    this.exerciseTemplates.set(id, template);
+    return template;
+  }
+
+  async updateExerciseTemplate(id: string, entry: UpdateExerciseTemplate): Promise<ExerciseTemplate | undefined> {
+    const existing = this.exerciseTemplates.get(id);
+    if (!existing) {
+      return undefined;
+    }
+    
+    const updated: ExerciseTemplate = {
+      ...existing,
+      ...entry,
+      lastUsed: new Date(), // Update last used when updated
+    };
+    this.exerciseTemplates.set(id, updated);
+    return updated;
+  }
+
+  async deleteExerciseTemplate(id: string): Promise<boolean> {
+    return this.exerciseTemplates.delete(id);
+  }
+
+  async getOrCreateExerciseTemplate(name: string): Promise<ExerciseTemplate> {
+    // Look for existing template with this name
+    const existing = Array.from(this.exerciseTemplates.values())
+      .find(template => template.name.toLowerCase() === name.toLowerCase());
+    
+    if (existing) {
+      // Update last used timestamp
+      const updated = await this.updateExerciseTemplate(existing.id, {});
+      return updated!;
+    }
+    
+    // Create new template
+    return await this.createExerciseTemplate({ name });
+  }
+
 }
 
 // Database Storage Implementation
@@ -1844,6 +1907,54 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(prChangesAudit)
       .where(eq(prChangesAudit.id, id));
     return result.rowCount > 0;
+  }
+
+  // Exercise Templates methods
+  async getAllExerciseTemplates(): Promise<ExerciseTemplate[]> {
+    return await db.select()
+      .from(exerciseTemplates)
+      .orderBy(desc(exerciseTemplates.lastUsed));
+  }
+
+  async createExerciseTemplate(entry: InsertExerciseTemplate): Promise<ExerciseTemplate> {
+    const [created] = await db.insert(exerciseTemplates)
+      .values(entry)
+      .returning();
+    return created;
+  }
+
+  async updateExerciseTemplate(id: string, entry: UpdateExerciseTemplate): Promise<ExerciseTemplate | undefined> {
+    const [updated] = await db.update(exerciseTemplates)
+      .set({ ...entry, lastUsed: new Date() })
+      .where(eq(exerciseTemplates.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteExerciseTemplate(id: string): Promise<boolean> {
+    const result = await db.delete(exerciseTemplates)
+      .where(eq(exerciseTemplates.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getOrCreateExerciseTemplate(name: string): Promise<ExerciseTemplate> {
+    // Look for existing template with this name (case-insensitive)
+    const [existing] = await db.select()
+      .from(exerciseTemplates)
+      .where(sql`LOWER(${exerciseTemplates.name}) = LOWER(${name})`)
+      .limit(1);
+    
+    if (existing) {
+      // Update last used timestamp
+      const [updated] = await db.update(exerciseTemplates)
+        .set({ lastUsed: new Date() })
+        .where(eq(exerciseTemplates.id, existing.id))
+        .returning();
+      return updated;
+    }
+    
+    // Create new template
+    return await this.createExerciseTemplate({ name });
   }
 }
 

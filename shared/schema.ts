@@ -238,6 +238,14 @@ export const tabSettings = pgTable("tab_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Exercise Templates - master list of exercise names for data consistency
+export const exerciseTemplates = pgTable("exercise_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(), // "Bench Press", "Squats", etc.
+  lastUsed: timestamp("last_used").defaultNow(), // Track when last used
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Changes Audit - for tracking weight changes in workout exercises
 export const changesAudit = pgTable("changes_audit", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -427,6 +435,14 @@ export type TabSettings = typeof tabSettings.$inferSelect;
 export type InsertTabSettings = z.infer<typeof insertTabSettingsSchema>;
 export type UpdateTabSettings = z.infer<typeof updateTabSettingsSchema>;
 
+export const insertExerciseTemplateSchema = createInsertSchema(exerciseTemplates).omit({
+  id: true,
+  createdAt: true,
+  lastUsed: true,
+});
+
+export const updateExerciseTemplateSchema = insertExerciseTemplateSchema.partial();
+
 export const insertChangesAuditSchema = createInsertSchema(changesAudit).omit({
   id: true,
   changedAt: true,
@@ -441,6 +457,9 @@ export const insertPRChangesAuditSchema = createInsertSchema(prChangesAudit).omi
 
 export const updatePRChangesAuditSchema = insertPRChangesAuditSchema.partial();
 
+export type ExerciseTemplate = typeof exerciseTemplates.$inferSelect;
+export type InsertExerciseTemplate = z.infer<typeof insertExerciseTemplateSchema>;
+export type UpdateExerciseTemplate = z.infer<typeof updateExerciseTemplateSchema>;
 export type ChangesAudit = typeof changesAudit.$inferSelect;
 export type InsertChangesAudit = z.infer<typeof insertChangesAuditSchema>;
 export type UpdateChangesAudit = z.infer<typeof updateChangesAuditSchema>;

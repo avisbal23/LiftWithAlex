@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import path from "path";
 import fs from "fs";
-import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema, insertChangesAuditSchema, updateChangesAuditSchema, insertPRChangesAuditSchema } from "@shared/schema";
+import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema, insertExerciseTemplateSchema, updateExerciseTemplateSchema, insertChangesAuditSchema, updateChangesAuditSchema, insertPRChangesAuditSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1018,6 +1018,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete PR changes audit entry" });
+    }
+  });
+
+  // Exercise Templates endpoints
+  app.get("/api/exercise-templates", async (req, res) => {
+    try {
+      const templates = await storage.getAllExerciseTemplates();
+      res.json(templates);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch exercise templates" });
+    }
+  });
+
+  app.post("/api/exercise-templates", async (req, res) => {
+    try {
+      const data = insertExerciseTemplateSchema.parse(req.body);
+      const created = await storage.createExerciseTemplate(data);
+      res.status(201).json(created);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create exercise template" });
+    }
+  });
+
+  app.patch("/api/exercise-templates/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const data = updateExerciseTemplateSchema.parse(req.body);
+      const updated = await storage.updateExerciseTemplate(id, data);
+      
+      if (!updated) {
+        return res.status(404).json({ message: "Exercise template not found" });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update exercise template" });
+    }
+  });
+
+  app.delete("/api/exercise-templates/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const deleted = await storage.deleteExerciseTemplate(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Exercise template not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete exercise template" });
+    }
+  });
+
+  app.post("/api/exercise-templates/get-or-create", async (req, res) => {
+    try {
+      const { name } = req.body;
+      if (!name || typeof name !== 'string') {
+        return res.status(400).json({ message: "Exercise name is required" });
+      }
+      
+      const template = await storage.getOrCreateExerciseTemplate(name);
+      res.json(template);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get or create exercise template" });
     }
   });
 
