@@ -50,6 +50,15 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
     },
   });
 
+  // Query to check if today's workout is already logged
+  const { data: workoutStatus } = useQuery<{ isCompleted: boolean }>({
+    queryKey: ["/api/daily-workout-status", category],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/daily-workout-status/${category}`);
+      return response.json();
+    },
+  });
+
   const createMutation = useMutation({
     mutationFn: async (exercise: InsertExercise) => {
       const response = await apiRequest("POST", "/api/exercises", exercise);
@@ -104,8 +113,17 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
       const response = await apiRequest("POST", "/api/workout-logs", { category: workoutCategory });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["/api/workout-logs/latest"] });
+      
+      // Set today's workout as completed
+      try {
+        await apiRequest("POST", `/api/daily-workout-status/${category}`, { isCompleted: true });
+        queryClient.invalidateQueries({ queryKey: ["/api/daily-workout-status", category] });
+      } catch (error) {
+        console.error("Failed to update workout status:", error);
+      }
+      
       toast({
         title: "Workout logged!",
         description: `Completed ${getCategoryDisplayName(category)} workout`,
@@ -629,7 +647,10 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
             onClick={() => logWorkoutMutation.mutate(category)}
             disabled={logWorkoutMutation.isPending}
             variant="outline"
-            className="bg-primary/5 border-primary/20 hover:bg-primary/10 text-primary font-medium"
+            className={workoutStatus?.isCompleted 
+              ? "bg-green-500/20 border-green-500/40 hover:bg-green-500/30 text-green-700 dark:text-green-400 font-medium"
+              : "bg-primary/5 border-primary/20 hover:bg-primary/10 text-primary font-medium"
+            }
             data-testid={`button-today-is-${category}-day`}
           >
             Log Workout
