@@ -114,7 +114,7 @@ export default function MiniStopwatch({ storageKey = "workout-stopwatch" }: Mini
     };
   }, [state.isRunning]);
 
-  // Listen for storage events (cross-tab sync)
+  // Listen for storage events (cross-tab sync) and periodically refresh state
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === `stopwatch-${storageKey}` && e.newValue) {
@@ -127,8 +127,18 @@ export default function MiniStopwatch({ storageKey = "workout-stopwatch" }: Mini
       }
     };
 
+    // Periodically sync with localStorage (for same-tab updates)
+    const syncInterval = setInterval(() => {
+      const freshState = loadState();
+      setState(freshState);
+    }, 500); // Check every 500ms
+
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(syncInterval);
+    };
   }, [storageKey]);
 
   const totalTime = getTotalTime();
