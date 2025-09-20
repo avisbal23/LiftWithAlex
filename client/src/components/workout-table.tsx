@@ -2,10 +2,10 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { OptimizedInput } from "@/components/optimized-input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Eye, ChevronDown, GripVertical, Download, Upload, FileText } from "lucide-react";
+import { Plus, Trash2, Eye, ChevronDown, ChevronUp, GripVertical, Download, Upload, FileText } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -26,6 +26,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
   const [selectedNotes, setSelectedNotes] = useState<{ exercise: string; notes: string } | null>(null);
   const [editingNotes, setEditingNotes] = useState<string>("");
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [collapsedExercises, setCollapsedExercises] = useState<Record<string, boolean>>({});
+  const [exerciseEditStates, setExerciseEditStates] = useState<Record<string, { weight: string; reps: string; notes: string }>>({});
   const timeoutRefs = useRef<Record<string, NodeJS.Timeout>>({});
   const [editingExercises, setEditingExercises] = useState<Record<string, Partial<Exercise>>>({});
   const [weightInputs, setWeightInputs] = useState<Record<string, string>>({});
@@ -269,6 +271,69 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
     const changes = editingExercises[exerciseId];
     return changes && Object.keys(changes).length > 0;
   }, [editingExercises]);
+
+  // Toggle exercise card collapse and auto-save
+  const toggleExerciseCollapse = (exerciseId: string) => {
+    const isCurrentlyCollapsed = collapsedExercises[exerciseId];
+    const editState = exerciseEditStates[exerciseId];
+    
+    // If collapsing and has pending changes, save them
+    if (!isCurrentlyCollapsed && editState) {
+      const exercise = exercises.find(e => e.id === exerciseId);
+      if (exercise) {
+        const hasWeightChange = editState.weight !== String(exercise.weight || 0);
+        const hasRepsChange = editState.reps !== String(exercise.reps || 0);
+        const hasNotesChange = editState.notes !== (exercise.notes || "");
+        
+        if (hasWeightChange || hasRepsChange || hasNotesChange) {
+          const updates: Partial<Exercise> = {};
+          if (hasWeightChange) updates.weight = parseInt(editState.weight) || 0;
+          if (hasRepsChange) updates.reps = parseInt(editState.reps) || 0;
+          if (hasNotesChange) updates.notes = editState.notes;
+          
+          updateMutation.mutate({ id: exerciseId, data: updates });
+        }
+      }
+      
+      // Clear edit state when collapsing
+      setExerciseEditStates(prev => {
+        const newState = { ...prev };
+        delete newState[exerciseId];
+        return newState;
+      });
+    }
+    
+    // If expanding, initialize edit state
+    if (isCurrentlyCollapsed) {
+      const exercise = exercises.find(e => e.id === exerciseId);
+      if (exercise) {
+        setExerciseEditStates(prev => ({
+          ...prev,
+          [exerciseId]: {
+            weight: String(exercise.weight || 0),
+            reps: String(exercise.reps || 0),
+            notes: exercise.notes || ""
+          }
+        }));
+      }
+    }
+    
+    setCollapsedExercises(prev => ({
+      ...prev,
+      [exerciseId]: !isCurrentlyCollapsed
+    }));
+  };
+
+  // Update edit state for collapsible cards
+  const updateEditState = (exerciseId: string, field: 'weight' | 'reps' | 'notes', value: string) => {
+    setExerciseEditStates(prev => ({
+      ...prev,
+      [exerciseId]: {
+        ...prev[exerciseId],
+        [field]: value
+      }
+    }));
+  };
 
   // Weight input handlers that commit on blur to prevent premature audit logging
   const handleWeightChange = useCallback((exerciseId: string, value: string) => {
@@ -874,69 +939,64 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                         />
                       </td>
                       <td className="px-3 py-2">
-                        <Dialog>
-                          <DialogTrigger asChild>
+                        <Collapsible open={!collapsedExercises[exercise.id]} onOpenChange={() => toggleExerciseCollapse(exercise.id)}>
+                          <CollapsibleTrigger asChild>
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => {
-                                setSelectedNotes({ exercise: exercise.name, notes: exercise.notes || "" });
-                                setEditingNotes(exercise.notes || "");
-                              }}
                               className="text-muted-foreground hover:text-foreground p-1 rounded transition-colors"
                               data-testid={`button-view-notes-${exercise.id}`}
                             >
-                              <Eye className="w-4 h-4" />
+                              {collapsedExercises[exercise.id] ? (
+                                <ChevronDown className="w-4 h-4" />
+                              ) : (
+                                <ChevronUp className="w-4 h-4" />
+                              )}
                             </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle>Exercise Details</DialogTitle>
-                            </DialogHeader>
-                            <Card>
-                              <CardHeader>
-                                <div className="flex items-center justify-between">
-                                  <CardTitle className="text-xl">{exercise.name}</CardTitle>
-                                  <Badge variant="secondary" className="capitalize">
-                                    {category}
-                                  </Badge>
-                                </div>
-                              </CardHeader>
-                              <CardContent className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div className="space-y-2">
-                                    <div className="text-sm font-medium text-muted-foreground">Weight (lbs)</div>
-                                    <Input
-                                      type="number"
-                                      value={exercise.weight || 0}
-                                      onChange={(e) => updateExercise(exercise.id, "weight", parseInt(e.target.value) || 0)}
-                                      className="text-2xl font-bold text-primary border border-input"
-                                      data-testid={`input-weight-detail-${exercise.id}`}
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <div className="text-sm font-medium text-muted-foreground">Reps</div>
-                                    <Input
-                                      type="number"
-                                      value={exercise.reps || 0}
-                                      onChange={(e) => updateExercise(exercise.id, "reps", parseInt(e.target.value) || 0)}
-                                      className="text-2xl font-bold text-primary border border-input"
-                                      data-testid={`input-reps-detail-${exercise.id}`}
-                                    />
-                                  </div>
-                                </div>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className="absolute top-full left-0 right-0 z-50 bg-background border rounded-lg shadow-lg p-4 mt-1">
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between mb-3">
+                                <span className="text-lg font-semibold">{exercise.name}</span>
+                                <Badge variant="secondary" className="capitalize">
+                                  {category}
+                                </Badge>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div className="space-y-2">
-                                  <div className="text-sm font-medium text-muted-foreground">Notes & Instructions</div>
-                                  <textarea
-                                    value={exercise.notes || ""}
-                                    onChange={(e) => updateExercise(exercise.id, "notes", e.target.value)}
-                                    placeholder="Add notes or instructions..."
-                                    className="w-full p-3 bg-muted rounded-lg border border-input text-sm leading-relaxed resize-none focus:bg-background focus:border-primary transition-colors"
-                                    rows={4}
-                                    data-testid={`textarea-notes-detail-${exercise.id}`}
+                                  <label className="text-sm font-medium text-muted-foreground">Weight (lbs)</label>
+                                  <Input
+                                    type="number"
+                                    value={exerciseEditStates[exercise.id]?.weight || exercise.weight || 0}
+                                    onChange={(e) => updateEditState(exercise.id, "weight", e.target.value)}
+                                    className="text-lg font-bold text-primary"
+                                    data-testid={`input-weight-detail-${exercise.id}`}
                                   />
                                 </div>
-                                <div className="text-xs text-muted-foreground pt-2 border-t">
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium text-muted-foreground">Reps</label>
+                                  <Input
+                                    type="number"
+                                    value={exerciseEditStates[exercise.id]?.reps || exercise.reps || 0}
+                                    onChange={(e) => updateEditState(exercise.id, "reps", e.target.value)}
+                                    className="text-lg font-bold text-primary"
+                                    data-testid={`input-reps-detail-${exercise.id}`}
+                                  />
+                                </div>
+                              </div>
+                              <div className="space-y-2 mb-4">
+                                <label className="text-sm font-medium text-muted-foreground">Notes & Instructions</label>
+                                <textarea
+                                  value={exerciseEditStates[exercise.id]?.notes || exercise.notes || ""}
+                                  onChange={(e) => updateEditState(exercise.id, "notes", e.target.value)}
+                                  placeholder="Add notes or instructions..."
+                                  className="w-full p-3 bg-muted rounded-lg border border-input text-sm leading-relaxed resize-none focus:bg-background focus:border-primary transition-colors"
+                                  rows={4}
+                                  data-testid={`textarea-notes-detail-${exercise.id}`}
+                                />
+                              </div>
+                              <div className="flex justify-between items-center pt-3 border-t border-border">
+                                <div className="text-xs text-muted-foreground">
                                   Last updated: {new Date(exercise.createdAt || new Date()).toLocaleDateString("en-US", { 
                                     month: "short", 
                                     day: "numeric", 
@@ -945,24 +1005,21 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                     minute: "2-digit"
                                   })}
                                 </div>
-                                
-                                {/* Delete Button */}
-                                <div className="flex justify-end pt-4 border-t border-border">
-                                  <Button
-                                    variant="destructive"
-                                    onClick={() => deleteExercise(exercise.id)}
-                                    disabled={deleteMutation.isPending}
-                                    className="flex items-center gap-2"
-                                    data-testid={`button-delete-detail-${exercise.id}`}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                    Delete Exercise
-                                  </Button>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </DialogContent>
-                        </Dialog>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => deleteExercise(exercise.id)}
+                                  disabled={deleteMutation.isPending}
+                                  className="flex items-center gap-2"
+                                  data-testid={`button-delete-detail-${exercise.id}`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  Delete
+                                </Button>
+                              </div>
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
                       </td>
                       <td className="px-3 py-2">
                         <div className="flex gap-1 items-center">
@@ -1105,25 +1162,23 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                       </div>
                       
                       <div className="flex items-center space-x-1 ml-2">
-                        <Dialog>
-                          <DialogTrigger asChild>
+                        <Collapsible open={!collapsedExercises[exercise.id]} onOpenChange={() => toggleExerciseCollapse(exercise.id)}>
+                          <CollapsibleTrigger asChild>
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => {
-                                setSelectedNotes({ exercise: exercise.name, notes: exercise.notes || "" });
-                                setEditingNotes(exercise.notes || "");
-                              }}
                               className="text-muted-foreground hover:text-foreground p-2 pointer-events-auto"
                               data-testid={`button-view-notes-mobile-${exercise.id}`}
                             >
-                              <Eye className="w-4 h-4" />
+                              {collapsedExercises[exercise.id] ? (
+                                <ChevronDown className="w-4 h-4" />
+                              ) : (
+                                <ChevronUp className="w-4 h-4" />
+                              )}
                             </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-[95vw] mx-4">
-                            <DialogHeader>
-                              <DialogTitle>Exercise Details</DialogTitle>
-                            </DialogHeader>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className="absolute top-full left-0 right-0 z-50 bg-background border rounded-lg shadow-lg p-4 mt-1 max-w-[95vw] mx-4">
+                            <div className="space-y-3">
                             <Card>
                               <CardHeader>
                                 <div className="flex items-center justify-between">
@@ -1261,8 +1316,9 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                 </div>
                               </CardContent>
                             </Card>
-                          </DialogContent>
-                        </Dialog>
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
                         
                       </div>
                     </div>
