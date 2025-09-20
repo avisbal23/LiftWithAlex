@@ -46,9 +46,10 @@ app.use((req, res, next) => {
   // This runs at 00:00 (midnight) in America/Los_Angeles timezone
   cron.schedule("0 0 * * *", async () => {
     try {
-      log("Running daily set progress reset at midnight PST...");
+      log("Running daily reset at midnight PST...");
       await storage.resetAllDailySetProgress();
-      log("Daily set progress reset completed successfully");
+      await storage.resetAllDailyWorkoutStatus();
+      log("Daily reset completed successfully");
     } catch (error) {
       log(`Error during daily reset: ${error}`);
     }
