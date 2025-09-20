@@ -417,35 +417,91 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
         const startIndex = lines[0].includes('ORDER|TITLE|WEIGHT|REPS|NOTES') ? 1 : 0;
         const dataLines = lines.slice(startIndex);
 
-        for (const line of dataLines) {
-          const [orderStr, title, weightStr, repsStr, notes] = line.split('|');
-          
-          if (!title?.trim()) continue; // Skip empty titles
-
-          const exerciseData: InsertExercise = {
-            name: title.trim(),
-            category,
-            weight: parseFloat(weightStr) || 0,
-            reps: parseInt(repsStr) || 0,
-            notes: notes?.trim() || "",
-            order: parseInt(orderStr) || 0,
-          };
-
-          await apiRequest("POST", "/api/exercises", exerciseData);
+        if (dataLines.length === 0) {
+          toast({
+            title: "Error",
+            description: "No data rows found in file.",
+            variant: "destructive",
+          });
+          return;
         }
 
-        queryClient.invalidateQueries({ queryKey: ["/api/exercises", category] });
-        
+        // Show loading toast
         toast({
-          title: "Workout imported!",
-          description: `Successfully imported ${dataLines.length} exercises.`,
+          title: "Importing...",
+          description: `Processing ${dataLines.length} exercises.`,
         });
+
+        let successCount = 0;
+        let errorCount = 0;
+        const errors: string[] = [];
+
+        // Process imports with better error handling
+        for (const [index, line] of dataLines.entries()) {
+          try {
+            const parts = line.split('|');
+            if (parts.length < 5) {
+              errors.push(`Line ${index + 1}: Invalid format (expected 5 columns)`);
+              errorCount++;
+              continue;
+            }
+
+            const [orderStr, title, weightStr, repsStr, notes] = parts;
+            
+            if (!title?.trim()) {
+              errors.push(`Line ${index + 1}: Missing exercise title`);
+              errorCount++;
+              continue;
+            }
+
+            const exerciseData: InsertExercise = {
+              name: title.trim(),
+              category,
+              weight: parseFloat(weightStr) || 0,
+              reps: parseInt(repsStr) || 0,
+              notes: notes?.trim() || "",
+              order: parseInt(orderStr) || 0,
+            };
+
+            await apiRequest("POST", "/api/exercises", exerciseData);
+            successCount++;
+          } catch (error) {
+            console.error(`Error importing line ${index + 1}:`, error);
+            errors.push(`Line ${index + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            errorCount++;
+          }
+        }
+
+        // Refresh the exercises list
+        await queryClient.invalidateQueries({ queryKey: ["/api/exercises", category] });
+        
+        // Show results
+        if (successCount > 0 && errorCount === 0) {
+          toast({
+            title: "Import successful!",
+            description: `Successfully imported ${successCount} exercises.`,
+          });
+        } else if (successCount > 0 && errorCount > 0) {
+          toast({
+            title: "Partial import",
+            description: `Imported ${successCount} exercises. ${errorCount} failed.`,
+            variant: "destructive",
+          });
+          console.log("Import errors:", errors);
+        } else {
+          toast({
+            title: "Import failed",
+            description: errorCount > 0 ? `All ${errorCount} exercises failed to import.` : "No exercises were imported.",
+            variant: "destructive",
+          });
+          console.log("Import errors:", errors);
+        }
 
       } catch (error) {
         console.error('Import error:', error);
         toast({
           title: "Import failed",
-          description: "Please check the file format and try again.",
+          description: error instanceof Error ? error.message : "Please check the file format and try again.",
           variant: "destructive",
         });
       }
