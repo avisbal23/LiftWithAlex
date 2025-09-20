@@ -1,5 +1,5 @@
-import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress, type DailyWorkoutStatus, type InsertDailyWorkoutStatus, type UpdateDailyWorkoutStatus, type ChangesAudit, type InsertChangesAudit, type UpdateChangesAudit, type PRChangesAudit, type InsertPRChangesAudit } from "@shared/schema";
-import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress, dailyWorkoutStatus, changesAudit, prChangesAudit } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress, type DailyWorkoutStatus, type InsertDailyWorkoutStatus, type UpdateDailyWorkoutStatus, type WorkoutNotes, type InsertWorkoutNotes, type UpdateWorkoutNotes, type ChangesAudit, type InsertChangesAudit, type UpdateChangesAudit, type PRChangesAudit, type InsertPRChangesAudit } from "@shared/schema";
+import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress, dailyWorkoutStatus, workoutNotes, changesAudit, prChangesAudit } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc, sql } from "drizzle-orm";
@@ -78,6 +78,10 @@ export interface IStorage {
   getDailyWorkoutStatus(category: string, date: Date): Promise<DailyWorkoutStatus | undefined>;
   setDailyWorkoutStatus(category: string, date: Date, isCompleted: boolean): Promise<DailyWorkoutStatus>;
   resetAllDailyWorkoutStatus(): Promise<void>;
+
+  // Workout notes tracking
+  getWorkoutNotes(category: string, date: Date): Promise<WorkoutNotes | undefined>;
+  saveWorkoutNotes(category: string, date: Date, notes: string): Promise<WorkoutNotes>;
   getTodaysPSTDate(): Date;
   
   // Changes audit tracking
@@ -930,6 +934,26 @@ export class MemStorage implements IStorage {
     // Not implemented for in-memory storage
   }
 
+  // Workout notes methods (stubs for MemStorage)
+  async getWorkoutNotes(category: string, date: Date): Promise<WorkoutNotes | undefined> {
+    return undefined; // Not implemented for in-memory storage
+  }
+
+  async saveWorkoutNotes(category: string, date: Date, notes: string): Promise<WorkoutNotes> {
+    const id = randomUUID();
+    const now = new Date();
+    const workoutNote: WorkoutNotes = {
+      id,
+      category,
+      date,
+      notes,
+      createdAt: now,
+      updatedAt: now,
+    };
+    // Note: MemStorage doesn't persist this data
+    return workoutNote;
+  }
+
   getTodaysPSTDate(): Date {
     const now = new Date();
     const pstTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
@@ -1725,6 +1749,48 @@ export class DatabaseStorage implements IStorage {
 
   async resetAllDailyWorkoutStatus(): Promise<void> {
     await db.delete(dailyWorkoutStatus);
+  }
+
+  // Workout notes tracking methods
+  async getWorkoutNotes(category: string, date: Date): Promise<WorkoutNotes | undefined> {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    const [result] = await db.select()
+      .from(workoutNotes)
+      .where(and(
+        eq(workoutNotes.category, category),
+        gte(workoutNotes.date, startOfDay),
+        lte(workoutNotes.date, endOfDay)
+      ));
+    
+    return result;
+  }
+
+  async saveWorkoutNotes(category: string, date: Date, notes: string): Promise<WorkoutNotes> {
+    const existing = await this.getWorkoutNotes(category, date);
+    
+    if (existing) {
+      const [updated] = await db.update(workoutNotes)
+        .set({
+          notes,
+          updatedAt: new Date()
+        })
+        .where(eq(workoutNotes.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(workoutNotes)
+        .values({
+          category,
+          date,
+          notes
+        })
+        .returning();
+      return created;
+    }
   }
 
   getTodaysPSTDate(): Date {
