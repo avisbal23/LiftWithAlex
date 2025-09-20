@@ -274,11 +274,11 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
 
   // Toggle exercise card collapse and auto-save
   const toggleExerciseCollapse = (exerciseId: string) => {
-    const isCurrentlyCollapsed = collapsedExercises[exerciseId];
+    const isCurrentlyOpen = collapsedExercises[exerciseId] || false;
     const editState = exerciseEditStates[exerciseId];
     
-    // If collapsing and has pending changes, save them
-    if (!isCurrentlyCollapsed && editState) {
+    // If closing and has pending changes, save them
+    if (isCurrentlyOpen && editState) {
       const exercise = exercises.find(e => e.id === exerciseId);
       if (exercise) {
         const hasWeightChange = editState.weight !== String(exercise.weight || 0);
@@ -295,7 +295,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
         }
       }
       
-      // Clear edit state when collapsing
+      // Clear edit state when closing
       setExerciseEditStates(prev => {
         const newState = { ...prev };
         delete newState[exerciseId];
@@ -303,8 +303,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
       });
     }
     
-    // If expanding, initialize edit state
-    if (isCurrentlyCollapsed) {
+    // If opening, initialize edit state
+    if (!isCurrentlyOpen) {
       const exercise = exercises.find(e => e.id === exerciseId);
       if (exercise) {
         setExerciseEditStates(prev => ({
@@ -320,7 +320,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
     
     setCollapsedExercises(prev => ({
       ...prev,
-      [exerciseId]: !isCurrentlyCollapsed
+      [exerciseId]: !isCurrentlyOpen
     }));
   };
 
@@ -939,7 +939,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                         />
                       </td>
                       <td className="px-3 py-2">
-                        <Collapsible open={!collapsedExercises[exercise.id]} onOpenChange={() => toggleExerciseCollapse(exercise.id)}>
+                        <Collapsible open={collapsedExercises[exercise.id] || false} onOpenChange={() => toggleExerciseCollapse(exercise.id)}>
                           <CollapsibleTrigger asChild>
                             <Button
                               variant="ghost"
@@ -948,13 +948,13 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               data-testid={`button-view-notes-${exercise.id}`}
                             >
                               {collapsedExercises[exercise.id] ? (
-                                <ChevronDown className="w-4 h-4" />
-                              ) : (
                                 <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
                               )}
                             </Button>
                           </CollapsibleTrigger>
-                          <CollapsibleContent className="absolute top-full left-0 right-0 z-50 bg-background border rounded-lg shadow-lg p-4 mt-1">
+                          <CollapsibleContent className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-background border rounded-lg shadow-lg p-4 w-96 max-w-[90vw]">
                             <div className="space-y-3">
                               <div className="flex items-center justify-between mb-3">
                                 <span className="text-lg font-semibold">{exercise.name}</span>
@@ -1162,7 +1162,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                       </div>
                       
                       <div className="flex items-center space-x-1 ml-2">
-                        <Collapsible open={!collapsedExercises[exercise.id]} onOpenChange={() => toggleExerciseCollapse(exercise.id)}>
+                        <Collapsible open={collapsedExercises[exercise.id] || false} onOpenChange={() => toggleExerciseCollapse(exercise.id)}>
                           <CollapsibleTrigger asChild>
                             <Button
                               variant="ghost"
@@ -1171,13 +1171,13 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               data-testid={`button-view-notes-mobile-${exercise.id}`}
                             >
                               {collapsedExercises[exercise.id] ? (
-                                <ChevronDown className="w-4 h-4" />
-                              ) : (
                                 <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
                               )}
                             </Button>
                           </CollapsibleTrigger>
-                          <CollapsibleContent className="absolute top-full left-0 right-0 z-50 bg-background border rounded-lg shadow-lg p-4 mt-1 max-w-[95vw] mx-4">
+                          <CollapsibleContent className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-background border rounded-lg shadow-lg p-4 w-96 max-w-[90vw]">
                             <div className="space-y-3">
                             <Card>
                               <CardHeader>
