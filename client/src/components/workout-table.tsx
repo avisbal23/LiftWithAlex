@@ -472,8 +472,27 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
         // Show loading toast
         toast({
           title: "Importing...",
-          description: `Processing ${dataLines.length} exercises from ${file.name}.`,
+          description: `Clearing existing workouts and importing ${dataLines.length} exercises from ${file.name}.`,
         });
+
+        // First, delete all existing exercises in this category
+        try {
+          const existingExercises = await queryClient.fetchQuery({
+            queryKey: ["/api/exercises", category],
+          }) as Exercise[];
+
+          for (const exercise of existingExercises) {
+            await apiRequest("DELETE", `/api/exercises/${exercise.id}`);
+          }
+        } catch (error) {
+          console.error('Error clearing existing exercises:', error);
+          toast({
+            title: "Import failed",
+            description: "Could not clear existing workouts. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
 
         let successCount = 0;
         let errorCount = 0;
