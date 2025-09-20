@@ -954,7 +954,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               )}
                             </Button>
                           </CollapsibleTrigger>
-                          <CollapsibleContent className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-background border rounded-lg shadow-lg p-4 w-96 max-w-[90vw]">
+                          <CollapsibleContent className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-background border rounded-lg shadow-lg p-6 w-[500px] max-w-[95vw] max-h-[80vh] overflow-y-auto">
                             <div className="space-y-3">
                               <div className="flex items-center justify-between mb-3">
                                 <span className="text-lg font-semibold">{exercise.name}</span>
@@ -1177,7 +1177,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               )}
                             </Button>
                           </CollapsibleTrigger>
-                          <CollapsibleContent className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-background border rounded-lg shadow-lg p-4 w-96 max-w-[90vw]">
+                          <CollapsibleContent className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-background border rounded-lg shadow-lg p-6 w-[500px] max-w-[95vw] max-h-[80vh] overflow-y-auto">
                             <div className="space-y-3">
                             <Card>
                               <CardHeader>
