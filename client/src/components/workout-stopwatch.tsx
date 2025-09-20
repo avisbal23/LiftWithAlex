@@ -124,12 +124,6 @@ export default function WorkoutStopwatch() {
               <div className="flex items-center gap-2">
                 <Timer className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 <CardTitle className="text-lg">Workout Timer</CardTitle>
-                {isRunning && (
-                  <Badge variant="default" className="bg-green-600 hover:bg-green-700">
-                    <Clock className="w-3 h-3 mr-1" />
-                    Running
-                  </Badge>
-                )}
               </div>
               <div className="flex items-center gap-3">
                 <span className="font-mono text-xl font-bold text-blue-600 dark:text-blue-400">
