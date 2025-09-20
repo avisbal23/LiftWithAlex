@@ -900,6 +900,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Workout Notes Routes
+  
+  // Get workout notes for a specific category and date (today)
+  app.get("/api/workout-notes/:category", async (req, res) => {
+    try {
+      const category = req.params.category;
+      if (!["push", "pull", "legs", "push2", "pull2", "legs2", "cardio"].includes(category)) {
+        return res.status(400).json({ message: "Invalid category" });
+      }
+      
+      const today = storage.getTodaysPSTDate();
+      const notes = await storage.getWorkoutNotes(category, today);
+      res.json({ notes: notes?.notes || "" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch workout notes" });
+    }
+  });
+
+  // Save workout notes for a specific category and date (today)
+  app.post("/api/workout-notes/:category", async (req, res) => {
+    try {
+      const category = req.params.category;
+      if (!["push", "pull", "legs", "push2", "pull2", "legs2", "cardio"].includes(category)) {
+        return res.status(400).json({ message: "Invalid category" });
+      }
+      
+      const { notes } = req.body;
+      if (typeof notes !== "string") {
+        return res.status(400).json({ message: "Notes must be a string" });
+      }
+      
+      const today = storage.getTodaysPSTDate();
+      const savedNotes = await storage.saveWorkoutNotes(category, today, notes);
+      res.json({ notes: savedNotes.notes });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to save workout notes" });
+    }
+  });
+
   // Get all changes audit entries
   app.get("/api/changes-audit", async (req, res) => {
     try {
