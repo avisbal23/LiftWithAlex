@@ -27,7 +27,7 @@ interface WorkoutStopwatchProps {
   storageKey?: string;
 }
 
-export default function WorkoutStopwatch({ storageKey = window.location.pathname }: WorkoutStopwatchProps) {
+export default function WorkoutStopwatch({ storageKey = "workout-stopwatch" }: WorkoutStopwatchProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [currentTime, setCurrentTime] = useState(Date.now());
   const animationRef = useRef<number | null>(null);
