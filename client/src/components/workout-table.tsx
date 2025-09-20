@@ -1073,48 +1073,6 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                     const isExpanded = expandedCards.has(exercise.id);
                     const keyMetric = isCardio ? exercise.duration : `${exercise.weight} lbs`;
                     const progress = getExerciseProgress(exercise.id);
-                        </Collapsible>
-                      </td>
-                      <td className="px-3 py-2">
-                        <div className="flex gap-1 items-center">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => deleteExercise(exercise.id)}
-                            disabled={deleteMutation.isPending}
-                            className="text-destructive hover:text-destructive/80 p-1 rounded transition-colors"
-                            data-testid={`button-delete-${exercise.id}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                              </td>
-                            </tr>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </tbody>
-                  )}
-                </Droppable>
-              </table>
-            </div>
-            </div>
-          </DragDropContext>
-
-          {/* Mobile Card View */}
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="mobile-exercises">
-              {(provided) => (
-                <div 
-                  className="md:hidden space-y-4"
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                >
-                  {exercises.map((exercise, index) => {
-                    const isExpanded = expandedCards.has(exercise.id);
-                    const keyMetric = isCardio ? exercise.duration : `${exercise.weight} lbs`;
-                    const progress = getExerciseProgress(exercise.id);
                     const setsCompleted = progress?.setsCompleted || 0;
                     const progressPercentage = getProgressPercentage(exercise.id);
                     const isComplete = setsCompleted >= 3;
