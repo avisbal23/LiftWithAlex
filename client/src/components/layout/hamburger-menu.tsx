@@ -22,7 +22,7 @@ export default function HamburgerMenu() {
 
   const menuItems = [
     { name: "Weight Tracking", path: "/weight", icon: Scale },
-    { name: "Blood Tracking", path: "/blood-tracking", icon: Droplet },
+    { name: "Blood Tracking", path: "/blood", icon: Droplet },
     { name: "Photo Progress", path: "/photo-progress", icon: Camera },
     { name: "Thoughts & Reflections", path: "/thoughts", icon: MessageCircle },
     { name: "Admin", path: "/admin", icon: Settings },
