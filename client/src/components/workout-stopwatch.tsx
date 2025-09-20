@@ -7,8 +7,8 @@ import { Play, Pause, RotateCcw, Clock, ChevronDown, ChevronUp, Timer } from "lu
 
 interface LapTime {
   id: number;
-  time: string;
   lapTime: string;
+  lapTimeMs: number;
 }
 
 export default function WorkoutStopwatch() {
@@ -54,14 +54,24 @@ export default function WorkoutStopwatch() {
     setLastLapTime(0);
   };
 
-  // Add lap
+  // Calculate total time across all laps
+  const getTotalTime = (): number => {
+    return laps.reduce((total, lap) => total + lap.lapTimeMs, 0);
+  };
+
+  // Get current lap time (time since last lap)
+  const getCurrentLapTime = (): number => {
+    return time - lastLapTime;
+  };
+
+  // Add lap - restart timer from zero
   const addLap = () => {
-    if (time > 0) {
-      const lapTime = time - lastLapTime;
+    if (getCurrentLapTime() > 0) {
+      const lapTimeMs = time - lastLapTime;
       const newLap: LapTime = {
         id: laps.length + 1,
-        time: formatTime(time),
-        lapTime: formatTime(lapTime)
+        lapTime: formatTime(lapTimeMs),
+        lapTimeMs: lapTimeMs
       };
       setLaps(prev => [newLap, ...prev]);
       setLastLapTime(time);
@@ -123,7 +133,7 @@ export default function WorkoutStopwatch() {
               </div>
               <div className="flex items-center gap-3">
                 <span className="font-mono text-xl font-bold text-blue-600 dark:text-blue-400">
-                  {formatTime(time)}
+                  {formatTime(getCurrentLapTime())}
                 </span>
                 {isCollapsed ? (
                   <ChevronDown className="w-4 h-4" />
@@ -162,7 +172,7 @@ export default function WorkoutStopwatch() {
                 onClick={addLap}
                 size="sm"
                 variant="outline"
-                disabled={time === 0}
+                disabled={getCurrentLapTime() === 0}
                 data-testid="button-lap"
                 className="backdrop-blur-sm bg-white/50 dark:bg-gray-700/50 border-white/30 dark:border-gray-500/40"
               >
@@ -174,7 +184,7 @@ export default function WorkoutStopwatch() {
                 onClick={resetTimer}
                 size="sm"
                 variant="outline"
-                disabled={time === 0 && laps.length === 0}
+                disabled={getCurrentLapTime() === 0 && laps.length === 0}
                 data-testid="button-reset"
                 className="backdrop-blur-sm bg-white/50 dark:bg-gray-700/50 border-white/30 dark:border-gray-500/40"
               >
@@ -186,7 +196,12 @@ export default function WorkoutStopwatch() {
             {/* Lap Times */}
             {laps.length > 0 && (
               <div className="space-y-2">
-                <h3 className="text-sm font-medium text-muted-foreground">Lap Times</h3>
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-medium text-muted-foreground">Lap Times</h3>
+                  <div className="text-sm font-mono font-medium text-blue-600 dark:text-blue-400">
+                    Total: {formatTime(getTotalTime())}
+                  </div>
+                </div>
                 <div className="max-h-32 overflow-y-auto space-y-1">
                   {laps.map((lap) => (
                     <div
@@ -196,8 +211,7 @@ export default function WorkoutStopwatch() {
                     >
                       <span className="text-sm font-medium">Lap {lap.id}</span>
                       <div className="flex gap-4 text-sm font-mono">
-                        <span className="text-muted-foreground">+{lap.lapTime}</span>
-                        <span className="font-medium">{lap.time}</span>
+                        <span className="font-medium">{lap.lapTime}</span>
                       </div>
                     </div>
                   ))}
