@@ -964,12 +964,6 @@ export default function BloodTracking() {
                       change: previous ? getValueChange(entry.vitaminD25oh, previous.vitaminD25oh) : null
                     },
                     { 
-                      label: "CRP (hs)", 
-                      value: entry.crpHs, 
-                      unit: entry.crpHsUnit,
-                      change: previous ? getValueChange(entry.crpHs, previous.crpHs) : null
-                    },
-                    { 
                       label: "HbA1c", 
                       value: entry.hba1c, 
                       unit: entry.hba1cUnit,
