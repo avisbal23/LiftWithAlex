@@ -104,10 +104,10 @@ export default function WorkoutStopwatch() {
   }, []);
 
   return (
-    <Card className="mb-6 backdrop-blur-sm bg-white/90 dark:bg-gray-900/90 border border-white/30 dark:border-gray-700/50">
+    <Card className="mt-6 mb-6 backdrop-blur-sm bg-white/90 dark:bg-gray-900/90 border border-white/30 dark:border-gray-700/50">
       <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/20 to-transparent dark:from-gray-400/10"></div>
       
-      <Collapsible open={!isCollapsed} onOpenChange={setIsCollapsed}>
+      <Collapsible open={!isCollapsed} onOpenChange={(open) => setIsCollapsed(!open)}>
         <CollapsibleTrigger asChild>
           <CardHeader className="relative z-10 pb-3 cursor-pointer hover:bg-white/50 dark:hover:bg-gray-800/50 transition-colors rounded-t-lg">
             <div className="flex items-center justify-between">
