@@ -2,6 +2,7 @@ import { Moon, Sun, Home, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { NavigationMenu } from "@/components/NavigationMenu";
+import MiniStopwatch from "@/components/mini-stopwatch";
 
 export default function Header() {
   const [isDark, setIsDark] = useState(false);
@@ -50,6 +51,10 @@ export default function Header() {
               </h1>
             </div>
 
+            {/* Center: Mini Stopwatch */}
+            <div className="flex-1 flex justify-center">
+              <MiniStopwatch />
+            </div>
             
             {/* Right: Theme Toggle */}
             <div className="flex items-center space-x-2">
