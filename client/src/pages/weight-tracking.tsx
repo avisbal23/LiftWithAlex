@@ -7,6 +7,7 @@ import { type WeightEntry, type InsertWeightEntry } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
+import WeightAudit from "@/components/weight-audit";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -744,6 +745,9 @@ export default function WeightTracking() {
             </TabsContent>
           </Card>
         </Tabs>
+
+        {/* Weight Change History */}
+        <WeightAudit />
 
         {/* Import Help Accordion */}
         <Card className="bg-gradient-to-br from-orange-50/50 to-amber-50/50 dark:from-orange-950/20 dark:to-amber-950/20 border-orange-200/30 dark:border-orange-800/30">
