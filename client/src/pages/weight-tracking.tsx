@@ -28,7 +28,7 @@ export default function WeightTracking() {
   const queryClient = useQueryClient();
   
   // State for chart controls
-  const [dateRange, setDateRange] = useState("30");
+  const [dateRange, setDateRange] = useState("90");
   const [showWeight, setShowWeight] = useState(true);
   const [showBodyFat, setShowBodyFat] = useState(false);
   const [showMuscleMass, setShowMuscleMass] = useState(false);
