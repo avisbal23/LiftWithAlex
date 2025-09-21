@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Timer } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 interface LapTime {
   id: number;
@@ -44,26 +45,65 @@ export default function MiniStopwatch({ storageKey = "workout-stopwatch" }: Mini
     autoResetDaily: true
   });
 
-  // Load state from localStorage
-  const loadState = (): StopwatchState => {
-    try {
-      const saved = localStorage.getItem(`stopwatch-${storageKey}`);
-      if (!saved) return getDefaultState();
+  // Load timer state from database
+  const { data: timerData } = useQuery({
+    queryKey: ["/api/timers", storageKey],
+    retry: false,
+    refetchInterval: 1000, // Refresh every second for live updates
+    queryFn: async () => {
+      try {
+        const response = await fetch(`/api/timers/${storageKey}`, { credentials: "include" });
+        if (response.status === 404) {
+          return null; // Timer doesn't exist yet
+        }
+        if (!response.ok) {
+          throw new Error(`${response.status}: ${response.statusText}`);
+        }
+        return await response.json();
+      } catch (error: any) {
+        if (error?.message?.includes('404')) {
+          return null; // Timer doesn't exist yet
+        }
+        throw error;
+      }
+    }
+  });
 
-      const state: StopwatchState = JSON.parse(saved);
-      
+  // Convert database response to local state format
+  const loadStateFromAPI = (): StopwatchState => {
+    if (!timerData) return getDefaultState();
+
+    try {
       // Check if we need to reset daily
-      if (state.autoResetDaily && state.dateKey !== getTodayKey()) {
+      if (timerData.autoResetDaily && timerData.dateKey !== getTodayKey()) {
         return getDefaultState();
       }
 
-      return state;
+      // Convert database lap times to local format
+      const laps: LapTime[] = (timerData.lapTimes || []).map((dbLap: any) => ({
+        id: dbLap.lapId,
+        lapTime: dbLap.lapTime,
+        lapTimeMs: dbLap.lapTimeMs,
+        startedAtMs: dbLap.startedAtMs,
+      }));
+
+      return {
+        isRunning: timerData.isRunning === 1,
+        sessionStartEpochMs: timerData.sessionStartEpochMs || 0,
+        lapStartEpochMs: timerData.lapStartEpochMs || 0,
+        elapsedBeforeStartMs: timerData.elapsedBeforeStartMs || 0,
+        lapElapsedBeforeStartMs: timerData.lapElapsedBeforeStartMs || 0,
+        laps,
+        dateKey: timerData.dateKey || getTodayKey(),
+        autoResetDaily: timerData.autoResetDaily === 1,
+      };
     } catch (error) {
+      console.warn('Failed to parse timer data:', error);
       return getDefaultState();
     }
   };
 
-  const [state, setState] = useState<StopwatchState>(loadState());
+  const state = loadStateFromAPI();
 
   // Format time display (compact version)
   const formatTime = (timeInMs: number): string => {
@@ -113,33 +153,6 @@ export default function MiniStopwatch({ storageKey = "workout-stopwatch" }: Mini
       }
     };
   }, [state.isRunning]);
-
-  // Listen for storage events (cross-tab sync) and periodically refresh state
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === `stopwatch-${storageKey}` && e.newValue) {
-        try {
-          const newState: StopwatchState = JSON.parse(e.newValue);
-          setState(newState);
-        } catch (error) {
-          // Ignore parse errors
-        }
-      }
-    };
-
-    // Periodically sync with localStorage (for same-tab updates)
-    const syncInterval = setInterval(() => {
-      const freshState = loadState();
-      setState(freshState);
-    }, 500); // Check every 500ms
-
-    window.addEventListener('storage', handleStorageChange);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(syncInterval);
-    };
-  }, [storageKey]);
 
   const totalTime = getTotalTime();
   const isRunning = state.isRunning;
