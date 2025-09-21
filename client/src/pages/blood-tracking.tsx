@@ -706,16 +706,30 @@ export default function BloodTracking() {
         )}
 
         {/* KPI Statistics Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+          <Card className="bg-gradient-to-br from-purple-50/50 to-violet-50/50 dark:from-purple-950/20 dark:to-violet-950/20 border-purple-200/30 dark:border-purple-800/30">
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Activity className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                <span className="text-sm font-medium text-purple-600 dark:text-purple-400">TSH</span>
+              </div>
+              <div className="text-2xl font-bold text-purple-700 dark:text-purple-300" data-testid="kpi-tsh">
+                {bloodEntries.length > 0 && bloodEntries[0]?.tsh 
+                  ? `${bloodEntries[0]?.tsh} ${bloodEntries[0]?.tshUnit}` 
+                  : "N/A"}
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="bg-gradient-to-br from-red-50/50 to-rose-50/50 dark:from-red-950/20 dark:to-rose-950/20 border-red-200/30 dark:border-red-800/30">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <TrendingUp className="w-5 h-5 text-red-600 dark:text-red-400" />
-                <span className="text-sm font-medium text-red-600 dark:text-red-400">Total Testosterone</span>
+                <span className="text-sm font-medium text-red-600 dark:text-red-400">LDL</span>
               </div>
-              <div className="text-2xl font-bold text-red-700 dark:text-red-300" data-testid="kpi-testosterone">
-                {bloodEntries.length > 0 && bloodEntries[0]?.totalTestosterone 
-                  ? `${bloodEntries[0]?.totalTestosterone} ${bloodEntries[0]?.totalTestosteroneUnit}` 
+              <div className="text-2xl font-bold text-red-700 dark:text-red-300" data-testid="kpi-ldl">
+                {bloodEntries.length > 0 && bloodEntries[0]?.ldlCalc 
+                  ? `${bloodEntries[0]?.ldlCalc} ${bloodEntries[0]?.ldlCalcUnit}` 
                   : "N/A"}
               </div>
             </CardContent>
@@ -724,39 +738,55 @@ export default function BloodTracking() {
           <Card className="bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200/30 dark:border-blue-800/30">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <Activity className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Free Testosterone</span>
+                <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <span className="text-sm font-medium text-blue-600 dark:text-blue-400">SHBG</span>
               </div>
-              <div className="text-2xl font-bold text-blue-700 dark:text-blue-300" data-testid="kpi-free-testosterone">
-                {bloodEntries.length > 0 && bloodEntries[0]?.freeTestosterone 
-                  ? `${bloodEntries[0]?.freeTestosterone} ${bloodEntries[0]?.freeTestosteroneUnit}` 
+              <div className="text-2xl font-bold text-blue-700 dark:text-blue-300" data-testid="kpi-shbg">
+                {bloodEntries.length > 0 && bloodEntries[0]?.shbg 
+                  ? `${bloodEntries[0]?.shbg} ${bloodEntries[0]?.shbgUnit}` 
                   : "N/A"}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-yellow-50/50 to-amber-50/50 dark:from-yellow-950/20 dark:to-amber-950/20 border-yellow-200/30 dark:border-yellow-800/30">
+          <Card className="bg-gradient-to-br from-green-50/50 to-emerald-50/50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200/30 dark:border-green-800/30">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <Target className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                <BarChart className="w-5 h-5 text-green-600 dark:text-green-400" />
+                <span className="text-sm font-medium text-green-600 dark:text-green-400">HBA1c</span>
+              </div>
+              <div className="text-2xl font-bold text-green-700 dark:text-green-300" data-testid="kpi-hba1c">
+                {bloodEntries.length > 0 && bloodEntries[0]?.hba1c 
+                  ? `${bloodEntries[0]?.hba1c} ${bloodEntries[0]?.hba1cUnit}` 
+                  : "N/A"}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-orange-50/50 to-amber-50/50 dark:from-orange-950/20 dark:to-amber-950/20 border-orange-200/30 dark:border-orange-800/30">
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <TrendingDown className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                <span className="text-sm font-medium text-orange-600 dark:text-orange-400">ApoB</span>
+              </div>
+              <div className="text-2xl font-bold text-orange-700 dark:text-orange-300" data-testid="kpi-apob">
+                {bloodEntries.length > 0 && bloodEntries[0]?.apob 
+                  ? `${bloodEntries[0]?.apob} ${bloodEntries[0]?.apobUnit}` 
+                  : "N/A"}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-yellow-50/50 to-lime-50/50 dark:from-yellow-950/20 dark:to-lime-950/20 border-yellow-200/30 dark:border-yellow-800/30">
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <CheckCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
                 <span className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Vitamin D</span>
               </div>
               <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-300" data-testid="kpi-vitamin-d">
                 {bloodEntries.length > 0 && bloodEntries[0]?.vitaminD25oh 
                   ? `${bloodEntries[0]?.vitaminD25oh} ${bloodEntries[0]?.vitaminD25ohUnit}` 
                   : "N/A"}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-emerald-50/50 to-green-50/50 dark:from-emerald-950/20 dark:to-green-950/20 border-emerald-200/30 dark:border-emerald-800/30">
-            <CardContent className="p-4 text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <BarChart className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Total Entries</span>
-              </div>
-              <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300" data-testid="kpi-total-entries">
-                {bloodEntries.length}
               </div>
             </CardContent>
           </Card>
