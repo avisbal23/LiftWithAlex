@@ -1668,16 +1668,226 @@ export default function BloodTracking() {
                   </TabsList>
                   
                   <TabsContent value="manual" className="space-y-4 mt-6">
-                    <div className="text-center py-8">
-                      <div className="text-2xl mb-2">📝</div>
-                      <p className="text-muted-foreground">Manual input form coming soon...</p>
-                    </div>
+                    <Form {...manualForm}>
+                      <form onSubmit={manualForm.handleSubmit(onManualFormSubmit)} className="space-y-6">
+                        {/* Date and Source */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg">
+                          <FormField
+                            control={manualForm.control}
+                            name="asOf"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Lab Date *</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="date"
+                                    value={field.value ? field.value.toISOString().split('T')[0] : ''}
+                                    onChange={(e) => field.onChange(new Date(e.target.value))}
+                                    data-testid="input-lab-date-empty"
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={manualForm.control}
+                            name="source"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Source *</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger data-testid="select-source-empty">
+                                      <SelectValue placeholder="Select source" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="manual_entry">Manual Entry</SelectItem>
+                                    <SelectItem value="labcorp_pdf">LabCorp PDF</SelectItem>
+                                    <SelectItem value="quest_pdf">Quest PDF</SelectItem>
+                                    <SelectItem value="user_screenshots">User Screenshots</SelectItem>
+                                    <SelectItem value="other">Other</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        {/* Categorized Lab Values - same as main dialog but with condensed form */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-4">
+                            <h3 className="font-medium">Key Markers</h3>
+                            <FormField
+                              control={manualForm.control}
+                              name="tsh"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>TSH</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      placeholder="3.0 uIU/mL"
+                                      {...field}
+                                      value={field.value ?? ''}
+                                      data-testid="input-tsh-empty"
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={manualForm.control}
+                              name="ldlCalc"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>LDL Cholesterol</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      step="0.1"
+                                      placeholder="120 mg/dL"
+                                      {...field}
+                                      value={field.value ?? ''}
+                                      data-testid="input-ldl-empty"
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={manualForm.control}
+                              name="shbg"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>SHBG</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      step="0.1"
+                                      placeholder="27.4 nmol/L"
+                                      {...field}
+                                      value={field.value ?? ''}
+                                      data-testid="input-shbg-empty"
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          <div className="space-y-4">
+                            <h3 className="font-medium">Additional Markers</h3>
+                            <FormField
+                              control={manualForm.control}
+                              name="hba1c"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>HBA1c</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      step="0.1"
+                                      placeholder="5.4 %"
+                                      {...field}
+                                      value={field.value ?? ''}
+                                      data-testid="input-hba1c-empty"
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={manualForm.control}
+                              name="apob"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>ApoB</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      step="0.1"
+                                      placeholder="95 mg/dL"
+                                      {...field}
+                                      value={field.value ?? ''}
+                                      data-testid="input-apob-empty"
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={manualForm.control}
+                              name="vitaminD25oh"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Vitamin D</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      step="0.1"
+                                      placeholder="45 ng/mL"
+                                      {...field}
+                                      value={field.value ?? ''}
+                                      data-testid="input-vitamin-d-empty"
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
+
+                        <Button 
+                          type="submit" 
+                          className="w-full" 
+                          disabled={manualFormMutation.isPending}
+                          data-testid="button-submit-manual-form-empty"
+                        >
+                          {manualFormMutation.isPending ? "Adding..." : "Add Blood Lab Entry"}
+                        </Button>
+                      </form>
+                    </Form>
                   </TabsContent>
                   
                   <TabsContent value="template" className="space-y-4 mt-6">
-                    <div className="text-center py-8">
-                      <div className="text-2xl mb-2">📊</div>
-                      <p className="text-muted-foreground">Template import coming soon...</p>
+                    <div className="space-y-4">
+                      <div className="border rounded-lg p-4">
+                        <h3 className="font-medium mb-2">Download Template</h3>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Download the CSV template and fill it with your lab data.
+                        </p>
+                        <Button 
+                          onClick={generateCsvTemplate} 
+                          variant="outline"
+                          size="sm"
+                          data-testid="button-download-template-empty"
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download Template
+                        </Button>
+                      </div>
+
+                      <div className="border rounded-lg p-4">
+                        <h3 className="font-medium mb-2">Upload Template</h3>
+                        <div className="space-y-3">
+                          <Input
+                            type="file"
+                            accept=".csv"
+                            onChange={(e) => setTemplateFile(e.target.files?.[0] || null)}
+                            data-testid="input-template-file-empty"
+                          />
+                          <Button
+                            onClick={() => templateFile && processTemplateFile(templateFile)}
+                            disabled={!templateFile || isProcessingTemplate}
+                            className="w-full"
+                            size="sm"
+                            data-testid="button-process-template-empty"
+                          >
+                            {isProcessingTemplate ? "Processing..." : "Import Lab Results"}
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </TabsContent>
                   
