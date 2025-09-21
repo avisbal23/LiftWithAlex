@@ -330,6 +330,12 @@ export const updateWeightEntrySchema = insertWeightEntrySchema.partial();
 export const insertBloodEntrySchema = createInsertSchema(bloodEntries).omit({
   id: true,
   createdAt: true,
+}).extend({
+  // Allow string dates and Date objects to be coerced properly
+  asOf: z.union([
+    z.string().transform((str) => new Date(str)),
+    z.date()
+  ]).transform((date) => date instanceof Date ? date : new Date(date)),
 });
 
 export const updateBloodEntrySchema = insertBloodEntrySchema.partial();

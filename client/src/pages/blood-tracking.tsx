@@ -1066,8 +1066,14 @@ export default function BloodTracking() {
                                 <FormControl>
                                   <Input
                                     type="date"
-                                    value={field.value ? field.value.toISOString().split('T')[0] : ''}
-                                    onChange={(e) => field.onChange(new Date(e.target.value))}
+                                    value={field.value && field.value instanceof Date && !isNaN(field.value.getTime()) 
+                                      ? field.value.toISOString().split('T')[0] 
+                                      : ''
+                                    }
+                                    onChange={(e) => {
+                                      const date = e.target.value ? new Date(e.target.value) : undefined;
+                                      field.onChange(date);
+                                    }}
                                     data-testid="input-lab-date"
                                   />
                                 </FormControl>
@@ -1681,8 +1687,14 @@ export default function BloodTracking() {
                                 <FormControl>
                                   <Input
                                     type="date"
-                                    value={field.value ? field.value.toISOString().split('T')[0] : ''}
-                                    onChange={(e) => field.onChange(new Date(e.target.value))}
+                                    value={field.value && field.value instanceof Date && !isNaN(field.value.getTime()) 
+                                      ? field.value.toISOString().split('T')[0] 
+                                      : ''
+                                    }
+                                    onChange={(e) => {
+                                      const date = e.target.value ? new Date(e.target.value) : undefined;
+                                      field.onChange(date);
+                                    }}
                                     data-testid="input-lab-date-empty"
                                   />
                                 </FormControl>

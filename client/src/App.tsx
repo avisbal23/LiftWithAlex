@@ -43,6 +43,7 @@ function Router() {
         <Route path="/cardio" component={Cardio} />
         <Route path="/weight" component={WeightTracking} />
         <Route path="/blood" component={BloodTracking} />
+        <Route path="/blood-tracking" component={BloodTracking} />
         <Route path="/photos" component={PhotoProgress} />
         <Route path="/thoughts" component={Thoughts} />
         <Route path="/admin" component={Admin} />
