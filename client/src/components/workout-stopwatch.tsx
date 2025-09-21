@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Play, Pause, RotateCcw, Clock, ChevronDown, ChevronUp, Timer } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 interface LapTime {
   id: number;
@@ -32,6 +34,7 @@ export default function WorkoutStopwatch({ storageKey = "workout-stopwatch" }: W
   const [currentTime, setCurrentTime] = useState(Date.now());
   const animationRef = useRef<number | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const queryClient = useQueryClient();
 
   // Get today's date key for daily reset
   const getTodayKey = (): string => {
@@ -50,36 +53,122 @@ export default function WorkoutStopwatch({ storageKey = "workout-stopwatch" }: W
     autoResetDaily: true
   });
 
-  // Load state from localStorage
-  const loadState = (): StopwatchState => {
-    try {
-      const saved = localStorage.getItem(`stopwatch-${storageKey}`);
-      if (!saved) return getDefaultState();
+  // Load timer state from database
+  const { data: timerData, isLoading: isLoadingTimer } = useQuery({
+    queryKey: ["/api/timers", storageKey],
+    retry: false,
+    queryFn: async () => {
+      try {
+        const response = await fetch(`/api/timers/${storageKey}`, { credentials: "include" });
+        if (response.status === 404) {
+          return null; // Timer doesn't exist yet
+        }
+        if (!response.ok) {
+          throw new Error(`${response.status}: ${response.statusText}`);
+        }
+        return await response.json();
+      } catch (error: any) {
+        if (error?.message?.includes('404')) {
+          return null; // Timer doesn't exist yet
+        }
+        throw error;
+      }
+    }
+  });
 
-      const state: StopwatchState = JSON.parse(saved);
-      
+  // Convert database response to local state format
+  const loadStateFromAPI = (): StopwatchState => {
+    if (!timerData) return getDefaultState();
+
+    try {
       // Check if we need to reset daily
-      if (state.autoResetDaily && state.dateKey !== getTodayKey()) {
+      if (timerData.autoResetDaily && timerData.dateKey !== getTodayKey()) {
         return getDefaultState();
       }
 
-      return state;
+      // Convert database lap times to local format
+      const laps: LapTime[] = (timerData.lapTimes || []).map((dbLap: any) => ({
+        id: dbLap.lapId,
+        lapTime: dbLap.lapTime,
+        lapTimeMs: dbLap.lapTimeMs,
+        startedAtMs: dbLap.startedAtMs,
+      }));
+
+      return {
+        isRunning: timerData.isRunning === 1,
+        sessionStartEpochMs: timerData.sessionStartEpochMs || 0,
+        lapStartEpochMs: timerData.lapStartEpochMs || 0,
+        elapsedBeforeStartMs: timerData.elapsedBeforeStartMs || 0,
+        lapElapsedBeforeStartMs: timerData.lapElapsedBeforeStartMs || 0,
+        laps,
+        dateKey: timerData.dateKey || getTodayKey(),
+        autoResetDaily: timerData.autoResetDaily === 1,
+      };
     } catch (error) {
-      console.warn('Failed to load stopwatch state:', error);
+      console.warn('Failed to parse timer data:', error);
       return getDefaultState();
     }
   };
 
-  const [state, setState] = useState<StopwatchState>(loadState);
+  const [state, setState] = useState<StopwatchState>(getDefaultState);
 
-  // Save state to localStorage
-  const saveStateToStorage = useCallback((newState: StopwatchState) => {
-    try {
-      localStorage.setItem(`stopwatch-${storageKey}`, JSON.stringify(newState));
-    } catch (error) {
-      console.warn('Failed to save stopwatch state:', error);
+  // Update local state when timer data loads from API
+  useEffect(() => {
+    if (!isLoadingTimer) {
+      setState(loadStateFromAPI());
     }
-  }, [storageKey]);
+  }, [timerData, isLoadingTimer, getTodayKey]);
+
+  // Mutation to save timer state to database
+  const saveTimerMutation = useMutation({
+    mutationFn: async (newState: StopwatchState) => {
+      // Convert local state to database format
+      const timerPayload = {
+        storageKey,
+        isRunning: newState.isRunning ? 1 : 0,
+        sessionStartEpochMs: newState.sessionStartEpochMs,
+        lapStartEpochMs: newState.lapStartEpochMs,
+        elapsedBeforeStartMs: newState.elapsedBeforeStartMs,
+        lapElapsedBeforeStartMs: newState.lapElapsedBeforeStartMs,
+        dateKey: newState.dateKey,
+        autoResetDaily: newState.autoResetDaily ? 1 : 0,
+      };
+
+      // Save timer state
+      const response = await apiRequest("PUT", `/api/timers/${storageKey}`, timerPayload);
+      const timer = await response.json();
+
+      // Clear existing lap times and save new ones
+      await apiRequest("DELETE", `/api/timers/${storageKey}/laps`);
+      
+      // Save lap times if any exist
+      if (newState.laps.length > 0) {
+        for (const lap of newState.laps) {
+          const lapPayload = {
+            lapId: lap.id,
+            lapTime: lap.lapTime,
+            lapTimeMs: lap.lapTimeMs,
+            startedAtMs: lap.startedAtMs,
+          };
+          await apiRequest("POST", `/api/timers/${storageKey}/laps`, lapPayload);
+        }
+      }
+
+      return timer;
+    },
+    onSuccess: () => {
+      // Invalidate the timer query to refresh data
+      queryClient.invalidateQueries({ queryKey: ["/api/timers", storageKey] });
+    },
+    onError: (error) => {
+      console.warn('Failed to save timer state:', error);
+    }
+  });
+
+  // Save state to database
+  const saveStateToStorage = useCallback((newState: StopwatchState) => {
+    saveTimerMutation.mutate(newState);
+  }, [saveTimerMutation]);
 
   // Save state (throttled for non-critical updates)
   const saveState = useCallback((newState: StopwatchState, immediate = false) => {
