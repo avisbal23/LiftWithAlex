@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Bar } from "recharts";
-import { Calendar, Upload, Plus, Trash2, Download, X, BarChart, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Target, HelpCircle } from "lucide-react";
+import { Calendar, Upload, Plus, Trash2, Download, X, BarChart, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Target, HelpCircle, FileText } from "lucide-react";
 import { format, subDays, subMonths, parseISO } from "date-fns";
 import { type WeightEntry, type InsertWeightEntry } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -21,6 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export default function WeightTracking() {
   const { toast } = useToast();
@@ -341,25 +342,36 @@ export default function WeightTracking() {
               style={{ display: 'none' }}
               id="weight-file-upload"
             />
-            <Button
-              variant="outline"
-              onClick={() => document.getElementById('weight-file-upload')?.click()}
-              data-testid="button-upload-weight-data"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Import RENPHO
-            </Button>
-
-            {/* Export CSV */}
-            <Button
-              variant="outline"
-              onClick={exportCSV}
-              disabled={weightEntries.length === 0}
-              data-testid="button-export-csv"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
-            </Button>
+            
+            {/* Import/Export Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline"
+                  className="bg-accent/50 border-accent text-accent-foreground hover:bg-accent/80"
+                  data-testid="button-import-export-weight"
+                >
+                  <FileText className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem 
+                  onClick={exportCSV}
+                  disabled={weightEntries.length === 0}
+                  data-testid="menu-export-weight"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => document.getElementById('weight-file-upload')?.click()}
+                  data-testid="menu-import-weight"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Import RENPHO
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Add Entry Dialog */}
             <Dialog>
