@@ -153,16 +153,21 @@ export default function BloodTracking() {
     
     const processedData: any = {};
     Object.entries(entryData).forEach(([key, fieldData]) => {
-      if (numberFields.includes(key)) {
+      // Handle source field differently since it's stored as a string
+      if (key === 'source') {
+        processedData[key] = fieldData || undefined;
+      } else if (numberFields.includes(key)) {
         processedData[key] = fieldData.value ? parseFloat(fieldData.value) : undefined;
       } else {
         processedData[key] = fieldData.value || undefined;
       }
       
-      // Also save unit fields
-      const unitKey = `${key}Unit`;
-      if (fieldData.unit) {
-        processedData[unitKey] = fieldData.unit;
+      // Also save unit fields (skip for source field)
+      if (key !== 'source') {
+        const unitKey = `${key}Unit`;
+        if (fieldData.unit) {
+          processedData[unitKey] = fieldData.unit;
+        }
       }
     });
 
@@ -171,13 +176,21 @@ export default function BloodTracking() {
 
   // Handle field change
   const handleFieldChange = (field: string, value: string, unit?: string) => {
-    setEditingValues(prev => ({
-      ...prev,
-      [field]: {
-        value,
-        unit: unit || prev[field]?.unit || "",
-      }
-    }));
+    // Handle source field differently since it doesn't have units
+    if (field === 'source') {
+      setEditingValues(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    } else {
+      setEditingValues(prev => ({
+        ...prev,
+        [field]: {
+          value,
+          unit: unit || prev[field]?.unit || "",
+        }
+      }));
+    }
   };
 
   // Generate CSV template
@@ -617,6 +630,24 @@ export default function BloodTracking() {
                               <div className="space-y-4">
                                 <div className="space-y-4">
                                   <h3 className="text-lg font-medium mb-4">Lab Values</h3>
+                                  
+                                  {/* Source */}
+                                  <div className="mb-6">
+                                    <label className="text-sm font-medium">Bloodwork Source</label>
+                                    <Select 
+                                      value={editingValues.source || entry.source || ""}
+                                      onValueChange={(value) => handleFieldChange('source', value)}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select bloodwork source" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Rythm Health 🩸">Rythm Health 🩸</SelectItem>
+                                        <SelectItem value="Maximus Tribe 💪🏼">Maximus Tribe 💪🏼</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {/* Total Testosterone */}
                                     <div className="flex gap-2">
