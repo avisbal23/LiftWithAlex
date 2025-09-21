@@ -31,6 +31,15 @@ export default function BloodTracking() {
     queryKey: ["/api/blood-entries"],
   });
 
+  // Helper function to find the latest available reading for a specific marker
+  const getLatestMarkerValue = (fieldName: keyof BloodEntry, unitFieldName: keyof BloodEntry) => {
+    const entry = bloodEntries.find(entry => entry[fieldName] != null);
+    if (entry && entry[fieldName] != null) {
+      return `${entry[fieldName]} ${entry[unitFieldName] || ''}`.trim();
+    }
+    return "N/A";
+  };
+
   const importMutation = useMutation({
     mutationFn: (entry: any) => apiRequest("POST", "/api/blood-entries", entry),
     onSuccess: () => {
@@ -116,7 +125,7 @@ export default function BloodTracking() {
       const status = row.status;
       
       // Map CSV markers to database fields
-      const markerMap: Record<string, { field: string; unitField: string; flagField?: string }> = {
+      const markerMap: Record<string, { field: string; unitField: string | null; flagField?: string }> = {
         "SHBG": { field: "shbg", unitField: "shbgUnit" },
         "Estrogen": { field: "estrogensTotal", unitField: "estrogensTotalUnit" },
         "Ferritin": { field: "ferritin", unitField: "ferritinUnit" },
@@ -714,9 +723,7 @@ export default function BloodTracking() {
                 <span className="text-sm font-medium text-purple-600 dark:text-purple-400">TSH</span>
               </div>
               <div className="text-2xl font-bold text-purple-700 dark:text-purple-300" data-testid="kpi-tsh">
-                {bloodEntries.length > 0 && bloodEntries[0]?.tsh 
-                  ? `${bloodEntries[0]?.tsh} ${bloodEntries[0]?.tshUnit}` 
-                  : "N/A"}
+                {getLatestMarkerValue('tsh', 'tshUnit')}
               </div>
             </CardContent>
           </Card>
@@ -728,9 +735,7 @@ export default function BloodTracking() {
                 <span className="text-sm font-medium text-red-600 dark:text-red-400">LDL</span>
               </div>
               <div className="text-2xl font-bold text-red-700 dark:text-red-300" data-testid="kpi-ldl">
-                {bloodEntries.length > 0 && bloodEntries[0]?.ldlCalc 
-                  ? `${bloodEntries[0]?.ldlCalc} ${bloodEntries[0]?.ldlCalcUnit}` 
-                  : "N/A"}
+                {getLatestMarkerValue('ldlCalc', 'ldlCalcUnit')}
               </div>
             </CardContent>
           </Card>
@@ -742,9 +747,7 @@ export default function BloodTracking() {
                 <span className="text-sm font-medium text-blue-600 dark:text-blue-400">SHBG</span>
               </div>
               <div className="text-2xl font-bold text-blue-700 dark:text-blue-300" data-testid="kpi-shbg">
-                {bloodEntries.length > 0 && bloodEntries[0]?.shbg 
-                  ? `${bloodEntries[0]?.shbg} ${bloodEntries[0]?.shbgUnit}` 
-                  : "N/A"}
+                {getLatestMarkerValue('shbg', 'shbgUnit')}
               </div>
             </CardContent>
           </Card>
@@ -756,9 +759,7 @@ export default function BloodTracking() {
                 <span className="text-sm font-medium text-green-600 dark:text-green-400">HBA1c</span>
               </div>
               <div className="text-2xl font-bold text-green-700 dark:text-green-300" data-testid="kpi-hba1c">
-                {bloodEntries.length > 0 && bloodEntries[0]?.hba1c 
-                  ? `${bloodEntries[0]?.hba1c} ${bloodEntries[0]?.hba1cUnit}` 
-                  : "N/A"}
+                {getLatestMarkerValue('hba1c', 'hba1cUnit')}
               </div>
             </CardContent>
           </Card>
@@ -770,9 +771,7 @@ export default function BloodTracking() {
                 <span className="text-sm font-medium text-orange-600 dark:text-orange-400">ApoB</span>
               </div>
               <div className="text-2xl font-bold text-orange-700 dark:text-orange-300" data-testid="kpi-apob">
-                {bloodEntries.length > 0 && bloodEntries[0]?.apob 
-                  ? `${bloodEntries[0]?.apob} ${bloodEntries[0]?.apobUnit}` 
-                  : "N/A"}
+                {getLatestMarkerValue('apob', 'apobUnit')}
               </div>
             </CardContent>
           </Card>
@@ -784,9 +783,7 @@ export default function BloodTracking() {
                 <span className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Vitamin D</span>
               </div>
               <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-300" data-testid="kpi-vitamin-d">
-                {bloodEntries.length > 0 && bloodEntries[0]?.vitaminD25oh 
-                  ? `${bloodEntries[0]?.vitaminD25oh} ${bloodEntries[0]?.vitaminD25ohUnit}` 
-                  : "N/A"}
+                {getLatestMarkerValue('vitaminD25oh', 'vitaminD25ohUnit')}
               </div>
             </CardContent>
           </Card>
