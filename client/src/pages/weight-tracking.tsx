@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Bar } from "recharts";
-import { Calendar, Upload, Plus, Trash2, Download, X } from "lucide-react";
+import { Calendar, Upload, Plus, Trash2, Download, X, BarChart, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Target } from "lucide-react";
 import { format, subDays, subMonths, parseISO } from "date-fns";
 import { type WeightEntry, type InsertWeightEntry } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -41,6 +42,9 @@ export default function WeightTracking() {
   
   // State for dismissible callout
   const [showCallout, setShowCallout] = useState(true);
+  
+  // State for chart controls collapsible
+  const [chartControlsOpen, setChartControlsOpen] = useState(false);
 
   // Fetch weight entries
   const { data: weightEntries = [], isLoading } = useQuery<WeightEntry[]>({
@@ -415,115 +419,146 @@ export default function WeightTracking() {
           </div>
         </div>
 
-        {/* Interactive Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {/* Date Range Control */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Date Range</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Select value={dateRange} onValueChange={setDateRange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select range" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="30">30 Days</SelectItem>
-                  <SelectItem value="90">90 Days</SelectItem>
-                  <SelectItem value="180">6 Months</SelectItem>
-                  <SelectItem value="365">1 Year</SelectItem>
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
-
-          {/* Display Options */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Chart Display</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="show-weight" 
-                  checked={showWeight} 
-                  onCheckedChange={(checked) => setShowWeight(!!checked)} 
-                />
-                <Label htmlFor="show-weight" className="text-sm">Weight</Label>
+        {/* KPI Statistics Row */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <Card className="bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200/30 dark:border-blue-800/30">
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Current Weight</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="show-bodyfat" 
-                  checked={showBodyFat} 
-                  onCheckedChange={(checked) => setShowBodyFat(!!checked)} 
-                />
-                <Label htmlFor="show-bodyfat" className="text-sm">Body Fat %</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="show-muscle" 
-                  checked={showMuscleMass} 
-                  onCheckedChange={(checked) => setShowMuscleMass(!!checked)} 
-                />
-                <Label htmlFor="show-muscle" className="text-sm">Muscle Mass</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="show-bmi" 
-                  checked={showBMI} 
-                  onCheckedChange={(checked) => setShowBMI(!!checked)} 
-                />
-                <Label htmlFor="show-bmi" className="text-sm">BMI</Label>
+              <div className="text-2xl font-bold text-blue-700 dark:text-blue-300" data-testid="kpi-current-weight">
+                {filteredData.length > 0 ? `${filteredData[filteredData.length - 1]?.weight} lbs` : "N/A"}
               </div>
             </CardContent>
           </Card>
 
-          {/* Stats */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Current Stats</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {filteredData.length > 0 && (
-                <>
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">Weight:</span> {filteredData[filteredData.length - 1]?.weight} lbs
-                  </div>
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">Body Fat:</span> {filteredData[filteredData.length - 1]?.bodyFat || "N/A"}%
-                  </div>
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">Change:</span> {
-                      filteredData.length > 1 
-                        ? `${((filteredData[filteredData.length - 1]?.weight || 0) - (filteredData[0]?.weight || 0)).toFixed(1)} lbs`
-                        : "N/A"
-                    }
-                  </div>
-                </>
-              )}
+          <Card className="bg-gradient-to-br from-emerald-50/50 to-green-50/50 dark:from-emerald-950/20 dark:to-green-950/20 border-emerald-200/30 dark:border-emerald-800/30">
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Target className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Body Fat</span>
+              </div>
+              <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300" data-testid="kpi-body-fat">
+                {filteredData.length > 0 && filteredData[filteredData.length - 1]?.bodyFat 
+                  ? `${filteredData[filteredData.length - 1]?.bodyFat}%` 
+                  : "N/A"}
+              </div>
             </CardContent>
           </Card>
 
-          {/* Recent Entries Count */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Data Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="text-sm">
-                <span className="text-muted-foreground">Total Entries:</span> {weightEntries.length}
+          <Card className="bg-gradient-to-br from-purple-50/50 to-violet-50/50 dark:from-purple-950/20 dark:to-violet-950/20 border-purple-200/30 dark:border-purple-800/30">
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <TrendingDown className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                <span className="text-sm font-medium text-purple-600 dark:text-purple-400">Weight Change</span>
               </div>
-              <div className="text-sm">
-                <span className="text-muted-foreground">In Range:</span> {filteredData.length}
+              <div className="text-2xl font-bold text-purple-700 dark:text-purple-300" data-testid="kpi-weight-change">
+                {filteredData.length > 1 
+                  ? `${((filteredData[filteredData.length - 1]?.weight || 0) - (filteredData[0]?.weight || 0)).toFixed(1)} lbs`
+                  : "N/A"}
               </div>
-              {filteredData.length > 0 && (
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Latest:</span> {format(new Date(filteredData[filteredData.length - 1]?.fullDate), "MMM dd")}
-                </div>
-              )}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-amber-50/50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200/30 dark:border-amber-800/30">
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <BarChart className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                <span className="text-sm font-medium text-amber-600 dark:text-amber-400">Total Entries</span>
+              </div>
+              <div className="text-2xl font-bold text-amber-700 dark:text-amber-300" data-testid="kpi-total-entries">
+                {weightEntries.length}
+              </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Chart Controls - Collapsible */}
+        <Card className="mb-6 bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-950/20 dark:to-gray-950/20 border-slate-200/30 dark:border-slate-800/30">
+          <Collapsible open={chartControlsOpen} onOpenChange={setChartControlsOpen}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-950/30 transition-colors">
+                <CardTitle className="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                  <div className="flex items-center gap-2">
+                    <BarChart className="w-5 h-5" />
+                    Chart Controls
+                  </div>
+                  {chartControlsOpen ? (
+                    <ChevronUp className="w-4 h-4" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4" />
+                  )}
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            
+            <CollapsibleContent>
+              <CardContent className="pt-0">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Date Range Control */}
+                  <div>
+                    <Label className="text-sm font-medium mb-3 block text-slate-600 dark:text-slate-400">Date Range</Label>
+                    <Select value={dateRange} onValueChange={setDateRange}>
+                      <SelectTrigger data-testid="select-date-range">
+                        <SelectValue placeholder="Select range" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="30">30 Days</SelectItem>
+                        <SelectItem value="90">90 Days</SelectItem>
+                        <SelectItem value="180">6 Months</SelectItem>
+                        <SelectItem value="365">1 Year</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Display Options */}
+                  <div>
+                    <Label className="text-sm font-medium mb-3 block text-slate-600 dark:text-slate-400">Chart Display</Label>
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="show-weight" 
+                          checked={showWeight} 
+                          onCheckedChange={(checked) => setShowWeight(!!checked)} 
+                          data-testid="checkbox-show-weight"
+                        />
+                        <Label htmlFor="show-weight" className="text-sm">Weight</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="show-bodyfat" 
+                          checked={showBodyFat} 
+                          onCheckedChange={(checked) => setShowBodyFat(!!checked)} 
+                          data-testid="checkbox-show-bodyfat"
+                        />
+                        <Label htmlFor="show-bodyfat" className="text-sm">Body Fat %</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="show-muscle" 
+                          checked={showMuscleMass} 
+                          onCheckedChange={(checked) => setShowMuscleMass(!!checked)} 
+                          data-testid="checkbox-show-muscle"
+                        />
+                        <Label htmlFor="show-muscle" className="text-sm">Muscle Mass</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="show-bmi" 
+                          checked={showBMI} 
+                          onCheckedChange={(checked) => setShowBMI(!!checked)} 
+                          data-testid="checkbox-show-bmi"
+                        />
+                        <Label htmlFor="show-bmi" className="text-sm">BMI</Label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
 
         {/* Interactive Chart */}
         {filteredData.length > 0 ? (
