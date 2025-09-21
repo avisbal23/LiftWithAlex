@@ -29,7 +29,7 @@ export default function WeightTracking() {
   // State for chart controls
   const [dateRange, setDateRange] = useState("30");
   const [showWeight, setShowWeight] = useState(true);
-  const [showBodyFat, setShowBodyFat] = useState(true);
+  const [showBodyFat, setShowBodyFat] = useState(false);
   const [showMuscleMass, setShowMuscleMass] = useState(false);
   const [showBMI, setShowBMI] = useState(false);
   
@@ -112,6 +112,35 @@ export default function WeightTracking() {
       }))
       .sort((a, b) => new Date(a.fullDate).getTime() - new Date(b.fullDate).getTime());
   }, [weightEntries, dateRange]);
+
+  // Calculate dynamic Y-axis domains
+  const chartDomains = useMemo(() => {
+    if (filteredData.length === 0) return { weight: [0, 100], percent: [0, 100] };
+
+    const weightValues: number[] = [];
+    const percentValues: number[] = [];
+
+    filteredData.forEach(entry => {
+      if (showWeight && entry.weight) weightValues.push(entry.weight);
+      if (showMuscleMass && entry.muscleMass) weightValues.push(entry.muscleMass);
+      if (showBodyFat && entry.bodyFat) percentValues.push(entry.bodyFat);
+      if (showBMI && entry.bmi) percentValues.push(entry.bmi);
+    });
+
+    const calculateDomain = (values: number[]) => {
+      if (values.length === 0) return [0, 100];
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const range = max - min;
+      const padding = Math.max(range * 0.1, 1); // 10% padding or minimum 1
+      return [Math.max(0, min - padding), max + padding];
+    };
+
+    return {
+      weight: calculateDomain(weightValues),
+      percent: calculateDomain(percentValues)
+    };
+  }, [filteredData, showWeight, showBodyFat, showMuscleMass, showBMI]);
 
   const handleAddEntry = () => {
     if (!newEntry.weight || !newEntry.date) {
@@ -614,8 +643,18 @@ export default function WeightTracking() {
                     <ComposedChart data={filteredData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="date" />
-                      <YAxis yAxisId="weight" orientation="left" />
-                      <YAxis yAxisId="percent" orientation="right" />
+                      <YAxis 
+                        yAxisId="weight" 
+                        orientation="left" 
+                        domain={chartDomains.weight}
+                        tickFormatter={(value) => value.toFixed(0)}
+                      />
+                      <YAxis 
+                        yAxisId="percent" 
+                        orientation="right" 
+                        domain={chartDomains.percent}
+                        tickFormatter={(value) => value.toFixed(1)}
+                      />
                       <Tooltip 
                         labelFormatter={(label) => `Date: ${label}`}
                         formatter={(value, name) => [
