@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import path from "path";
 import fs from "fs";
-import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema, insertExerciseTemplateSchema, updateExerciseTemplateSchema, insertChangesAuditSchema, updateChangesAuditSchema, insertPRChangesAuditSchema, insertWeightAuditSchema, updateWeightAuditSchema } from "@shared/schema";
+import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema, insertExerciseTemplateSchema, updateExerciseTemplateSchema, insertChangesAuditSchema, updateChangesAuditSchema, insertPRChangesAuditSchema, insertWeightAuditSchema, updateWeightAuditSchema, insertWorkoutTimerSchema, updateWorkoutTimerSchema, insertTimerLapTimeSchema, updateTimerLapTimeSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1154,6 +1154,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(template);
     } catch (error) {
       res.status(500).json({ message: "Failed to get or create exercise template" });
+    }
+  });
+
+  // Timer Management Routes
+  
+  // Get timer state by storage key
+  app.get("/api/timers/:storageKey", async (req, res) => {
+    try {
+      const storageKey = req.params.storageKey;
+      const timer = await storage.getWorkoutTimer(storageKey);
+      
+      if (!timer) {
+        return res.status(404).json({ message: "Timer not found" });
+      }
+      
+      // Get associated lap times
+      const lapTimes = await storage.getTimerLapTimes(timer.id);
+      
+      res.json({ ...timer, lapTimes });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch timer" });
+    }
+  });
+
+  // Create or update timer state
+  app.put("/api/timers/:storageKey", async (req, res) => {
+    try {
+      const storageKey = req.params.storageKey;
+      const validatedData = insertWorkoutTimerSchema.parse({
+        ...req.body,
+        storageKey
+      });
+      
+      const timer = await storage.createOrUpdateWorkoutTimer(validatedData);
+      res.json(timer);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to save timer state" });
+      }
+    }
+  });
+
+  // Delete timer
+  app.delete("/api/timers/:storageKey", async (req, res) => {
+    try {
+      const storageKey = req.params.storageKey;
+      const deleted = await storage.deleteWorkoutTimer(storageKey);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Timer not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete timer" });
+    }
+  });
+
+  // Get lap times for a timer
+  app.get("/api/timers/:storageKey/laps", async (req, res) => {
+    try {
+      const storageKey = req.params.storageKey;
+      const timer = await storage.getWorkoutTimer(storageKey);
+      
+      if (!timer) {
+        return res.status(404).json({ message: "Timer not found" });
+      }
+      
+      const lapTimes = await storage.getTimerLapTimes(timer.id);
+      res.json(lapTimes);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch lap times" });
+    }
+  });
+
+  // Add a new lap time
+  app.post("/api/timers/:storageKey/laps", async (req, res) => {
+    try {
+      const storageKey = req.params.storageKey;
+      const timer = await storage.getWorkoutTimer(storageKey);
+      
+      if (!timer) {
+        return res.status(404).json({ message: "Timer not found" });
+      }
+      
+      const validatedData = insertTimerLapTimeSchema.parse({
+        ...req.body,
+        timerId: timer.id
+      });
+      
+      const lapTime = await storage.createTimerLapTime(validatedData);
+      res.status(201).json(lapTime);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create lap time" });
+      }
+    }
+  });
+
+  // Clear all lap times for a timer
+  app.delete("/api/timers/:storageKey/laps", async (req, res) => {
+    try {
+      const storageKey = req.params.storageKey;
+      const timer = await storage.getWorkoutTimer(storageKey);
+      
+      if (!timer) {
+        return res.status(404).json({ message: "Timer not found" });
+      }
+      
+      await storage.clearTimerLapTimes(timer.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to clear lap times" });
     }
   });
 

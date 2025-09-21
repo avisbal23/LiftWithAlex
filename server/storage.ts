@@ -1,5 +1,5 @@
-import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress, type DailyWorkoutStatus, type InsertDailyWorkoutStatus, type UpdateDailyWorkoutStatus, type WorkoutNotes, type InsertWorkoutNotes, type UpdateWorkoutNotes, type ExerciseTemplate, type InsertExerciseTemplate, type UpdateExerciseTemplate, type ChangesAudit, type InsertChangesAudit, type UpdateChangesAudit, type PRChangesAudit, type InsertPRChangesAudit, type WeightAudit, type InsertWeightAudit, type UpdateWeightAudit } from "@shared/schema";
-import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress, dailyWorkoutStatus, workoutNotes, exerciseTemplates, changesAudit, prChangesAudit, weightAudit } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress, type DailyWorkoutStatus, type InsertDailyWorkoutStatus, type UpdateDailyWorkoutStatus, type WorkoutNotes, type InsertWorkoutNotes, type UpdateWorkoutNotes, type ExerciseTemplate, type InsertExerciseTemplate, type UpdateExerciseTemplate, type ChangesAudit, type InsertChangesAudit, type UpdateChangesAudit, type PRChangesAudit, type InsertPRChangesAudit, type WeightAudit, type InsertWeightAudit, type UpdateWeightAudit, type WorkoutTimer, type InsertWorkoutTimer, type UpdateWorkoutTimer, type TimerLapTime, type InsertTimerLapTime, type UpdateTimerLapTime } from "@shared/schema";
+import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress, dailyWorkoutStatus, workoutNotes, exerciseTemplates, changesAudit, prChangesAudit, weightAudit, workoutTimers, timerLapTimes } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc, sql } from "drizzle-orm";
@@ -105,6 +105,16 @@ export interface IStorage {
   getAllWeightAudit(): Promise<WeightAudit[]>;
   createWeightAudit(entry: InsertWeightAudit): Promise<WeightAudit>;
   deleteWeightAudit(id: string): Promise<boolean>;
+  
+  // Workout Timers - persistent timer state management
+  getWorkoutTimer(storageKey: string): Promise<WorkoutTimer | undefined>;
+  createOrUpdateWorkoutTimer(entry: InsertWorkoutTimer): Promise<WorkoutTimer>;
+  deleteWorkoutTimer(storageKey: string): Promise<boolean>;
+  
+  // Timer Lap Times - individual lap records
+  getTimerLapTimes(timerId: string): Promise<TimerLapTime[]>;
+  createTimerLapTime(entry: InsertTimerLapTime): Promise<TimerLapTime>;
+  clearTimerLapTimes(timerId: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -124,6 +134,8 @@ export class MemStorage implements IStorage {
   private changesAudit: Map<string, ChangesAudit>;
   private prChangesAudit: Map<string, PRChangesAudit>;
   private weightAudit: Map<string, WeightAudit>;
+  private workoutTimers: Map<string, WorkoutTimer>; // keyed by storageKey
+  private timerLapTimes: Map<string, TimerLapTime>; // keyed by id
 
   constructor() {
     this.users = new Map();
@@ -142,6 +154,8 @@ export class MemStorage implements IStorage {
     this.changesAudit = new Map();
     this.prChangesAudit = new Map();
     this.weightAudit = new Map();
+    this.workoutTimers = new Map();
+    this.timerLapTimes = new Map();
     
     // Add some initial sample data
     this.seedData();
@@ -2034,6 +2048,77 @@ export class DatabaseStorage implements IStorage {
       
       throw error; // Re-throw if it's not a uniqueness issue
     }
+  }
+  
+  // Workout Timers - persistent timer state management
+  async getWorkoutTimer(storageKey: string): Promise<WorkoutTimer | undefined> {
+    const [result] = await db.select()
+      .from(workoutTimers)
+      .where(eq(workoutTimers.storageKey, storageKey))
+      .limit(1);
+    return result;
+  }
+  
+  async createOrUpdateWorkoutTimer(entry: InsertWorkoutTimer): Promise<WorkoutTimer> {
+    const existing = await this.getWorkoutTimer(entry.storageKey);
+    
+    if (existing) {
+      // Update existing timer
+      const [updated] = await db.update(workoutTimers)
+        .set({
+          ...entry,
+          updatedAt: new Date(),
+        })
+        .where(eq(workoutTimers.storageKey, entry.storageKey))
+        .returning();
+      return updated;
+    } else {
+      // Create new timer
+      const [created] = await db.insert(workoutTimers)
+        .values({
+          ...entry,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
+      return created;
+    }
+  }
+  
+  async deleteWorkoutTimer(storageKey: string): Promise<boolean> {
+    const timer = await this.getWorkoutTimer(storageKey);
+    if (!timer) return false;
+    
+    // Delete all associated lap times first
+    await this.clearTimerLapTimes(timer.id);
+    
+    const result = await db.delete(workoutTimers)
+      .where(eq(workoutTimers.storageKey, storageKey));
+    
+    return result.rowCount > 0;
+  }
+  
+  // Timer Lap Times - individual lap records
+  async getTimerLapTimes(timerId: string): Promise<TimerLapTime[]> {
+    return await db.select()
+      .from(timerLapTimes)
+      .where(eq(timerLapTimes.timerId, timerId))
+      .orderBy(asc(timerLapTimes.lapId));
+  }
+  
+  async createTimerLapTime(entry: InsertTimerLapTime): Promise<TimerLapTime> {
+    const [created] = await db.insert(timerLapTimes)
+      .values({
+        ...entry,
+        createdAt: new Date(),
+      })
+      .returning();
+    return created;
+  }
+  
+  async clearTimerLapTimes(timerId: string): Promise<void> {
+    await db.delete(timerLapTimes)
+      .where(eq(timerLapTimes.timerId, timerId));
   }
 }
 
