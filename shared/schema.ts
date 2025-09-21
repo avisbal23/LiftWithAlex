@@ -270,6 +270,29 @@ export const prChangesAudit = pgTable("pr_changes_audit", {
   changedAt: timestamp("changed_at").defaultNow(),
 });
 
+// Weight Audit - for tracking changes to weight entries
+export const weightAudit = pgTable("weight_audit", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  weightEntryId: varchar("weight_entry_id"), // references weightEntries(id), null for deletions
+  action: text("action").notNull(), // 'create', 'update', 'delete', 'import'
+  source: text("source").notNull(), // 'manual', 'renpho_csv'
+  previousWeight: real("previous_weight"), // previous weight value
+  newWeight: real("new_weight"), // new weight value
+  weightDelta: real("weight_delta"), // absolute change in weight (new - previous)
+  weightPercentageChange: real("weight_percentage_change"), // percentage change
+  previousBodyFat: real("previous_body_fat"), // previous body fat %
+  newBodyFat: real("new_body_fat"), // new body fat %
+  bodyFatDelta: real("body_fat_delta"), // absolute change in body fat
+  previousMuscleMass: real("previous_muscle_mass"), // previous muscle mass
+  newMuscleMass: real("new_muscle_mass"), // new muscle mass
+  muscleMassDelta: real("muscle_mass_delta"), // absolute change in muscle mass
+  previousBMI: real("previous_bmi"), // previous BMI
+  newBMI: real("new_bmi"), // new BMI
+  bmiDelta: real("bmi_delta"), // absolute change in BMI
+  remarks: text("remarks"), // optional notes about the change
+  changedAt: timestamp("changed_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -457,6 +480,13 @@ export const insertPRChangesAuditSchema = createInsertSchema(prChangesAudit).omi
 
 export const updatePRChangesAuditSchema = insertPRChangesAuditSchema.partial();
 
+export const insertWeightAuditSchema = createInsertSchema(weightAudit).omit({
+  id: true,
+  changedAt: true,
+});
+
+export const updateWeightAuditSchema = insertWeightAuditSchema.partial();
+
 export type ExerciseTemplate = typeof exerciseTemplates.$inferSelect;
 export type InsertExerciseTemplate = z.infer<typeof insertExerciseTemplateSchema>;
 export type UpdateExerciseTemplate = z.infer<typeof updateExerciseTemplateSchema>;
@@ -466,3 +496,6 @@ export type UpdateChangesAudit = z.infer<typeof updateChangesAuditSchema>;
 export type PRChangesAudit = typeof prChangesAudit.$inferSelect;
 export type InsertPRChangesAudit = z.infer<typeof insertPRChangesAuditSchema>;
 export type UpdatePRChangesAudit = z.infer<typeof updatePRChangesAuditSchema>;
+export type WeightAudit = typeof weightAudit.$inferSelect;
+export type InsertWeightAudit = z.infer<typeof insertWeightAuditSchema>;
+export type UpdateWeightAudit = z.infer<typeof updateWeightAuditSchema>;
