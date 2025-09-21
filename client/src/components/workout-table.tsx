@@ -28,7 +28,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
   const [editingNotes, setEditingNotes] = useState<string>("");
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [collapsedExercises, setCollapsedExercises] = useState<Record<string, boolean>>({});
-  const [exerciseEditStates, setExerciseEditStates] = useState<Record<string, { weight: string; reps: string; notes: string }>>({});
+  const [exerciseEditStates, setExerciseEditStates] = useState<Record<string, { name: string; weight: string; reps: string; notes: string }>>({});
   const timeoutRefs = useRef<Record<string, NodeJS.Timeout>>({});
   const [editingExercises, setEditingExercises] = useState<Record<string, Partial<Exercise>>>({});
   const [weightInputs, setWeightInputs] = useState<Record<string, string>>({});
@@ -278,12 +278,14 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
     if (isCurrentlyOpen && editState) {
       const exercise = exercises.find(e => e.id === exerciseId);
       if (exercise) {
+        const hasNameChange = editState.name !== exercise.name;
         const hasWeightChange = editState.weight !== String(exercise.weight || 0);
         const hasRepsChange = editState.reps !== String(exercise.reps || 0);
         const hasNotesChange = editState.notes !== (exercise.notes || "");
         
-        if (hasWeightChange || hasRepsChange || hasNotesChange) {
+        if (hasNameChange || hasWeightChange || hasRepsChange || hasNotesChange) {
           const updates: Partial<Exercise> = {};
+          if (hasNameChange) updates.name = editState.name;
           if (hasWeightChange) updates.weight = parseInt(editState.weight) || 0;
           if (hasRepsChange) updates.reps = parseInt(editState.reps) || 0;
           if (hasNotesChange) updates.notes = editState.notes;
@@ -307,6 +309,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
         setExerciseEditStates(prev => ({
           ...prev,
           [exerciseId]: {
+            name: exercise.name,
             weight: String(exercise.weight || 0),
             reps: String(exercise.reps || 0),
             notes: exercise.notes || ""
@@ -322,7 +325,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
   };
 
   // Update edit state for collapsible cards
-  const updateEditState = (exerciseId: string, field: 'weight' | 'reps' | 'notes', value: string) => {
+  const updateEditState = (exerciseId: string, field: 'weight' | 'reps' | 'notes' | 'name', value: string) => {
     setExerciseEditStates(prev => ({
       ...prev,
       [exerciseId]: {
@@ -963,10 +966,19 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[71] w-[min(600px,95vw)] max-h-[85vh] overflow-y-auto rounded-lg border bg-background p-6 shadow-xl">
                                 <div className="space-y-3">
                                   <div className="flex items-center justify-between mb-3">
-                                    <span className="text-lg font-semibold">{exercise.name}</span>
                                     <Badge variant="secondary" className="capitalize">
                                       {category}
                                     </Badge>
+                                  </div>
+                                  <div className="space-y-2 mb-4">
+                                    <label className="text-sm font-medium text-muted-foreground">Exercise Name</label>
+                                    <Input
+                                      type="text"
+                                      value={exerciseEditStates[exercise.id]?.name || exercise.name}
+                                      onChange={(e) => updateEditState(exercise.id, "name", e.target.value)}
+                                      className="text-lg font-bold text-primary"
+                                      data-testid={`input-name-detail-${exercise.id}`}
+                                    />
                                   </div>
                                   <div className="grid grid-cols-2 gap-4 mb-4">
                                     <div className="space-y-2">
@@ -1200,8 +1212,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                   <div className="text-sm font-medium text-muted-foreground">Exercise Name</div>
                                   <Input
                                     type="text"
-                                    value={exercise.name}
-                                    onChange={(e) => updateExercise(exercise.id, "name", e.target.value)}
+                                    value={exerciseEditStates[exercise.id]?.name || exercise.name}
+                                    onChange={(e) => updateEditState(exercise.id, "name", e.target.value)}
                                     className="text-xl font-bold text-primary border border-input"
                                     data-testid={`input-name-detail-mobile-${exercise.id}`}
                                   />
