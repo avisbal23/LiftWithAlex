@@ -23,6 +23,10 @@ export default function Admin() {
   // Edit shortcut state
   const [editingShortcut, setEditingShortcut] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<{ shortcutName: string; routePath: string }>({ shortcutName: "", routePath: "" });
+  
+  // Edit tab state
+  const [editingTab, setEditingTab] = useState<string | null>(null);
+  const [editTabValues, setEditTabValues] = useState<{ tabName: string; routePath: string }>({ tabName: "", routePath: "" });
 
   const { data: exercises = [] } = useQuery<Exercise[]>({
     queryKey: ["/api/exercises"],
@@ -88,6 +92,29 @@ export default function Admin() {
     },
   });
 
+  const editTabMutation = useMutation({
+    mutationFn: async ({ tabKey, tabName, routePath }: { tabKey: string; tabName: string; routePath: string }) => {
+      return apiRequest("PATCH", `/api/tab-settings/${tabKey}`, { tabName, routePath });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tab-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tab-settings/visible"] });
+      setEditingTab(null);
+      setEditTabValues({ tabName: "", routePath: "" });
+      toast({
+        title: "Tab Updated",
+        description: "Tab details saved successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update tab details",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleShortcutToggle = (shortcutKey: string, isVisible: boolean) => {
     updateShortcutMutation.mutate({ shortcutKey, isVisible });
   };
@@ -99,10 +126,23 @@ export default function Admin() {
 
   const handleSaveShortcut = () => {
     if (editingShortcut) {
+      // Validate before saving
+      const trimmedName = editValues.shortcutName.trim();
+      const trimmedPath = editValues.routePath.trim();
+      
+      if (!trimmedName || !trimmedPath || !trimmedPath.startsWith('/')) {
+        toast({
+          title: "Validation Error",
+          description: "Shortcut name is required and route path must start with '/'",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       editShortcutMutation.mutate({
         shortcutKey: editingShortcut,
-        shortcutName: editValues.shortcutName,
-        routePath: editValues.routePath
+        shortcutName: trimmedName,
+        routePath: trimmedPath
       });
     }
   };
@@ -110,6 +150,44 @@ export default function Admin() {
   const handleCancelEdit = () => {
     setEditingShortcut(null);
     setEditValues({ shortcutName: "", routePath: "" });
+  };
+
+  const handleEditTab = (tab: TabSettings) => {
+    // Prevent editing locked tabs
+    const isHomeTab = tab.tabKey === 'home';
+    const isAdminTab = tab.tabKey === 'admin';
+    if (isHomeTab || isAdminTab) return;
+    
+    setEditingTab(tab.tabKey);
+    setEditTabValues({ tabName: tab.tabName, routePath: tab.routePath });
+  };
+
+  const handleSaveTab = () => {
+    if (editingTab) {
+      // Validate before saving
+      const trimmedName = editTabValues.tabName.trim();
+      const trimmedPath = editTabValues.routePath.trim();
+      
+      if (!trimmedName || !trimmedPath || !trimmedPath.startsWith('/')) {
+        toast({
+          title: "Validation Error",
+          description: "Tab name is required and route path must start with '/'",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      editTabMutation.mutate({
+        tabKey: editingTab,
+        tabName: trimmedName,
+        routePath: trimmedPath
+      });
+    }
+  };
+
+  const handleCancelTabEdit = () => {
+    setEditingTab(null);
+    setEditTabValues({ tabName: "", routePath: "" });
   };
 
   const updateTabMutation = useMutation({
@@ -825,7 +903,7 @@ export default function Admin() {
                           <div className="flex gap-2">
                             <Button
                               onClick={handleSaveShortcut}
-                              disabled={editShortcutMutation.isPending || !editValues.shortcutName.trim() || !editValues.routePath.trim()}
+                              disabled={editShortcutMutation.isPending || !editValues.shortcutName.trim() || !editValues.routePath.trim() || !editValues.routePath.startsWith('/')}
                               size="sm"
                               className="h-7 text-xs"
                               data-testid={`button-save-shortcut-${shortcut.shortcutKey}`}
@@ -934,7 +1012,7 @@ export default function Admin() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Control which tabs are visible. Toggle any tab on or off to customize your navigation.
+                Control which tabs are visible. Toggle tabs on or off, or click the edit button to modify tab names and paths.
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
                 {tabSettings.map((tab) => {
@@ -942,63 +1020,141 @@ export default function Admin() {
                   const isAdminTab = tab.tabKey === 'admin';
                   const isLockedTab = isHomeTab || isAdminTab;
                   const isDisabled = updateTabMutation.isPending || isLockedTab;
+                  const isEditing = editingTab === tab.tabKey;
                   
-                  return (
-                    <button
-                    key={tab.tabKey}
-                    onClick={() => !isLockedTab && handleTabToggle(tab.tabKey, tab.isVisible !== 1)}
-                    disabled={isDisabled}
-                    className={`
-                      relative p-1 sm:p-1.5 rounded-lg transition-all duration-300 group aspect-square
-                      backdrop-blur-lg border shadow-2xl
-                      ${tab.isVisible === 1
-                        ? 'bg-green-100/20 dark:bg-green-950/20 border-green-300/30 dark:border-green-700/40 text-green-700 dark:text-green-300 shadow-green-400/20' 
-                        : 'bg-red-100/20 dark:bg-red-950/20 border-red-300/30 dark:border-red-700/40 text-red-700 dark:text-red-300 shadow-red-400/20'
-                      }
-                      ${!isLockedTab ? 'cursor-pointer hover:-translate-y-1 hover:scale-105 hover:shadow-3xl' : 'cursor-not-allowed'}
-                      disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0
-                      ${isLockedTab ? 'opacity-75' : ''}
-                    `}
-                    data-testid={`button-tab-${tab.tabKey}`}
-                  >
-                    {/* Status indicator circle */}
-                    <div className={`
-                      absolute top-1 right-1 w-2 h-2 rounded-full border transition-colors
-                      ${tab.isVisible === 1
-                        ? 'bg-green-500 border-green-600 shadow-green-400/50' 
-                        : 'bg-red-500 border-red-600 shadow-red-400/50'
-                      }
-                      shadow-lg
-                    `} />
-                    
-                    {/* Main content */}
-                    <div className="text-left space-y-0.5">
-                      <h3 className="font-semibold text-xs">{tab.tabName}</h3>
-                      <p className="text-[10px] opacity-70">{tab.routePath}</p>
-                      <div className="flex items-center gap-1 text-[9px] font-medium">
-                        <div className={`
-                          w-1 h-1 rounded-full
-                          ${tab.isVisible === 1 ? 'bg-green-500' : 'bg-red-500'}
-                        `} />
-                        {tab.isVisible === 1 ? 'ON' : 'OFF'}
-                        {isLockedTab && (
-                          <span className="flex items-center gap-0.5 text-[8px] text-muted-foreground/70 ml-0.5">
-                            <Lock className="w-2 h-2" />
-                            🔒
-                          </span>
-                        )}
+                  if (isEditing) {
+                    // Edit mode - show form instead of button
+                    return (
+                      <div
+                        key={tab.tabKey}
+                        className="col-span-2 p-3 rounded-lg border bg-card text-card-foreground shadow-sm"
+                      >
+                        <div className="space-y-3">
+                          <div>
+                            <Label htmlFor={`edit-tab-name-${tab.tabKey}`} className="text-xs">
+                              Tab Name
+                            </Label>
+                            <Input
+                              id={`edit-tab-name-${tab.tabKey}`}
+                              value={editTabValues.tabName}
+                              onChange={(e) => setEditTabValues(prev => ({ ...prev, tabName: e.target.value }))}
+                              className="h-8 text-xs"
+                              data-testid={`input-tab-name-${tab.tabKey}`}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`edit-tab-path-${tab.tabKey}`} className="text-xs">
+                              Route Path
+                            </Label>
+                            <Input
+                              id={`edit-tab-path-${tab.tabKey}`}
+                              value={editTabValues.routePath}
+                              onChange={(e) => setEditTabValues(prev => ({ ...prev, routePath: e.target.value }))}
+                              className="h-8 text-xs"
+                              placeholder="/example"
+                              data-testid={`input-tab-route-path-${tab.tabKey}`}
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={handleSaveTab}
+                              disabled={editTabMutation.isPending || !editTabValues.tabName.trim() || !editTabValues.routePath.trim() || !editTabValues.routePath.startsWith('/')}
+                              size="sm"
+                              className="h-7 text-xs"
+                              data-testid={`button-save-tab-${tab.tabKey}`}
+                            >
+                              <Save className="w-3 h-3 mr-1" />
+                              Save
+                            </Button>
+                            <Button
+                              onClick={handleCancelTabEdit}
+                              disabled={editTabMutation.isPending}
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs"
+                              data-testid={`button-cancel-tab-${tab.tabKey}`}
+                            >
+                              <X className="w-3 h-3 mr-1" />
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
                       </div>
+                    );
+                  }
+                  
+                  // Normal mode - show tab button
+                  return (
+                    <div key={tab.tabKey} className="relative">
+                      <button
+                        onClick={() => !isLockedTab && handleTabToggle(tab.tabKey, tab.isVisible !== 1)}
+                        disabled={isDisabled}
+                        className={`
+                          w-full relative p-1 sm:p-1.5 rounded-lg transition-all duration-300 group aspect-square
+                          backdrop-blur-lg border shadow-2xl
+                          ${tab.isVisible === 1
+                            ? 'bg-green-100/20 dark:bg-green-950/20 border-green-300/30 dark:border-green-700/40 text-green-700 dark:text-green-300 shadow-green-400/20' 
+                            : 'bg-red-100/20 dark:bg-red-950/20 border-red-300/30 dark:border-red-700/40 text-red-700 dark:text-red-300 shadow-red-400/20'
+                          }
+                          ${!isLockedTab ? 'cursor-pointer hover:-translate-y-1 hover:scale-105 hover:shadow-3xl' : 'cursor-not-allowed'}
+                          disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0
+                          ${isLockedTab ? 'opacity-75' : ''}
+                        `}
+                        data-testid={`button-tab-${tab.tabKey}`}
+                      >
+                        {/* Status indicator circle */}
+                        <div className={`
+                          absolute top-1 right-1 w-2 h-2 rounded-full border transition-colors
+                          ${tab.isVisible === 1
+                            ? 'bg-green-500 border-green-600 shadow-green-400/50' 
+                            : 'bg-red-500 border-red-600 shadow-red-400/50'
+                          }
+                          shadow-lg
+                        `} />
+                        
+                        {/* Main content */}
+                        <div className="text-left space-y-0.5">
+                          <h3 className="font-semibold text-xs">{tab.tabName}</h3>
+                          <p className="text-[10px] opacity-70">{tab.routePath}</p>
+                          <div className="flex items-center gap-1 text-[9px] font-medium">
+                            <div className={`
+                              w-1 h-1 rounded-full
+                              ${tab.isVisible === 1 ? 'bg-green-500' : 'bg-red-500'}
+                            `} />
+                            {tab.isVisible === 1 ? 'ON' : 'OFF'}
+                            {isLockedTab && (
+                              <span className="flex items-center gap-0.5 text-[8px] text-muted-foreground/70 ml-0.5">
+                                <Lock className="w-2 h-2" />
+                                🔒
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* 3D Glass Effect */}
+                        <div className="absolute inset-0 bg-gradient-to-b from-white/15 to-black/5 dark:from-gray-300/15 dark:to-gray-700/5 rounded-lg"></div>
+                        
+                        {/* Inner Glass Highlight */}
+                        <div className="absolute inset-0.5 bg-gradient-to-b from-white/20 to-transparent dark:from-gray-300/20 rounded-lg opacity-50"></div>
+                        
+                        {/* Hover effect overlay */}
+                        <div className="absolute inset-0 bg-white/10 dark:bg-black/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </button>
+                      
+                      {/* Edit button - only show for non-locked tabs */}
+                      {!isLockedTab && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditTab(tab);
+                          }}
+                          className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center transition-colors z-10"
+                          data-testid={`button-edit-tab-${tab.tabKey}`}
+                        >
+                          <Edit3 className="w-2.5 h-2.5" />
+                        </button>
+                      )}
                     </div>
-                    
-                    {/* 3D Glass Effect */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/15 to-black/5 dark:from-gray-300/15 dark:to-gray-700/5 rounded-lg"></div>
-                    
-                    {/* Inner Glass Highlight */}
-                    <div className="absolute inset-0.5 bg-gradient-to-b from-white/20 to-transparent dark:from-gray-300/20 rounded-lg opacity-50"></div>
-                    
-                    {/* Hover effect overlay */}
-                    <div className="absolute inset-0 bg-white/10 dark:bg-black/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </button>
                   );
                 })}
               </div>
