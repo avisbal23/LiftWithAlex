@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Droplets, Plus, TrendingUp, TrendingDown, Calendar, Upload, Download, AlertTriangle, CheckCircle, FileText, RotateCcw, X, Edit3, Save, ChevronDown, ChevronUp } from "lucide-react";
+import { Droplets, Plus, TrendingUp, TrendingDown, Calendar, Upload, Download, AlertTriangle, CheckCircle, FileText, RotateCcw, X, Edit3, Save, ChevronDown, ChevronUp, Target, Activity, BarChart } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { type BloodEntry } from "@shared/schema";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
@@ -704,6 +704,63 @@ export default function BloodTracking() {
             </div>
           </div>
         )}
+
+        {/* KPI Statistics Row */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <Card className="bg-gradient-to-br from-red-50/50 to-rose-50/50 dark:from-red-950/20 dark:to-rose-950/20 border-red-200/30 dark:border-red-800/30">
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <TrendingUp className="w-5 h-5 text-red-600 dark:text-red-400" />
+                <span className="text-sm font-medium text-red-600 dark:text-red-400">Total Testosterone</span>
+              </div>
+              <div className="text-2xl font-bold text-red-700 dark:text-red-300" data-testid="kpi-testosterone">
+                {bloodEntries.length > 0 && bloodEntries[0]?.totalTestosterone 
+                  ? `${bloodEntries[0]?.totalTestosterone} ${bloodEntries[0]?.totalTestosteroneUnit}` 
+                  : "N/A"}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200/30 dark:border-blue-800/30">
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Activity className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Cholesterol</span>
+              </div>
+              <div className="text-2xl font-bold text-blue-700 dark:text-blue-300" data-testid="kpi-cholesterol">
+                {bloodEntries.length > 0 && bloodEntries[0]?.cholesterolTotal 
+                  ? `${bloodEntries[0]?.cholesterolTotal} ${bloodEntries[0]?.cholesterolTotalUnit}` 
+                  : "N/A"}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-yellow-50/50 to-amber-50/50 dark:from-yellow-950/20 dark:to-amber-950/20 border-yellow-200/30 dark:border-yellow-800/30">
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Target className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                <span className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Vitamin D</span>
+              </div>
+              <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-300" data-testid="kpi-vitamin-d">
+                {bloodEntries.length > 0 && bloodEntries[0]?.vitaminD25oh 
+                  ? `${bloodEntries[0]?.vitaminD25oh} ${bloodEntries[0]?.vitaminD25ohUnit}` 
+                  : "N/A"}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-emerald-50/50 to-green-50/50 dark:from-emerald-950/20 dark:to-green-950/20 border-emerald-200/30 dark:border-emerald-800/30">
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <BarChart className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Total Entries</span>
+              </div>
+              <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300" data-testid="kpi-total-entries">
+                {bloodEntries.length}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         <div className="flex items-center justify-between mb-8">
           <div></div>
