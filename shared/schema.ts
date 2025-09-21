@@ -293,6 +293,32 @@ export const weightAudit = pgTable("weight_audit", {
   changedAt: timestamp("changed_at").defaultNow(),
 });
 
+// Workout Timers - persistent timer state that survives restarts
+export const workoutTimers = pgTable("workout_timers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  storageKey: text("storage_key").notNull(), // 'workout-stopwatch', 'mini-stopwatch', etc.
+  isRunning: integer("is_running").default(0), // 1 for running, 0 for stopped
+  sessionStartEpochMs: integer("session_start_epoch_ms").default(0), // When current session started
+  lapStartEpochMs: integer("lap_start_epoch_ms").default(0), // When current lap started
+  elapsedBeforeStartMs: integer("elapsed_before_start_ms").default(0), // Total elapsed before current session
+  lapElapsedBeforeStartMs: integer("lap_elapsed_before_start_ms").default(0), // Lap elapsed before current session
+  dateKey: text("date_key").notNull(), // Date string for daily reset (e.g., "Mon Sep 21 2025")
+  autoResetDaily: integer("auto_reset_daily").default(1), // 1 for auto reset daily, 0 for persistent
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Timer Lap Times - individual lap records for each timer
+export const timerLapTimes = pgTable("timer_lap_times", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  timerId: varchar("timer_id").notNull(), // references workoutTimers(id)
+  lapId: integer("lap_id").notNull(), // Sequential lap number (1, 2, 3...)
+  lapTime: text("lap_time").notNull(), // Formatted lap time display (e.g., "2:35")
+  lapTimeMs: integer("lap_time_ms").notNull(), // Lap time in milliseconds
+  startedAtMs: integer("started_at_ms").notNull(), // When this lap started (epoch ms)
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -493,6 +519,21 @@ export const insertWeightAuditSchema = createInsertSchema(weightAudit).omit({
 
 export const updateWeightAuditSchema = insertWeightAuditSchema.partial();
 
+export const insertWorkoutTimerSchema = createInsertSchema(workoutTimers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateWorkoutTimerSchema = insertWorkoutTimerSchema.partial();
+
+export const insertTimerLapTimeSchema = createInsertSchema(timerLapTimes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const updateTimerLapTimeSchema = insertTimerLapTimeSchema.partial();
+
 export type ExerciseTemplate = typeof exerciseTemplates.$inferSelect;
 export type InsertExerciseTemplate = z.infer<typeof insertExerciseTemplateSchema>;
 export type UpdateExerciseTemplate = z.infer<typeof updateExerciseTemplateSchema>;
@@ -505,3 +546,9 @@ export type UpdatePRChangesAudit = z.infer<typeof updatePRChangesAuditSchema>;
 export type WeightAudit = typeof weightAudit.$inferSelect;
 export type InsertWeightAudit = z.infer<typeof insertWeightAuditSchema>;
 export type UpdateWeightAudit = z.infer<typeof updateWeightAuditSchema>;
+export type WorkoutTimer = typeof workoutTimers.$inferSelect;
+export type InsertWorkoutTimer = z.infer<typeof insertWorkoutTimerSchema>;
+export type UpdateWorkoutTimer = z.infer<typeof updateWorkoutTimerSchema>;
+export type TimerLapTime = typeof timerLapTimes.$inferSelect;
+export type InsertTimerLapTime = z.infer<typeof insertTimerLapTimeSchema>;
+export type UpdateTimerLapTime = z.infer<typeof updateTimerLapTimeSchema>;
