@@ -1190,13 +1190,22 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                             <Card>
                               <CardHeader>
                                 <div className="flex items-center justify-between">
-                                  <CardTitle className="text-lg">{exercise.name}</CardTitle>
                                   <Badge variant="secondary" className="capitalize">
                                     {category}
                                   </Badge>
                                 </div>
                               </CardHeader>
                               <CardContent className="space-y-4">
+                                <div className="space-y-2 mb-4">
+                                  <div className="text-sm font-medium text-muted-foreground">Exercise Name</div>
+                                  <Input
+                                    type="text"
+                                    value={exercise.name}
+                                    onChange={(e) => updateExercise(exercise.id, "name", e.target.value)}
+                                    className="text-xl font-bold text-primary border border-input"
+                                    data-testid={`input-name-detail-mobile-${exercise.id}`}
+                                  />
+                                </div>
                                 <div className="space-y-2 mb-4">
                                   <div className="text-sm font-medium text-muted-foreground">Order</div>
                                   <Input
