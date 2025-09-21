@@ -112,12 +112,47 @@ export default function WorkoutStopwatch({ storageKey = "workout-stopwatch" }: W
 
   const [state, setState] = useState<StopwatchState>(getDefaultState);
 
-  // Update local state when timer data loads from API
+  // Update state when timer data changes
   useEffect(() => {
-    if (!isLoadingTimer) {
-      setState(loadStateFromAPI());
+    if (timerData) {
+      // Timer exists in database, use database state
+      try {
+        const todayKey = new Date().toDateString();
+        
+        // Check if we need to reset daily
+        if (timerData.autoResetDaily && timerData.dateKey !== todayKey) {
+          setState(getDefaultState());
+          return;
+        }
+
+        // Convert database lap times to local format
+        const laps: LapTime[] = (timerData.lapTimes || []).map((dbLap: any) => ({
+          id: dbLap.lapId,
+          lapTime: dbLap.lapTime,
+          lapTimeMs: dbLap.lapTimeMs,
+          startedAtMs: dbLap.startedAtMs,
+        }));
+
+        const newState = {
+          isRunning: timerData.isRunning === 1,
+          sessionStartEpochMs: timerData.sessionStartEpochMs || 0,
+          lapStartEpochMs: timerData.lapStartEpochMs || 0,
+          elapsedBeforeStartMs: timerData.elapsedBeforeStartMs || 0,
+          lapElapsedBeforeStartMs: timerData.lapElapsedBeforeStartMs || 0,
+          laps,
+          dateKey: timerData.dateKey || todayKey,
+          autoResetDaily: timerData.autoResetDaily === 1,
+        };
+        setState(newState);
+      } catch (error) {
+        console.warn('Failed to parse timer data:', error);
+        setState(getDefaultState());
+      }
+    } else if (!isLoadingTimer) {
+      // Timer doesn't exist, use default state
+      setState(getDefaultState());
     }
-  }, [timerData, isLoadingTimer, getTodayKey]);
+  }, [timerData, isLoadingTimer]);
 
   // Mutation to save timer state to database
   const saveTimerMutation = useMutation({
