@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function WeightTracking() {
@@ -45,6 +46,9 @@ export default function WeightTracking() {
   
   // State for chart controls collapsible
   const [chartControlsOpen, setChartControlsOpen] = useState(false);
+  
+  // State for chart/table tabs
+  const [activeTab, setActiveTab] = useState("chart");
 
   // Fetch weight entries
   const { data: weightEntries = [], isLoading } = useQuery<WeightEntry[]>({
@@ -560,149 +564,159 @@ export default function WeightTracking() {
           </Collapsible>
         </Card>
 
-        {/* Interactive Chart */}
-        {filteredData.length > 0 ? (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Health Progress Chart</CardTitle>
+        {/* Chart and Table Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle>Health Data Visualization</CardTitle>
+                <TabsList className="grid w-[200px] grid-cols-2" data-testid="tabs-chart-table">
+                  <TabsTrigger value="chart" data-testid="tab-trigger-chart">Chart</TabsTrigger>
+                  <TabsTrigger value="table" data-testid="tab-trigger-table">Table</TabsTrigger>
+                </TabsList>
+              </div>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <ComposedChart data={filteredData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis yAxisId="weight" orientation="left" />
-                  <YAxis yAxisId="percent" orientation="right" />
-                  <Tooltip 
-                    labelFormatter={(label) => `Date: ${label}`}
-                    formatter={(value, name) => [
-                      `${typeof value === 'number' ? value.toFixed(1) : value}${
-                        name === 'bodyFat' ? '%' : 
-                        name === 'weight' || name === 'muscleMass' ? ' lbs' : 
-                        name === 'bmi' ? '' : ''
-                      }`,
-                      name === 'bodyFat' ? 'Body Fat %' : 
-                      name === 'muscleMass' ? 'Muscle Mass' : 
-                      name === 'bmi' ? 'BMI' : 'Weight'
-                    ]}
-                  />
-                  <Legend />
-                  
-                  {showWeight && (
-                    <Line 
-                      yAxisId="weight"
-                      type="monotone" 
-                      dataKey="weight" 
-                      stroke="#2563eb" 
-                      strokeWidth={2}
-                      name="weight"
-                    />
-                  )}
-                  {showBodyFat && (
-                    <Line 
-                      yAxisId="percent"
-                      type="monotone" 
-                      dataKey="bodyFat" 
-                      stroke="#dc2626" 
-                      strokeWidth={2}
-                      name="bodyFat"
-                    />
-                  )}
-                  {showMuscleMass && (
-                    <Line 
-                      yAxisId="weight"
-                      type="monotone" 
-                      dataKey="muscleMass" 
-                      stroke="#16a34a" 
-                      strokeWidth={2}
-                      name="muscleMass"
-                    />
-                  )}
-                  {showBMI && (
-                    <Line 
-                      yAxisId="percent"
-                      type="monotone" 
-                      dataKey="bmi" 
-                      stroke="#f59e0b" 
-                      strokeWidth={2}
-                      name="bmi"
-                    />
-                  )}
-                </ComposedChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="mb-6">
-            <CardContent className="py-12 text-center">
-              <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Health Data</h3>
-              <p className="text-muted-foreground mb-4">Start tracking your health metrics by adding your first entry or importing a RENPHO CSV file.</p>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button>Add First Entry</Button>
-                </DialogTrigger>
-              </Dialog>
-            </CardContent>
-          </Card>
-        )}
 
-        {/* Data Table */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Health Data Entries ({weightEntries.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Time</TableHead>
-                    <TableHead>Weight (lbs)</TableHead>
-                    <TableHead>Body Fat %</TableHead>
-                    <TableHead>Muscle Mass (lbs)</TableHead>
-                    <TableHead>BMI</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {weightEntries.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
-                        No health data entries found. Add your first entry to get started.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    weightEntries
-                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                      .map((entry) => (
-                        <TableRow key={entry.id}>
-                          <TableCell>{format(new Date(entry.date), "MMM dd, yyyy")}</TableCell>
-                          <TableCell>{entry.time || "-"}</TableCell>
-                          <TableCell>{entry.weight}</TableCell>
-                          <TableCell>{entry.bodyFat ? `${entry.bodyFat}%` : "-"}</TableCell>
-                          <TableCell>{entry.muscleMass || "-"}</TableCell>
-                          <TableCell>{entry.bmi || "-"}</TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => deleteMutation.mutate(entry.id)}
-                              disabled={deleteMutation.isPending}
-                              data-testid={`button-delete-weight-${entry.id}`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+            <TabsContent value="chart" className="mt-0">
+              <CardContent className="pt-0">
+                {filteredData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={400}>
+                    <ComposedChart data={filteredData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis yAxisId="weight" orientation="left" />
+                      <YAxis yAxisId="percent" orientation="right" />
+                      <Tooltip 
+                        labelFormatter={(label) => `Date: ${label}`}
+                        formatter={(value, name) => [
+                          `${typeof value === 'number' ? value.toFixed(1) : value}${
+                            name === 'bodyFat' ? '%' : 
+                            name === 'weight' || name === 'muscleMass' ? ' lbs' : 
+                            name === 'bmi' ? '' : ''
+                          }`,
+                          name === 'bodyFat' ? 'Body Fat %' : 
+                          name === 'muscleMass' ? 'Muscle Mass' : 
+                          name === 'bmi' ? 'BMI' : 'Weight'
+                        ]}
+                      />
+                      <Legend />
+                      
+                      {showWeight && (
+                        <Line 
+                          yAxisId="weight"
+                          type="monotone" 
+                          dataKey="weight" 
+                          stroke="#2563eb" 
+                          strokeWidth={2}
+                          name="weight"
+                        />
+                      )}
+                      {showBodyFat && (
+                        <Line 
+                          yAxisId="percent"
+                          type="monotone" 
+                          dataKey="bodyFat" 
+                          stroke="#dc2626" 
+                          strokeWidth={2}
+                          name="bodyFat"
+                        />
+                      )}
+                      {showMuscleMass && (
+                        <Line 
+                          yAxisId="weight"
+                          type="monotone" 
+                          dataKey="muscleMass" 
+                          stroke="#16a34a" 
+                          strokeWidth={2}
+                          name="muscleMass"
+                        />
+                      )}
+                      {showBMI && (
+                        <Line 
+                          yAxisId="percent"
+                          type="monotone" 
+                          dataKey="bmi" 
+                          stroke="#f59e0b" 
+                          strokeWidth={2}
+                          name="bmi"
+                        />
+                      )}
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="py-12 text-center">
+                    <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Health Data</h3>
+                    <p className="text-muted-foreground mb-4">Start tracking your health metrics by adding your first entry or importing a RENPHO CSV file.</p>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button>Add First Entry</Button>
+                      </DialogTrigger>
+                    </Dialog>
+                  </div>
+                )}
+              </CardContent>
+            </TabsContent>
+
+            <TabsContent value="table" className="mt-0">
+              <CardContent className="pt-0">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {weightEntries.length} entries total
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Time</TableHead>
+                        <TableHead>Weight (lbs)</TableHead>
+                        <TableHead>Body Fat %</TableHead>
+                        <TableHead>Muscle Mass (lbs)</TableHead>
+                        <TableHead>BMI</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {weightEntries.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                            No health data entries found. Add your first entry to get started.
                           </TableCell>
                         </TableRow>
-                      ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+                      ) : (
+                        weightEntries
+                          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                          .map((entry) => (
+                            <TableRow key={entry.id}>
+                              <TableCell>{format(new Date(entry.date), "MMM dd, yyyy")}</TableCell>
+                              <TableCell>{entry.time || "-"}</TableCell>
+                              <TableCell>{entry.weight}</TableCell>
+                              <TableCell>{entry.bodyFat ? `${entry.bodyFat}%` : "-"}</TableCell>
+                              <TableCell>{entry.muscleMass || "-"}</TableCell>
+                              <TableCell>{entry.bmi || "-"}</TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => deleteMutation.mutate(entry.id)}
+                                  disabled={deleteMutation.isPending}
+                                  data-testid={`button-delete-weight-${entry.id}`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </TabsContent>
+          </Card>
+        </Tabs>
 
         {/* RENPHO CSV Format Information (moved to bottom) */}
         <Card>
