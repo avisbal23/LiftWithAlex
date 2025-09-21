@@ -74,6 +74,8 @@ export interface IStorage {
   getVisibleTabSettings(): Promise<TabSettings[]>;
   updateTabSettings(tabKey: string, entry: UpdateTabSettings): Promise<TabSettings | undefined>;
   initializeDefaultTabs(): Promise<void>;
+  addMissingTabs(): Promise<void>;
+  migrateTabs(): Promise<void>;
   
   // Daily set progress tracking
   getDailySetProgressByExerciseId(exerciseId: string, date: Date): Promise<DailySetProgress | undefined>;
@@ -1134,6 +1136,8 @@ export class DatabaseStorage implements IStorage {
         // Even if exercises exist, check if shortcuts and tabs need to be initialized
         await this.initializeDefaultShortcuts();
         await this.initializeDefaultTabs();
+        await this.addMissingTabs(); // Add any missing tabs to existing database
+        await this.migrateTabs(); // Fix any incorrect routes in existing tabs
         return; // Already seeded
       }
 
@@ -1141,6 +1145,8 @@ export class DatabaseStorage implements IStorage {
       await this.seedPersonalRecordsData();
       await this.initializeDefaultShortcuts();
       await this.initializeDefaultTabs();
+      await this.addMissingTabs(); // Add any missing tabs after initial setup
+      await this.migrateTabs(); // Fix any incorrect routes in existing tabs
       console.log('Database seeded with sample data');
     } catch (error) {
       console.error('Error seeding database:', error);
@@ -1675,7 +1681,7 @@ export class DatabaseStorage implements IStorage {
       { tabKey: 'cardio', tabName: 'Cardio', routePath: '/cardio', isVisible: 1, order: 8 },
       { tabKey: 'weight', tabName: 'Weight', routePath: '/weight', isVisible: 0, order: 9 },
       { tabKey: 'blood', tabName: 'Blood', routePath: '/blood', isVisible: 0, order: 10 },
-      { tabKey: 'photos', tabName: 'Photos', routePath: '/photo-progress', isVisible: 0, order: 11 },
+      { tabKey: 'photos', tabName: 'Photos', routePath: '/photos', isVisible: 0, order: 11 },
       { tabKey: 'thoughts', tabName: 'Thoughts', routePath: '/thoughts', isVisible: 0, order: 12 },
       { tabKey: 'admin', tabName: 'Admin', routePath: '/admin', isVisible: 0, order: 13 }
     ];
@@ -1706,6 +1712,25 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
+  // Centralized tab definitions
+  private getAllTabDefinitions() {
+    return [
+      { tabKey: 'home', tabName: 'Home', routePath: '/', isVisible: 1, order: 0 },
+      { tabKey: 'push', tabName: 'Push', routePath: '/push', isVisible: 1, order: 1 },
+      { tabKey: 'pull', tabName: 'Pull', routePath: '/pull', isVisible: 1, order: 2 },
+      { tabKey: 'legs', tabName: 'Legs', routePath: '/legs', isVisible: 1, order: 3 },
+      { tabKey: 'push2', tabName: 'SHARMS', routePath: '/push2', isVisible: 1, order: 4 },
+      { tabKey: 'pull2', tabName: 'BACK', routePath: '/pull2', isVisible: 0, order: 5 },
+      { tabKey: 'legs2', tabName: 'Legs 2', routePath: '/legs2', isVisible: 0, order: 6 },
+      { tabKey: 'cardio', tabName: 'Cardio', routePath: '/cardio', isVisible: 1, order: 7 },
+      { tabKey: 'weight', tabName: 'Weight', routePath: '/weight', isVisible: 0, order: 8 },
+      { tabKey: 'blood', tabName: 'Blood', routePath: '/blood', isVisible: 0, order: 9 },
+      { tabKey: 'photos', tabName: 'Photos', routePath: '/photos', isVisible: 0, order: 10 },
+      { tabKey: 'thoughts', tabName: 'Thoughts', routePath: '/thoughts', isVisible: 0, order: 11 },
+      { tabKey: 'admin', tabName: 'Admin', routePath: '/admin', isVisible: 0, order: 12 }
+    ];
+  }
+
   async initializeDefaultTabs(): Promise<void> {
     // Check if tabs already exist
     const existing = await db.select().from(tabSettings).limit(1);
@@ -1713,20 +1738,53 @@ export class DatabaseStorage implements IStorage {
       return; // Already initialized
     }
 
-    // Define all available navigation tabs with default visibility
-    const defaultTabs = [
-      { tabKey: 'push', tabName: 'Push', routePath: '/push', isVisible: 1, order: 1 },
-      { tabKey: 'pull', tabName: 'Pull', routePath: '/pull', isVisible: 1, order: 2 },
-      { tabKey: 'legs', tabName: 'Legs', routePath: '/legs', isVisible: 1, order: 3 },
-      { tabKey: 'push2', tabName: 'SHARMS', routePath: '/push2', isVisible: 1, order: 4 },
-      { tabKey: 'pull2', tabName: 'BACK', routePath: '/pull2', isVisible: 0, order: 5 },
-      { tabKey: 'legs2', tabName: 'Legs 2', routePath: '/legs2', isVisible: 0, order: 6 },
-      { tabKey: 'cardio', tabName: 'Cardio', routePath: '/cardio', isVisible: 1, order: 7 }
-    ];
-
-    // Insert all default tabs
+    // Get tab definitions and insert them
+    const defaultTabs = this.getAllTabDefinitions();
     for (const tab of defaultTabs) {
       await db.insert(tabSettings).values(tab);
+    }
+  }
+
+  async addMissingTabs(): Promise<void> {
+    // Get all existing tab keys and their max order
+    const existingTabs = await db.select({ tabKey: tabSettings.tabKey, order: tabSettings.order }).from(tabSettings);
+    const existingTabKeys = new Set(existingTabs.map(tab => tab.tabKey));
+    const maxOrder = Math.max(...existingTabs.map(tab => tab.order), 0);
+
+    // Get all expected tabs
+    const expectedTabs = this.getAllTabDefinitions();
+
+    // Find missing tabs and add them with safe ordering
+    const missingTabs = expectedTabs.filter(tab => !existingTabKeys.has(tab.tabKey));
+    
+    for (let i = 0; i < missingTabs.length; i++) {
+      const tab = missingTabs[i];
+      // Use max existing order + i + 1 to avoid conflicts
+      const safeOrder = maxOrder + i + 1;
+      await db.insert(tabSettings).values({
+        ...tab,
+        order: safeOrder
+      });
+    }
+  }
+
+  async migrateTabs(): Promise<void> {
+    // Fix any incorrect route paths that may exist in production
+    const migrations = [
+      { tabKey: 'photos', correctRoutePath: '/photos' }
+    ];
+
+    for (const migration of migrations) {
+      const [existingTab] = await db.select()
+        .from(tabSettings)
+        .where(eq(tabSettings.tabKey, migration.tabKey))
+        .limit(1);
+      
+      if (existingTab && existingTab.routePath !== migration.correctRoutePath) {
+        await db.update(tabSettings)
+          .set({ routePath: migration.correctRoutePath, updatedAt: new Date() })
+          .where(eq(tabSettings.tabKey, migration.tabKey));
+      }
     }
   }
 
