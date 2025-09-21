@@ -1,5 +1,5 @@
-import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress, type DailyWorkoutStatus, type InsertDailyWorkoutStatus, type UpdateDailyWorkoutStatus, type WorkoutNotes, type InsertWorkoutNotes, type UpdateWorkoutNotes, type ExerciseTemplate, type InsertExerciseTemplate, type UpdateExerciseTemplate, type ChangesAudit, type InsertChangesAudit, type UpdateChangesAudit, type PRChangesAudit, type InsertPRChangesAudit } from "@shared/schema";
-import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress, dailyWorkoutStatus, workoutNotes, exerciseTemplates, changesAudit, prChangesAudit } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress, type DailyWorkoutStatus, type InsertDailyWorkoutStatus, type UpdateDailyWorkoutStatus, type WorkoutNotes, type InsertWorkoutNotes, type UpdateWorkoutNotes, type ExerciseTemplate, type InsertExerciseTemplate, type UpdateExerciseTemplate, type ChangesAudit, type InsertChangesAudit, type UpdateChangesAudit, type PRChangesAudit, type InsertPRChangesAudit, type WeightAudit, type InsertWeightAudit, type UpdateWeightAudit } from "@shared/schema";
+import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress, dailyWorkoutStatus, workoutNotes, exerciseTemplates, changesAudit, prChangesAudit, weightAudit } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc, sql } from "drizzle-orm";
@@ -100,6 +100,11 @@ export interface IStorage {
   getAllPRChangesAudit(): Promise<PRChangesAudit[]>;
   createPRChangesAudit(entry: InsertPRChangesAudit): Promise<PRChangesAudit>;
   deletePRChangesAudit(id: string): Promise<boolean>;
+
+  // Weight audit tracking
+  getAllWeightAudit(): Promise<WeightAudit[]>;
+  createWeightAudit(entry: InsertWeightAudit): Promise<WeightAudit>;
+  deleteWeightAudit(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -118,6 +123,7 @@ export class MemStorage implements IStorage {
   private exerciseTemplates: Map<string, ExerciseTemplate>;
   private changesAudit: Map<string, ChangesAudit>;
   private prChangesAudit: Map<string, PRChangesAudit>;
+  private weightAudit: Map<string, WeightAudit>;
 
   constructor() {
     this.users = new Map();
@@ -135,6 +141,7 @@ export class MemStorage implements IStorage {
     this.exerciseTemplates = new Map();
     this.changesAudit = new Map();
     this.prChangesAudit = new Map();
+    this.weightAudit = new Map();
     
     // Add some initial sample data
     this.seedData();
@@ -1014,6 +1021,29 @@ export class MemStorage implements IStorage {
 
   async deletePRChangesAudit(id: string): Promise<boolean> {
     return this.prChangesAudit.delete(id);
+  }
+
+  // Weight audit methods
+  async getAllWeightAudit(): Promise<WeightAudit[]> {
+    return Array.from(this.weightAudit.values()).sort((a, b) => 
+      new Date(b.changedAt!).getTime() - new Date(a.changedAt!).getTime()
+    );
+  }
+
+  async createWeightAudit(entry: InsertWeightAudit): Promise<WeightAudit> {
+    const id = randomUUID();
+    const now = new Date();
+    const auditEntry: WeightAudit = {
+      id,
+      ...entry,
+      changedAt: now,
+    };
+    this.weightAudit.set(id, auditEntry);
+    return auditEntry;
+  }
+
+  async deleteWeightAudit(id: string): Promise<boolean> {
+    return this.weightAudit.delete(id);
   }
 
   // Exercise Templates methods
@@ -1909,6 +1939,27 @@ export class DatabaseStorage implements IStorage {
   async deletePRChangesAudit(id: string): Promise<boolean> {
     const result = await db.delete(prChangesAudit)
       .where(eq(prChangesAudit.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Weight audit tracking
+  async getAllWeightAudit(): Promise<WeightAudit[]> {
+    const results = await db.select()
+      .from(weightAudit)
+      .orderBy(desc(weightAudit.changedAt));
+    return results;
+  }
+
+  async createWeightAudit(entry: InsertWeightAudit): Promise<WeightAudit> {
+    const [created] = await db.insert(weightAudit)
+      .values(entry)
+      .returning();
+    return created;
+  }
+
+  async deleteWeightAudit(id: string): Promise<boolean> {
+    const result = await db.delete(weightAudit)
+      .where(eq(weightAudit.id, id));
     return result.rowCount > 0;
   }
 
