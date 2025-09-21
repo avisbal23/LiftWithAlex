@@ -48,6 +48,19 @@ export default function BloodTracking() {
     return "N/A";
   };
 
+  // Helper function to calculate ratios
+  const calculateRatio = (numerator: keyof BloodEntry, denominator: keyof BloodEntry) => {
+    const sortedEntries = bloodEntries
+      .filter(entry => entry[numerator] != null && entry[denominator] != null)
+      .sort((a, b) => new Date(b.asOf).getTime() - new Date(a.asOf).getTime());
+    const entry = sortedEntries[0];
+    if (entry && entry[numerator] != null && entry[denominator] != null) {
+      const ratio = (entry[numerator] as number) / (entry[denominator] as number);
+      return ratio.toFixed(2);
+    }
+    return "N/A";
+  };
+
   // Add new blood entry function - similar to workout pattern
   const addNewBloodEntry = async () => {
     const newEntry = {
@@ -131,8 +144,11 @@ export default function BloodTracking() {
     
     // Convert string values to numbers where needed
     const numberFields = [
-      'totalTestosterone', 'freeTestosterone', 'shbg', 'estradiol',
-      'tsh', 'freeT3', 'ldlCalc', 'hdl', 'apob', 'vitaminD25oh', 'hba1c'
+      'totalTestosterone', 'freeTestosterone', 'shbg', 'estradiol', 'estrogensTotal', 'dheasulfate', 'cortisolAm', 'psa',
+      'tsh', 'freeT3', 'freeT4', 'tpoAb',
+      'vitaminD25oh', 'crpHs', 'insulin', 'hba1c',
+      'cholesterolTotal', 'triglycerides', 'hdl', 'ldlCalc', 'vldlCalc', 'apob',
+      'albumin', 'ferritin'
     ];
     
     const processedData: any = {};
@@ -450,6 +466,7 @@ export default function BloodTracking() {
 
           {/* Latest Values Overview */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Hormone Balance */}
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Testosterone</CardTitle>
@@ -474,6 +491,29 @@ export default function BloodTracking() {
             
             <Card>
               <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Estradiol</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-pink-600 dark:text-pink-400">
+                  {getLatestMarkerValue('estradiol', 'estradiolUnit')}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">T/E Ratio</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                  {calculateRatio('totalTestosterone', 'estradiol')}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Lipids */}
+            <Card>
+              <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">LDL Cholesterol</CardTitle>
               </CardHeader>
               <CardContent>
@@ -485,11 +525,78 @@ export default function BloodTracking() {
             
             <Card>
               <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">HDL Cholesterol</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                  {getLatestMarkerValue('hdl', 'hdlUnit')}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Triglycerides</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                  {getLatestMarkerValue('triglycerides', 'triglyceridesUnit')}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">TG/HDL Ratio</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                  {calculateRatio('triglycerides', 'hdl')}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Thyroid & Vitamins */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">TSH</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-teal-600 dark:text-teal-400">
+                  {getLatestMarkerValue('tsh', 'tshUnit')}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Free T3</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">
+                  {getLatestMarkerValue('freeT3', 'freeT3Unit')}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Vitamin D</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                   {getLatestMarkerValue('vitaminD25oh', 'vitaminD25ohUnit')}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">HbA1c</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-slate-600 dark:text-slate-400">
+                  {getLatestMarkerValue('hba1c', 'hba1cUnit')}
                 </div>
               </CardContent>
             </Card>
@@ -624,6 +731,126 @@ export default function BloodTracking() {
                                             </Select>
                                           </div>
                                         </div>
+
+                                        {/* SHBG */}
+                                        <div className="flex gap-2">
+                                          <div className="flex-1">
+                                            <label className="text-sm font-medium">SHBG</label>
+                                            <Input
+                                              type="number"
+                                              step="0.1"
+                                              placeholder="28"
+                                              value={editingValues.shbg?.value || entry.shbg || ''}
+                                              onChange={(e) => handleFieldChange('shbg', e.target.value)}
+                                              data-testid={`input-shbg-${entry.id}`}
+                                            />
+                                          </div>
+                                          <div className="w-24">
+                                            <label className="text-sm font-medium">Unit</label>
+                                            <Select 
+                                              value={editingValues.shbg?.unit || entry.shbgUnit || "nmol/L"}
+                                              onValueChange={(value) => handleFieldChange('shbg', editingValues.shbg?.value || entry.shbg?.toString() || '', value)}
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="nmol/L">nmol/L</SelectItem>
+                                                <SelectItem value="ug/dL">ug/dL</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                        </div>
+
+                                        {/* Estradiol */}
+                                        <div className="flex gap-2">
+                                          <div className="flex-1">
+                                            <label className="text-sm font-medium">Estradiol</label>
+                                            <Input
+                                              type="number"
+                                              step="0.1"
+                                              placeholder="26"
+                                              value={editingValues.estradiol?.value || entry.estradiol || ''}
+                                              onChange={(e) => handleFieldChange('estradiol', e.target.value)}
+                                              data-testid={`input-estradiol-${entry.id}`}
+                                            />
+                                          </div>
+                                          <div className="w-24">
+                                            <label className="text-sm font-medium">Unit</label>
+                                            <Select 
+                                              value={editingValues.estradiol?.unit || entry.estradiolUnit || "pg/mL"}
+                                              onValueChange={(value) => handleFieldChange('estradiol', editingValues.estradiol?.value || entry.estradiol?.toString() || '', value)}
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="pg/mL">pg/mL</SelectItem>
+                                                <SelectItem value="pmol/L">pmol/L</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                        </div>
+
+                                        {/* DHEA Sulfate */}
+                                        <div className="flex gap-2">
+                                          <div className="flex-1">
+                                            <label className="text-sm font-medium">DHEA Sulfate</label>
+                                            <Input
+                                              type="number"
+                                              step="0.1"
+                                              placeholder="350"
+                                              value={editingValues.dheasulfate?.value || entry.dheasulfate || ''}
+                                              onChange={(e) => handleFieldChange('dheasulfate', e.target.value)}
+                                              data-testid={`input-dhea-sulfate-${entry.id}`}
+                                            />
+                                          </div>
+                                          <div className="w-24">
+                                            <label className="text-sm font-medium">Unit</label>
+                                            <Select 
+                                              value={editingValues.dheasulfate?.unit || entry.dheasulfateUnit || "ug/dL"}
+                                              onValueChange={(value) => handleFieldChange('dheasulfate', editingValues.dheasulfate?.value || entry.dheasulfate?.toString() || '', value)}
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="ug/dL">ug/dL</SelectItem>
+                                                <SelectItem value="umol/L">umol/L</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                        </div>
+
+                                        {/* Cortisol AM */}
+                                        <div className="flex gap-2">
+                                          <div className="flex-1">
+                                            <label className="text-sm font-medium">Cortisol (AM)</label>
+                                            <Input
+                                              type="number"
+                                              step="0.1"
+                                              placeholder="15"
+                                              value={editingValues.cortisolAm?.value || entry.cortisolAm || ''}
+                                              onChange={(e) => handleFieldChange('cortisolAm', e.target.value)}
+                                              data-testid={`input-cortisol-am-${entry.id}`}
+                                            />
+                                          </div>
+                                          <div className="w-24">
+                                            <label className="text-sm font-medium">Unit</label>
+                                            <Select 
+                                              value={editingValues.cortisolAm?.unit || entry.cortisolAmUnit || "ug/dL"}
+                                              onValueChange={(value) => handleFieldChange('cortisolAm', editingValues.cortisolAm?.value || entry.cortisolAm?.toString() || '', value)}
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="ug/dL">ug/dL</SelectItem>
+                                                <SelectItem value="nmol/L">nmol/L</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                        </div>
                                       </div>
                                     </AccordionContent>
                                   </AccordionItem>
@@ -663,6 +890,66 @@ export default function BloodTracking() {
                                               <SelectContent>
                                                 <SelectItem value="uIU/mL">uIU/mL</SelectItem>
                                                 <SelectItem value="mIU/L">mIU/L</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                        </div>
+
+                                        {/* Free T3 */}
+                                        <div className="flex gap-2">
+                                          <div className="flex-1">
+                                            <label className="text-sm font-medium">Free T3</label>
+                                            <Input
+                                              type="number"
+                                              step="0.1"
+                                              placeholder="3.2"
+                                              value={editingValues.freeT3?.value || entry.freeT3 || ''}
+                                              onChange={(e) => handleFieldChange('freeT3', e.target.value)}
+                                              data-testid={`input-free-t3-${entry.id}`}
+                                            />
+                                          </div>
+                                          <div className="w-24">
+                                            <label className="text-sm font-medium">Unit</label>
+                                            <Select 
+                                              value={editingValues.freeT3?.unit || entry.freeT3Unit || "pg/mL"}
+                                              onValueChange={(value) => handleFieldChange('freeT3', editingValues.freeT3?.value || entry.freeT3?.toString() || '', value)}
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="pg/mL">pg/mL</SelectItem>
+                                                <SelectItem value="pmol/L">pmol/L</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                        </div>
+
+                                        {/* Free T4 */}
+                                        <div className="flex gap-2">
+                                          <div className="flex-1">
+                                            <label className="text-sm font-medium">Free T4</label>
+                                            <Input
+                                              type="number"
+                                              step="0.1"
+                                              placeholder="1.2"
+                                              value={editingValues.freeT4?.value || entry.freeT4 || ''}
+                                              onChange={(e) => handleFieldChange('freeT4', e.target.value)}
+                                              data-testid={`input-free-t4-${entry.id}`}
+                                            />
+                                          </div>
+                                          <div className="w-24">
+                                            <label className="text-sm font-medium">Unit</label>
+                                            <Select 
+                                              value={editingValues.freeT4?.unit || entry.freeT4Unit || "ng/dL"}
+                                              onValueChange={(value) => handleFieldChange('freeT4', editingValues.freeT4?.value || entry.freeT4?.toString() || '', value)}
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="ng/dL">ng/dL</SelectItem>
+                                                <SelectItem value="pmol/L">pmol/L</SelectItem>
                                               </SelectContent>
                                             </Select>
                                           </div>
@@ -740,6 +1027,96 @@ export default function BloodTracking() {
                                             </Select>
                                           </div>
                                         </div>
+
+                                        {/* Total Cholesterol */}
+                                        <div className="flex gap-2">
+                                          <div className="flex-1">
+                                            <label className="text-sm font-medium">Total Cholesterol</label>
+                                            <Input
+                                              type="number"
+                                              step="0.1"
+                                              placeholder="200"
+                                              value={editingValues.cholesterolTotal?.value || entry.cholesterolTotal || ''}
+                                              onChange={(e) => handleFieldChange('cholesterolTotal', e.target.value)}
+                                              data-testid={`input-cholesterol-total-${entry.id}`}
+                                            />
+                                          </div>
+                                          <div className="w-24">
+                                            <label className="text-sm font-medium">Unit</label>
+                                            <Select 
+                                              value={editingValues.cholesterolTotal?.unit || entry.cholesterolTotalUnit || "mg/dL"}
+                                              onValueChange={(value) => handleFieldChange('cholesterolTotal', editingValues.cholesterolTotal?.value || entry.cholesterolTotal?.toString() || '', value)}
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="mg/dL">mg/dL</SelectItem>
+                                                <SelectItem value="mmol/L">mmol/L</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                        </div>
+
+                                        {/* Triglycerides */}
+                                        <div className="flex gap-2">
+                                          <div className="flex-1">
+                                            <label className="text-sm font-medium">Triglycerides</label>
+                                            <Input
+                                              type="number"
+                                              step="0.1"
+                                              placeholder="150"
+                                              value={editingValues.triglycerides?.value || entry.triglycerides || ''}
+                                              onChange={(e) => handleFieldChange('triglycerides', e.target.value)}
+                                              data-testid={`input-triglycerides-${entry.id}`}
+                                            />
+                                          </div>
+                                          <div className="w-24">
+                                            <label className="text-sm font-medium">Unit</label>
+                                            <Select 
+                                              value={editingValues.triglycerides?.unit || entry.triglyceridesUnit || "mg/dL"}
+                                              onValueChange={(value) => handleFieldChange('triglycerides', editingValues.triglycerides?.value || entry.triglycerides?.toString() || '', value)}
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="mg/dL">mg/dL</SelectItem>
+                                                <SelectItem value="mmol/L">mmol/L</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                        </div>
+
+                                        {/* ApoB */}
+                                        <div className="flex gap-2">
+                                          <div className="flex-1">
+                                            <label className="text-sm font-medium">ApoB</label>
+                                            <Input
+                                              type="number"
+                                              step="0.1"
+                                              placeholder="95"
+                                              value={editingValues.apob?.value || entry.apob || ''}
+                                              onChange={(e) => handleFieldChange('apob', e.target.value)}
+                                              data-testid={`input-apob-${entry.id}`}
+                                            />
+                                          </div>
+                                          <div className="w-24">
+                                            <label className="text-sm font-medium">Unit</label>
+                                            <Select 
+                                              value={editingValues.apob?.unit || entry.apobUnit || "mg/dL"}
+                                              onValueChange={(value) => handleFieldChange('apob', editingValues.apob?.value || entry.apob?.toString() || '', value)}
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="mg/dL">mg/dL</SelectItem>
+                                                <SelectItem value="g/L">g/L</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                        </div>
                                       </div>
                                     </AccordionContent>
                                   </AccordionItem>
@@ -813,6 +1190,96 @@ export default function BloodTracking() {
                                             </Select>
                                           </div>
                                         </div>
+
+                                        {/* CRP-HS */}
+                                        <div className="flex gap-2">
+                                          <div className="flex-1">
+                                            <label className="text-sm font-medium">CRP-HS</label>
+                                            <Input
+                                              type="number"
+                                              step="0.1"
+                                              placeholder="1.2"
+                                              value={editingValues.crpHs?.value || entry.crpHs || ''}
+                                              onChange={(e) => handleFieldChange('crpHs', e.target.value)}
+                                              data-testid={`input-crp-hs-${entry.id}`}
+                                            />
+                                          </div>
+                                          <div className="w-24">
+                                            <label className="text-sm font-medium">Unit</label>
+                                            <Select 
+                                              value={editingValues.crpHs?.unit || entry.crpHsUnit || "mg/L"}
+                                              onValueChange={(value) => handleFieldChange('crpHs', editingValues.crpHs?.value || entry.crpHs?.toString() || '', value)}
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="mg/L">mg/L</SelectItem>
+                                                <SelectItem value="mg/dL">mg/dL</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                        </div>
+
+                                        {/* Insulin */}
+                                        <div className="flex gap-2">
+                                          <div className="flex-1">
+                                            <label className="text-sm font-medium">Insulin</label>
+                                            <Input
+                                              type="number"
+                                              step="0.1"
+                                              placeholder="8"
+                                              value={editingValues.insulin?.value || entry.insulin || ''}
+                                              onChange={(e) => handleFieldChange('insulin', e.target.value)}
+                                              data-testid={`input-insulin-${entry.id}`}
+                                            />
+                                          </div>
+                                          <div className="w-24">
+                                            <label className="text-sm font-medium">Unit</label>
+                                            <Select 
+                                              value={editingValues.insulin?.unit || entry.insulinUnit || "uIU/mL"}
+                                              onValueChange={(value) => handleFieldChange('insulin', editingValues.insulin?.value || entry.insulin?.toString() || '', value)}
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="uIU/mL">uIU/mL</SelectItem>
+                                                <SelectItem value="pmol/L">pmol/L</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                        </div>
+
+                                        {/* Ferritin */}
+                                        <div className="flex gap-2">
+                                          <div className="flex-1">
+                                            <label className="text-sm font-medium">Ferritin</label>
+                                            <Input
+                                              type="number"
+                                              step="0.1"
+                                              placeholder="150"
+                                              value={editingValues.ferritin?.value || entry.ferritin || ''}
+                                              onChange={(e) => handleFieldChange('ferritin', e.target.value)}
+                                              data-testid={`input-ferritin-${entry.id}`}
+                                            />
+                                          </div>
+                                          <div className="w-24">
+                                            <label className="text-sm font-medium">Unit</label>
+                                            <Select 
+                                              value={editingValues.ferritin?.unit || entry.ferritinUnit || "ng/mL"}
+                                              onValueChange={(value) => handleFieldChange('ferritin', editingValues.ferritin?.value || entry.ferritin?.toString() || '', value)}
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="ng/mL">ng/mL</SelectItem>
+                                                <SelectItem value="ug/L">ug/L</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                        </div>
                                       </div>
                                     </AccordionContent>
                                   </AccordionItem>
@@ -843,6 +1310,7 @@ export default function BloodTracking() {
                               // View Mode - Display lab values
                               <div className="space-y-3">
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                  {/* Hormones */}
                                   {entry.totalTestosterone && (
                                     <div>
                                       <span className="text-gray-600 dark:text-gray-400">Total T:</span>
@@ -855,16 +1323,102 @@ export default function BloodTracking() {
                                       <div className="font-medium">{entry.freeTestosterone} {entry.freeTestosteroneUnit}</div>
                                     </div>
                                   )}
+                                  {entry.estradiol && (
+                                    <div>
+                                      <span className="text-gray-600 dark:text-gray-400">Estradiol:</span>
+                                      <div className="font-medium">{entry.estradiol} {entry.estradiolUnit}</div>
+                                    </div>
+                                  )}
+                                  {entry.shbg && (
+                                    <div>
+                                      <span className="text-gray-600 dark:text-gray-400">SHBG:</span>
+                                      <div className="font-medium">{entry.shbg} {entry.shbgUnit}</div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Thyroid */}
+                                  {entry.tsh && (
+                                    <div>
+                                      <span className="text-gray-600 dark:text-gray-400">TSH:</span>
+                                      <div className="font-medium">{entry.tsh} {entry.tshUnit}</div>
+                                    </div>
+                                  )}
+                                  {entry.freeT3 && (
+                                    <div>
+                                      <span className="text-gray-600 dark:text-gray-400">Free T3:</span>
+                                      <div className="font-medium">{entry.freeT3} {entry.freeT3Unit}</div>
+                                    </div>
+                                  )}
+                                  {entry.freeT4 && (
+                                    <div>
+                                      <span className="text-gray-600 dark:text-gray-400">Free T4:</span>
+                                      <div className="font-medium">{entry.freeT4} {entry.freeT4Unit}</div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Lipids */}
                                   {entry.ldlCalc && (
                                     <div>
                                       <span className="text-gray-600 dark:text-gray-400">LDL:</span>
                                       <div className="font-medium">{entry.ldlCalc} {entry.ldlCalcUnit}</div>
                                     </div>
                                   )}
+                                  {entry.hdl && (
+                                    <div>
+                                      <span className="text-gray-600 dark:text-gray-400">HDL:</span>
+                                      <div className="font-medium">{entry.hdl} {entry.hdlUnit}</div>
+                                    </div>
+                                  )}
+                                  {entry.triglycerides && (
+                                    <div>
+                                      <span className="text-gray-600 dark:text-gray-400">Triglycerides:</span>
+                                      <div className="font-medium">{entry.triglycerides} {entry.triglyceridesUnit}</div>
+                                    </div>
+                                  )}
+                                  {entry.apob && (
+                                    <div>
+                                      <span className="text-gray-600 dark:text-gray-400">ApoB:</span>
+                                      <div className="font-medium">{entry.apob} {entry.apobUnit}</div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Health Markers */}
                                   {entry.vitaminD25oh && (
                                     <div>
                                       <span className="text-gray-600 dark:text-gray-400">Vitamin D:</span>
                                       <div className="font-medium">{entry.vitaminD25oh} {entry.vitaminD25ohUnit}</div>
+                                    </div>
+                                  )}
+                                  {entry.hba1c && (
+                                    <div>
+                                      <span className="text-gray-600 dark:text-gray-400">HbA1c:</span>
+                                      <div className="font-medium">{entry.hba1c} {entry.hba1cUnit}</div>
+                                    </div>
+                                  )}
+                                  {entry.crpHs && (
+                                    <div>
+                                      <span className="text-gray-600 dark:text-gray-400">CRP-HS:</span>
+                                      <div className="font-medium">{entry.crpHs} {entry.crpHsUnit}</div>
+                                    </div>
+                                  )}
+                                  {entry.ferritin && (
+                                    <div>
+                                      <span className="text-gray-600 dark:text-gray-400">Ferritin:</span>
+                                      <div className="font-medium">{entry.ferritin} {entry.ferritinUnit}</div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Show calculated ratios if both values exist */}
+                                  {entry.totalTestosterone && entry.estradiol && (
+                                    <div>
+                                      <span className="text-gray-600 dark:text-gray-400">T/E Ratio:</span>
+                                      <div className="font-medium">{(entry.totalTestosterone / entry.estradiol).toFixed(2)}</div>
+                                    </div>
+                                  )}
+                                  {entry.triglycerides && entry.hdl && (
+                                    <div>
+                                      <span className="text-gray-600 dark:text-gray-400">TG/HDL:</span>
+                                      <div className="font-medium">{(entry.triglycerides / entry.hdl).toFixed(2)}</div>
                                     </div>
                                   )}
                                 </div>
