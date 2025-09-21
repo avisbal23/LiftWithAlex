@@ -10,13 +10,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Camera, Calendar, User, Trash2, Edit, Plus, Image as ImageIcon } from "lucide-react";
+import { Camera, Calendar, User, Trash2, Edit, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ObjectUploader } from "@/components/ObjectUploader";
+import { MobilePhotoUploader } from "@/components/MobilePhotoUploader";
 import { insertPhotoProgressSchema, type PhotoProgress, type InsertPhotoProgress } from "@shared/schema";
-import type { UploadResult } from "@uppy/core";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
 
 
@@ -42,18 +41,6 @@ export default function PhotoProgressPage() {
     queryKey: ["/api/photo-progress"],
   });
 
-  const addForm = useForm<InsertPhotoProgress>({
-    resolver: zodResolver(insertPhotoProgressSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      photoUrl: "",
-      bodyPart: "",
-      weight: undefined,
-      takenAt: new Date(),
-    },
-  });
-
   const editForm = useForm<InsertPhotoProgress>({
     resolver: zodResolver(insertPhotoProgressSchema),
     defaultValues: {
@@ -66,28 +53,7 @@ export default function PhotoProgressPage() {
     },
   });
 
-  const addMutation = useMutation({
-    mutationFn: async (data: InsertPhotoProgress) => {
-      return apiRequest("POST", "/api/photo-progress", data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/photo-progress"] });
-      setIsAddDialogOpen(false);
-      addForm.reset();
-      toast({
-        title: "Success",
-        description: "Photo progress entry added successfully!",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to add photo progress entry",
-        variant: "destructive",
-      });
-      console.error("Add photo error:", error);
-    },
-  });
+  // Add mutation now handled by MobilePhotoUploader
 
   const editMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<InsertPhotoProgress> }) => {
@@ -133,48 +99,7 @@ export default function PhotoProgressPage() {
     },
   });
 
-  const handlePhotoUpload = async (form: typeof addForm) => {
-    try {
-      const response = await apiRequest("POST", "/api/objects/upload");
-      const data = await response.json() as { uploadURL: string };
-      const { uploadURL } = data;
-      return { method: "PUT" as const, url: uploadURL };
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to get upload URL",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
-
-  const handleUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>, form: typeof addForm) => {
-    if (result.successful && result.successful.length > 0) {
-      const uploadedFile = result.successful[0];
-      const photoURL = uploadedFile.uploadURL;
-
-      try {
-        // Set ACL policy for the photo
-        await apiRequest("PUT", "/api/objects/set-acl", { photoURL });
-
-        // Update form with the photo URL
-        form.setValue("photoUrl", photoURL || "");
-        
-        toast({
-          title: "Success",
-          description: "Photo uploaded successfully!",
-        });
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to set photo permissions",
-          variant: "destructive",
-        });
-        console.error("Set ACL error:", error);
-      }
-    }
-  };
+  // Removed photo upload handlers - now handled by MobilePhotoUploader
 
   const photos = (photoProgress as PhotoProgress[]) || [];
   const filteredPhotos = selectedBodyPart === "all" 
@@ -255,167 +180,13 @@ export default function PhotoProgressPage() {
                 </DialogDescription>
               </DialogHeader>
 
-              <Form {...addForm}>
-                <form onSubmit={addForm.handleSubmit((data) => {
-                  if (!data.photoUrl) {
-                    toast({
-                      title: "Error",
-                      description: "Please upload a photo before submitting",
-                      variant: "destructive",
-                    });
-                    return;
-                  }
-                  addMutation.mutate(data);
-                })} className="space-y-6">
-                  <div className="space-y-4">
-                    <FormField
-                      control={addForm.control}
-                      name="title"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Title</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="e.g., Front progress - Week 12" 
-                              {...field} 
-                              data-testid="input-photo-title"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={addForm.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Description (Optional)</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="Add notes about your progress, workout routine, etc." 
-                              {...field}
-                              value={field.value || ""}
-                              data-testid="textarea-photo-description"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={addForm.control}
-                      name="bodyPart"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Body Part</FormLabel>
-                          <FormControl>
-                            <Select onValueChange={field.onChange} value={field.value || ""}>
-                              <SelectTrigger data-testid="select-photo-body-part">
-                                <SelectValue placeholder="Select body part" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {bodyPartOptions.map((option) => (
-                                  <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={addForm.control}
-                        name="weight"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Weight (lbs) - Optional</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number" 
-                                step="0.1"
-                                placeholder="165.5" 
-                                {...field}
-                                value={field.value || ""}
-                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                data-testid="input-photo-weight"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={addForm.control}
-                        name="takenAt"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Date Taken</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="datetime-local"
-                                {...field}
-                                value={field.value ? format(new Date(field.value), "yyyy-MM-dd'T'HH:mm") : ""}
-                                onChange={(e) => field.onChange(new Date(e.target.value))}
-                                data-testid="input-photo-date"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {/* Photo Upload */}
-                    <div className="space-y-2">
-                      <Label>Photo</Label>
-                      <ObjectUploader
-                        maxNumberOfFiles={1}
-                        maxFileSize={10485760} // 10MB
-                        onGetUploadParameters={() => handlePhotoUpload(addForm)}
-                        onComplete={(result) => handleUploadComplete(result, addForm)}
-                        buttonClassName="w-full"
-                      >
-                        <div className="flex items-center justify-center gap-2 py-8">
-                          <ImageIcon className="w-6 h-6" />
-                          <span>Upload Progress Photo</span>
-                        </div>
-                      </ObjectUploader>
-                      {addForm.watch("photoUrl") && (
-                        <p className="text-sm text-green-600 dark:text-green-400">
-                          ✓ Photo uploaded successfully
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end gap-3">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => setIsAddDialogOpen(false)}
-                      data-testid="button-cancel-add"
-                    >
-                      Cancel
-                    </Button>
-                    <Button 
-                      type="submit" 
-                      disabled={addMutation.isPending || !addForm.watch("photoUrl")}
-                      data-testid="button-save-photo"
-                    >
-                      {addMutation.isPending ? "Adding..." : "Add Photo"}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
+              <MobilePhotoUploader
+                onSuccess={() => {
+                  queryClient.invalidateQueries({ queryKey: ["/api/photo-progress"] });
+                  setIsAddDialogOpen(false);
+                }}
+                onCancel={() => setIsAddDialogOpen(false)}
+              />
             </DialogContent>
           </Dialog>
         </div>
