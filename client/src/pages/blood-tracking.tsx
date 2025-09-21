@@ -725,11 +725,11 @@ export default function BloodTracking() {
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Activity className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Cholesterol</span>
+                <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Free Testosterone</span>
               </div>
-              <div className="text-2xl font-bold text-blue-700 dark:text-blue-300" data-testid="kpi-cholesterol">
-                {bloodEntries.length > 0 && bloodEntries[0]?.cholesterolTotal 
-                  ? `${bloodEntries[0]?.cholesterolTotal} ${bloodEntries[0]?.cholesterolTotalUnit}` 
+              <div className="text-2xl font-bold text-blue-700 dark:text-blue-300" data-testid="kpi-free-testosterone">
+                {bloodEntries.length > 0 && bloodEntries[0]?.freeTestosterone 
+                  ? `${bloodEntries[0]?.freeTestosterone} ${bloodEntries[0]?.freeTestosteroneUnit}` 
                   : "N/A"}
               </div>
             </CardContent>
