@@ -20,7 +20,7 @@ export default function BloodTracking() {
   const queryClient = useQueryClient();
   const [collapsedRecords, setCollapsedRecords] = useState<Record<string, boolean>>({});
   const [editingEntry, setEditingEntry] = useState<string | null>(null);
-  const [editingValues, setEditingValues] = useState<Record<string, { value: string; unit: string }>>({});
+  const [editingValues, setEditingValues] = useState<Record<string, { value: string; unit: string } | string>>({});
   
   // Import state
   const [importData, setImportData] = useState("");
@@ -155,18 +155,24 @@ export default function BloodTracking() {
     Object.entries(entryData).forEach(([key, fieldData]) => {
       // Handle source field differently since it's stored as a string
       if (key === 'source') {
-        processedData[key] = fieldData || undefined;
+        processedData[key] = typeof fieldData === 'string' ? fieldData : fieldData?.value || undefined;
       } else if (numberFields.includes(key)) {
-        processedData[key] = fieldData.value ? parseFloat(fieldData.value) : undefined;
-      } else {
-        processedData[key] = fieldData.value || undefined;
-      }
-      
-      // Also save unit fields (skip for source field)
-      if (key !== 'source') {
+        const data = typeof fieldData === 'string' ? { value: fieldData, unit: '' } : fieldData;
+        processedData[key] = data?.value ? parseFloat(data.value) : undefined;
+        
+        // Also save unit fields
         const unitKey = `${key}Unit`;
-        if (fieldData.unit) {
-          processedData[unitKey] = fieldData.unit;
+        if (data?.unit) {
+          processedData[unitKey] = data.unit;
+        }
+      } else {
+        const data = typeof fieldData === 'string' ? { value: fieldData, unit: '' } : fieldData;
+        processedData[key] = data?.value || undefined;
+        
+        // Also save unit fields
+        const unitKey = `${key}Unit`;
+        if (data?.unit) {
+          processedData[unitKey] = data.unit;
         }
       }
     });
@@ -635,7 +641,7 @@ export default function BloodTracking() {
                                   <div className="mb-6">
                                     <label className="text-sm font-medium">Bloodwork Source</label>
                                     <Select 
-                                      value={editingValues.source || entry.source || ""}
+                                      value={typeof editingValues.source === 'string' ? editingValues.source : editingValues.source?.value || entry.source || ""}
                                       onValueChange={(value) => handleFieldChange('source', value)}
                                     >
                                       <SelectTrigger>
