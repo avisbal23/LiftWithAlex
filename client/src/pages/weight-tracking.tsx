@@ -47,7 +47,6 @@ export default function WeightTracking() {
   const [showCallout, setShowCallout] = useState(true);
   
   // State for chart controls collapsible
-  const [chartControlsOpen, setChartControlsOpen] = useState(false);
   
   // State for chart/table tabs
   const [activeTab, setActiveTab] = useState("chart");
@@ -537,91 +536,6 @@ export default function WeightTracking() {
           </Card>
         </div>
 
-        {/* Chart Controls - Collapsible */}
-        <Card className="mb-6 bg-gradient-to-br from-slate-50/50 to-gray-50/50 dark:from-slate-950/20 dark:to-gray-950/20 border-slate-200/30 dark:border-slate-800/30">
-          <Collapsible open={chartControlsOpen} onOpenChange={setChartControlsOpen}>
-            <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-950/30 transition-colors">
-                <CardTitle className="flex items-center justify-between text-slate-700 dark:text-slate-300">
-                  <div className="flex items-center gap-2">
-                    <BarChart className="w-5 h-5" />
-                    Chart Controls
-                  </div>
-                  {chartControlsOpen ? (
-                    <ChevronUp className="w-4 h-4" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4" />
-                  )}
-                </CardTitle>
-              </CardHeader>
-            </CollapsibleTrigger>
-            
-            <CollapsibleContent>
-              <CardContent className="pt-0">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Date Range Control */}
-                  <div>
-                    <Label className="text-sm font-medium mb-3 block text-slate-600 dark:text-slate-400">Date Range</Label>
-                    <Select value={dateRange} onValueChange={setDateRange}>
-                      <SelectTrigger data-testid="select-date-range">
-                        <SelectValue placeholder="Select range" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="30">30 Days</SelectItem>
-                        <SelectItem value="90">90 Days</SelectItem>
-                        <SelectItem value="180">6 Months</SelectItem>
-                        <SelectItem value="365">1 Year</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Display Options */}
-                  <div>
-                    <Label className="text-sm font-medium mb-3 block text-slate-600 dark:text-slate-400">Chart Display</Label>
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="show-weight" 
-                          checked={showWeight} 
-                          onCheckedChange={(checked) => setShowWeight(!!checked)} 
-                          data-testid="checkbox-show-weight"
-                        />
-                        <Label htmlFor="show-weight" className="text-sm">Weight</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="show-bodyfat" 
-                          checked={showBodyFat} 
-                          onCheckedChange={(checked) => setShowBodyFat(!!checked)} 
-                          data-testid="checkbox-show-bodyfat"
-                        />
-                        <Label htmlFor="show-bodyfat" className="text-sm">Body Fat %</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="show-muscle" 
-                          checked={showMuscleMass} 
-                          onCheckedChange={(checked) => setShowMuscleMass(!!checked)} 
-                          data-testid="checkbox-show-muscle"
-                        />
-                        <Label htmlFor="show-muscle" className="text-sm">Muscle Mass</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="show-bmi" 
-                          checked={showBMI} 
-                          onCheckedChange={(checked) => setShowBMI(!!checked)} 
-                          data-testid="checkbox-show-bmi"
-                        />
-                        <Label htmlFor="show-bmi" className="text-sm">BMI</Label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </CollapsibleContent>
-          </Collapsible>
-        </Card>
 
         {/* Chart and Table Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
@@ -724,6 +638,70 @@ export default function WeightTracking() {
                     </Dialog>
                   </div>
                 )}
+                
+                {/* Chart Controls */}
+                <div className="mt-6 pt-4 border-t border-border">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Date Range Control */}
+                    <div>
+                      <Label className="text-sm font-medium mb-3 block">Date Range</Label>
+                      <Select value={dateRange} onValueChange={setDateRange}>
+                        <SelectTrigger data-testid="select-date-range">
+                          <SelectValue placeholder="Select range" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="30">30 Days</SelectItem>
+                          <SelectItem value="90">90 Days</SelectItem>
+                          <SelectItem value="180">6 Months</SelectItem>
+                          <SelectItem value="365">1 Year</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Display Options */}
+                    <div>
+                      <Label className="text-sm font-medium mb-3 block">Chart Display</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox 
+                            id="show-weight" 
+                            checked={showWeight} 
+                            onCheckedChange={(checked) => setShowWeight(!!checked)} 
+                            data-testid="checkbox-show-weight"
+                          />
+                          <Label htmlFor="show-weight" className="text-sm">Weight</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox 
+                            id="show-bodyfat" 
+                            checked={showBodyFat} 
+                            onCheckedChange={(checked) => setShowBodyFat(!!checked)} 
+                            data-testid="checkbox-show-bodyfat"
+                          />
+                          <Label htmlFor="show-bodyfat" className="text-sm">Body Fat %</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox 
+                            id="show-muscle" 
+                            checked={showMuscleMass} 
+                            onCheckedChange={(checked) => setShowMuscleMass(!!checked)} 
+                            data-testid="checkbox-show-muscle"
+                          />
+                          <Label htmlFor="show-muscle" className="text-sm">Muscle Mass</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox 
+                            id="show-bmi" 
+                            checked={showBMI} 
+                            onCheckedChange={(checked) => setShowBMI(!!checked)} 
+                            data-testid="checkbox-show-bmi"
+                          />
+                          <Label htmlFor="show-bmi" className="text-sm">BMI</Label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </TabsContent>
 
