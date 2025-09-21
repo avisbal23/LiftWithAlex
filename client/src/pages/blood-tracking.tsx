@@ -10,8 +10,15 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Droplets, Plus, TrendingUp, TrendingDown, Calendar, Upload, Download, AlertTriangle, CheckCircle, FileText, RotateCcw, X, Edit3, Save, ChevronDown, ChevronUp, Target, Activity, BarChart } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { type BloodEntry } from "@shared/schema";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { type BloodEntry, insertBloodEntrySchema } from "@shared/schema";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
 
 export default function BloodTracking() {
@@ -26,6 +33,42 @@ export default function BloodTracking() {
   const [editingValues, setEditingValues] = useState<Record<string, { value: string; unit: string }>>({});
   const [editingCard, setEditingCard] = useState<string | null>(null);
   const [collapsedRecords, setCollapsedRecords] = useState<Record<string, boolean>>({});
+  
+  // Template import state
+  const [templateFile, setTemplateFile] = useState<File | null>(null);
+  const [isProcessingTemplate, setIsProcessingTemplate] = useState(false);
+  const [templateResults, setTemplateResults] = useState<{
+    successful: number;
+    failed: Array<{ row: number; error: string }>;
+  } | null>(null);
+
+  // Manual form schema with proper coercion
+  const manualFormSchema = insertBloodEntrySchema.extend({
+    asOf: z.coerce.date(),
+    source: z.string().min(1, "Source is required"),
+    // Coerce numeric fields to handle string inputs from form
+    totalTestosterone: z.coerce.number().optional(),
+    freeTestosterone: z.coerce.number().optional(),
+    shbg: z.coerce.number().optional(),
+    estradiol: z.coerce.number().optional(),
+    tsh: z.coerce.number().optional(),
+    freeT3: z.coerce.number().optional(),
+    ldlCalc: z.coerce.number().optional(),
+    hdl: z.coerce.number().optional(),
+    apob: z.coerce.number().optional(),
+    vitaminD25oh: z.coerce.number().optional(),
+    hba1c: z.coerce.number().optional(),
+  });
+
+  // Manual form setup
+  const manualForm = useForm<z.infer<typeof manualFormSchema>>({
+    resolver: zodResolver(manualFormSchema),
+    defaultValues: {
+      asOf: new Date(),
+      source: "manual_entry",
+      // All lab values default to undefined (optional)
+    },
+  });
 
   const { data: bloodEntries = [] } = useQuery<BloodEntry[]>({
     queryKey: ["/api/blood-entries"],
@@ -46,6 +89,190 @@ export default function BloodTracking() {
       queryClient.invalidateQueries({ queryKey: ["/api/blood-entries"] });
     },
   });
+
+  // Manual form submission with proper typing
+  const manualFormMutation = useMutation({
+    mutationFn: (data: z.infer<typeof manualFormSchema>) => apiRequest("POST", "/api/blood-entries", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/blood-entries"] });
+      manualForm.reset();
+      toast({
+        title: "Blood entry added",
+        description: "Lab results added successfully",
+      });
+    },
+    onError: (error) => {
+      console.error("Manual form submission error:", error);
+      toast({
+        title: "Failed to add entry",
+        description: "Could not save blood lab results",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onManualFormSubmit = (data: z.infer<typeof manualFormSchema>) => {
+    // Remove undefined values and empty strings to only send fields with data
+    const cleanedData = Object.fromEntries(
+      Object.entries(data).filter(([_, value]) => value !== undefined && value !== "" && value !== null)
+    );
+    manualFormMutation.mutate(cleanedData as z.infer<typeof manualFormSchema>);
+  };
+
+  // Template import functions
+  const generateCsvTemplate = () => {
+    const headers = [
+      'asOf', 'source',
+      'totalTestosterone', 'totalTestosteroneUnit',
+      'freeTestosterone', 'freeTestosteroneUnit', 
+      'shbg', 'shbgUnit',
+      'estradiol', 'estradiolUnit',
+      'estrogensTotal', 'estrogensTotalUnit',
+      'dheasulfate', 'dheasulfateUnit',
+      'cortisolAm', 'cortisolAmUnit',
+      'psa', 'psaUnit',
+      'testosteroneEstrogenRatio',
+      'tsh', 'tshUnit',
+      'freeT3', 'freeT3Unit',
+      'freeT4', 'freeT4Unit',
+      'tpoAb', 'tpoAbUnit',
+      'vitaminD25oh', 'vitaminD25ohUnit',
+      'crpHs', 'crpHsUnit',
+      'insulin', 'insulinUnit',
+      'hba1c', 'hba1cUnit',
+      'cholesterolTotal', 'cholesterolTotalUnit',
+      'triglycerides', 'triglyceridesUnit',
+      'hdl', 'hdlUnit',
+      'ldlCalc', 'ldlCalcUnit',
+      'ldlCalcFlag',
+      'vldlCalc', 'vldlCalcUnit',
+      'apob', 'apobUnit',
+      'apobFlag',
+      'ldlApobRatio',
+      'tgHdlRatio',
+      'albumin', 'albuminUnit',
+      'ferritin', 'ferritinUnit'
+    ];
+    
+    const sampleRow = [
+      '2024-01-15', 'manual_entry',
+      '400', 'ng/dL',
+      '85', 'pg/mL',
+      '28', 'nmol/L',
+      '26', 'pg/mL',
+      '', '',
+      '', '',
+      '', '',
+      '', '',
+      '',
+      '2.5', 'uIU/mL',
+      '3.2', 'pg/mL',
+      '', '',
+      '', '',
+      '45', 'ng/mL',
+      '', '',
+      '', '',
+      '5.4', '%',
+      '', '',
+      '', '',
+      '60', 'mg/dL',
+      '120', 'mg/dL',
+      '',
+      '', '',
+      '95', 'mg/dL',
+      '',
+      '',
+      '',
+      '', '',
+      '', ''
+    ];
+
+    const csvContent = [
+      headers.join(','),
+      sampleRow.join(',')
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'blood_lab_template.csv';
+    link.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const processTemplateFile = async (file: File) => {
+    setIsProcessingTemplate(true);
+    setTemplateResults(null);
+
+    try {
+      const text = await file.text();
+      const lines = text.split('\n').filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        throw new Error('CSV file must have headers and at least one data row');
+      }
+
+      const headers = lines[0].split(',').map(h => h.trim());
+      const dataRows = lines.slice(1);
+
+      const results = {
+        successful: 0,
+        failed: [] as Array<{ row: number; error: string }>
+      };
+
+      for (let i = 0; i < dataRows.length; i++) {
+        const values = dataRows[i].split(',').map(v => v.trim());
+        const rowData: Record<string, any> = {};
+
+        // Map CSV values to schema fields
+        headers.forEach((header, index) => {
+          const value = values[index];
+          if (value && value !== '') {
+            if (header === 'asOf') {
+              rowData[header] = new Date(value);
+            } else if (header.includes('Unit') || header === 'source' || header.includes('Flag')) {
+              rowData[header] = value;
+            } else if (header.includes('Ratio') || !header.includes('Unit')) {
+              // Numeric fields
+              const numValue = parseFloat(value);
+              if (!isNaN(numValue)) {
+                rowData[header] = numValue;
+              }
+            }
+          }
+        });
+
+        try {
+          // Validate with schema
+          const validatedData = manualFormSchema.parse(rowData);
+          await apiRequest("POST", "/api/blood-entries", validatedData);
+          results.successful++;
+        } catch (error) {
+          results.failed.push({
+            row: i + 2, // +2 because of 0-index and header row
+            error: error instanceof Error ? error.message : 'Validation failed'
+          });
+        }
+      }
+
+      setTemplateResults(results);
+      queryClient.invalidateQueries({ queryKey: ["/api/blood-entries"] });
+      
+      toast({
+        title: "Template processing complete",
+        description: `${results.successful} entries imported successfully${results.failed.length > 0 ? `, ${results.failed.length} failed` : ''}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Template processing failed",
+        description: error instanceof Error ? error.message : 'Failed to process template',
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingTemplate(false);
+    }
+  };
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<BloodEntry> }) => 
@@ -800,74 +1027,609 @@ export default function BloodTracking() {
             
             <Dialog>
               <DialogTrigger asChild>
-                <Button data-testid="button-import-blood">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Import Lab Results
+                <Button data-testid="button-add-blood-data">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Blood Data
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-4xl">
                 <DialogHeader>
-                  <DialogTitle>Import Blood Lab Data</DialogTitle>
+                  <DialogTitle>Add Blood Lab Data</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4">
-                  <div className="flex gap-2">
-                    <Button
-                      variant={importFormat === "csv" ? "default" : "outline"}
-                      onClick={() => setImportFormat("csv")}
-                      className="flex-1"
-                      data-testid="button-csv-format"
-                    >
+                <Tabs defaultValue="manual" className="w-full">
+                  <TabsList className="grid grid-cols-3 w-full">
+                    <TabsTrigger value="manual" data-testid="tab-manual-input">
+                      <Edit3 className="w-4 h-4 mr-2" />
+                      Manual Input
+                    </TabsTrigger>
+                    <TabsTrigger value="template" data-testid="tab-template-import">
                       <FileText className="w-4 h-4 mr-2" />
-                      CSV Format
-                    </Button>
-                    <Button
-                      variant={importFormat === "json" ? "default" : "outline"}
-                      onClick={() => setImportFormat("json")}
-                      className="flex-1"
-                      data-testid="button-json-format"
-                    >
-                      JSON Format
-                    </Button>
-                  </div>
+                      Template Import
+                    </TabsTrigger>
+                    <TabsTrigger value="rhythm" data-testid="tab-rhythm-csv">
+                      <Upload className="w-4 h-4 mr-2" />
+                      Rhythm Health CSV
+                    </TabsTrigger>
+                  </TabsList>
                   
-                  {importFormat === "csv" ? (
-                    <div>
-                      <Label htmlFor="csv-import">Rhythm Health CSV Export</Label>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Paste CSV data from your bloodwork provider (format: marker,value,unit,reference_range,status,time)
-                      </p>
-                      <Textarea
-                        id="csv-import"
-                        placeholder={`marker,value,unit,reference_range,status,time\nSHBG,27.4,nmol/L,13.3 - 89.5,average,2025-08-16\nTotal Testosterone,390,ng/dL,250 - 900,average,2025-08-16\n...`}
-                        value={csvImportData}
-                        onChange={(e) => setCsvImportData(e.target.value)}
-                        className="min-h-[200px] font-mono text-sm"
-                      />
-                    </div>
-                  ) : (
-                    <div>
-                      <Label htmlFor="json-import">Lab Results JSON Data</Label>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Paste JSON data in the original format
-                      </p>
-                      <Textarea
-                        id="json-import"
-                        placeholder="Paste your lab results JSON here..."
-                        value={importData}
-                        onChange={(e) => setImportData(e.target.value)}
-                        className="min-h-[200px] font-mono text-sm"
-                      />
-                    </div>
-                  )}
+                  <TabsContent value="manual" className="space-y-4 mt-6">
+                    <Form {...manualForm}>
+                      <form onSubmit={manualForm.handleSubmit(onManualFormSubmit)} className="space-y-6">
+                        {/* Date and Source */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg">
+                          <FormField
+                            control={manualForm.control}
+                            name="asOf"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Lab Date *</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="date"
+                                    value={field.value ? field.value.toISOString().split('T')[0] : ''}
+                                    onChange={(e) => field.onChange(new Date(e.target.value))}
+                                    data-testid="input-lab-date"
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={manualForm.control}
+                            name="source"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Source *</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger data-testid="select-source">
+                                      <SelectValue placeholder="Select source" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="manual_entry">Manual Entry</SelectItem>
+                                    <SelectItem value="labcorp_pdf">LabCorp PDF</SelectItem>
+                                    <SelectItem value="quest_pdf">Quest PDF</SelectItem>
+                                    <SelectItem value="user_screenshots">User Screenshots</SelectItem>
+                                    <SelectItem value="other">Other</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        {/* Categorized Lab Values */}
+                        <Accordion type="multiple" className="w-full" defaultValue={["hormones"]}>
+                          {/* Hormone Balance */}
+                          <AccordionItem value="hormones">
+                            <AccordionTrigger>
+                              <div className="flex items-center gap-2">
+                                <Target className="w-4 h-4" />
+                                Hormone Balance
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Total Testosterone */}
+                                <div className="flex gap-2">
+                                  <FormField
+                                    control={manualForm.control}
+                                    name="totalTestosterone"
+                                    render={({ field }) => (
+                                      <FormItem className="flex-1">
+                                        <FormLabel>Total Testosterone</FormLabel>
+                                        <FormControl>
+                                          <Input
+                                            type="number"
+                                            step="0.1"
+                                            placeholder="390"
+                                            {...field}
+                                            value={field.value || ''}
+                                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                            data-testid="input-total-testosterone"
+                                          />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={manualForm.control}
+                                    name="totalTestosteroneUnit"
+                                    render={({ field }) => (
+                                      <FormItem className="w-24">
+                                        <FormLabel>Unit</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue="ng/dL">
+                                          <FormControl>
+                                            <SelectTrigger>
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                          </FormControl>
+                                          <SelectContent>
+                                            <SelectItem value="ng/dL">ng/dL</SelectItem>
+                                            <SelectItem value="nmol/L">nmol/L</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+
+                                {/* SHBG */}
+                                <div className="flex gap-2">
+                                  <FormField
+                                    control={manualForm.control}
+                                    name="shbg"
+                                    render={({ field }) => (
+                                      <FormItem className="flex-1">
+                                        <FormLabel>SHBG</FormLabel>
+                                        <FormControl>
+                                          <Input
+                                            type="number"
+                                            step="0.1"
+                                            placeholder="27.4"
+                                            {...field}
+                                            value={field.value || ''}
+                                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                            data-testid="input-shbg"
+                                          />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={manualForm.control}
+                                    name="shbgUnit"
+                                    render={({ field }) => (
+                                      <FormItem className="w-24">
+                                        <FormLabel>Unit</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue="nmol/L">
+                                          <FormControl>
+                                            <SelectTrigger>
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                          </FormControl>
+                                          <SelectContent>
+                                            <SelectItem value="nmol/L">nmol/L</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+
+                          {/* Thyroid */}
+                          <AccordionItem value="thyroid">
+                            <AccordionTrigger>
+                              <div className="flex items-center gap-2">
+                                <Activity className="w-4 h-4" />
+                                Thyroid Function
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* TSH */}
+                                <div className="flex gap-2">
+                                  <FormField
+                                    control={manualForm.control}
+                                    name="tsh"
+                                    render={({ field }) => (
+                                      <FormItem className="flex-1">
+                                        <FormLabel>TSH</FormLabel>
+                                        <FormControl>
+                                          <Input
+                                            type="number"
+                                            step="0.01"
+                                            placeholder="3.0"
+                                            {...field}
+                                            value={field.value || ''}
+                                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                            data-testid="input-tsh"
+                                          />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={manualForm.control}
+                                    name="tshUnit"
+                                    render={({ field }) => (
+                                      <FormItem className="w-24">
+                                        <FormLabel>Unit</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue="uIU/mL">
+                                          <FormControl>
+                                            <SelectTrigger>
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                          </FormControl>
+                                          <SelectContent>
+                                            <SelectItem value="uIU/mL">uIU/mL</SelectItem>
+                                            <SelectItem value="mIU/L">mIU/L</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+
+                          {/* Lipids */}
+                          <AccordionItem value="lipids">
+                            <AccordionTrigger>
+                              <div className="flex items-center gap-2">
+                                <TrendingUp className="w-4 h-4" />
+                                Lipid Panel
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* LDL */}
+                                <div className="flex gap-2">
+                                  <FormField
+                                    control={manualForm.control}
+                                    name="ldlCalc"
+                                    render={({ field }) => (
+                                      <FormItem className="flex-1">
+                                        <FormLabel>LDL Cholesterol</FormLabel>
+                                        <FormControl>
+                                          <Input
+                                            type="number"
+                                            step="0.1"
+                                            placeholder="123.4"
+                                            {...field}
+                                            value={field.value || ''}
+                                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                            data-testid="input-ldl"
+                                          />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={manualForm.control}
+                                    name="ldlCalcUnit"
+                                    render={({ field }) => (
+                                      <FormItem className="w-24">
+                                        <FormLabel>Unit</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue="mg/dL">
+                                          <FormControl>
+                                            <SelectTrigger>
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                          </FormControl>
+                                          <SelectContent>
+                                            <SelectItem value="mg/dL">mg/dL</SelectItem>
+                                            <SelectItem value="mmol/L">mmol/L</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+
+                                {/* ApoB */}
+                                <div className="flex gap-2">
+                                  <FormField
+                                    control={manualForm.control}
+                                    name="apob"
+                                    render={({ field }) => (
+                                      <FormItem className="flex-1">
+                                        <FormLabel>ApoB</FormLabel>
+                                        <FormControl>
+                                          <Input
+                                            type="number"
+                                            step="0.1"
+                                            placeholder="101"
+                                            {...field}
+                                            value={field.value || ''}
+                                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                            data-testid="input-apob"
+                                          />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={manualForm.control}
+                                    name="apobUnit"
+                                    render={({ field }) => (
+                                      <FormItem className="w-24">
+                                        <FormLabel>Unit</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue="mg/dL">
+                                          <FormControl>
+                                            <SelectTrigger>
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                          </FormControl>
+                                          <SelectContent>
+                                            <SelectItem value="mg/dL">mg/dL</SelectItem>
+                                            <SelectItem value="g/L">g/L</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+
+                          {/* Vitamins & Glucose */}
+                          <AccordionItem value="vitamins">
+                            <AccordionTrigger>
+                              <div className="flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4" />
+                                Vitamins & Glucose
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Vitamin D */}
+                                <div className="flex gap-2">
+                                  <FormField
+                                    control={manualForm.control}
+                                    name="vitaminD25oh"
+                                    render={({ field }) => (
+                                      <FormItem className="flex-1">
+                                        <FormLabel>Vitamin D (25-OH)</FormLabel>
+                                        <FormControl>
+                                          <Input
+                                            type="number"
+                                            step="0.1"
+                                            placeholder="62"
+                                            {...field}
+                                            value={field.value || ''}
+                                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                            data-testid="input-vitamin-d"
+                                          />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={manualForm.control}
+                                    name="vitaminD25ohUnit"
+                                    render={({ field }) => (
+                                      <FormItem className="w-24">
+                                        <FormLabel>Unit</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue="ng/mL">
+                                          <FormControl>
+                                            <SelectTrigger>
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                          </FormControl>
+                                          <SelectContent>
+                                            <SelectItem value="ng/mL">ng/mL</SelectItem>
+                                            <SelectItem value="nmol/L">nmol/L</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+
+                                {/* HBA1c */}
+                                <div className="flex gap-2">
+                                  <FormField
+                                    control={manualForm.control}
+                                    name="hba1c"
+                                    render={({ field }) => (
+                                      <FormItem className="flex-1">
+                                        <FormLabel>HBA1c</FormLabel>
+                                        <FormControl>
+                                          <Input
+                                            type="number"
+                                            step="0.1"
+                                            placeholder="5.4"
+                                            {...field}
+                                            value={field.value || ''}
+                                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                            data-testid="input-hba1c"
+                                          />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={manualForm.control}
+                                    name="hba1cUnit"
+                                    render={({ field }) => (
+                                      <FormItem className="w-24">
+                                        <FormLabel>Unit</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue="%">
+                                          <FormControl>
+                                            <SelectTrigger>
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                          </FormControl>
+                                          <SelectContent>
+                                            <SelectItem value="%">%</SelectItem>
+                                            <SelectItem value="mmol/mol">mmol/mol</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+
+                        {/* Submit Button */}
+                        <Button 
+                          type="submit" 
+                          className="w-full" 
+                          disabled={manualFormMutation.isPending}
+                          data-testid="button-submit-manual-form"
+                        >
+                          {manualFormMutation.isPending ? "Adding..." : "Add Blood Lab Entry"}
+                        </Button>
+                      </form>
+                    </Form>
+                  </TabsContent>
                   
-                  <Button 
-                    onClick={importBloodData}
-                    disabled={isImporting || (importFormat === "csv" ? !csvImportData.trim() : !importData.trim())}
-                    className="w-full"
-                  >
-                    {isImporting ? "Importing..." : `Import ${importFormat.toUpperCase()} Lab Results`}
-                  </Button>
-                </div>
+                  <TabsContent value="template" className="space-y-4 mt-6">
+                    <div className="space-y-6">
+                      {/* Download Template Section */}
+                      <div className="border rounded-lg p-6">
+                        <h3 className="text-lg font-semibold mb-2">Step 1: Download Template</h3>
+                        <p className="text-muted-foreground mb-4">
+                          Download the CSV template, fill it with your lab data, then upload it back to import multiple entries at once.
+                        </p>
+                        <Button 
+                          onClick={generateCsvTemplate} 
+                          variant="outline"
+                          data-testid="button-download-template"
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download Blood Lab Template
+                        </Button>
+                      </div>
+
+                      {/* Upload Section */}
+                      <div className="border rounded-lg p-6">
+                        <h3 className="text-lg font-semibold mb-2">Step 2: Upload Completed Template</h3>
+                        <p className="text-muted-foreground mb-4">
+                          Select your completed CSV file to import the lab results. The system will validate each row and report any errors.
+                        </p>
+                        <div className="space-y-4">
+                          <Input
+                            type="file"
+                            accept=".csv"
+                            onChange={(e) => setTemplateFile(e.target.files?.[0] || null)}
+                            data-testid="input-template-file"
+                          />
+                          {templateFile && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <FileText className="w-4 h-4" />
+                              Selected: {templateFile.name}
+                            </div>
+                          )}
+                          <Button
+                            onClick={() => templateFile && processTemplateFile(templateFile)}
+                            disabled={!templateFile || isProcessingTemplate}
+                            className="w-full"
+                            data-testid="button-process-template"
+                          >
+                            {isProcessingTemplate ? "Processing..." : "Import Lab Results"}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Results Section */}
+                      {templateResults && (
+                        <div className="border rounded-lg p-6">
+                          <h3 className="text-lg font-semibold mb-2">Import Results</h3>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-green-600">
+                              <CheckCircle className="w-4 h-4" />
+                              <span>{templateResults.successful} entries imported successfully</span>
+                            </div>
+                            {templateResults.failed.length > 0 && (
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-red-600">
+                                  <AlertTriangle className="w-4 h-4" />
+                                  <span>{templateResults.failed.length} entries failed</span>
+                                </div>
+                                <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded-lg">
+                                  <p className="text-sm font-medium text-red-800 dark:text-red-200 mb-2">Failed entries:</p>
+                                  <ul className="text-sm text-red-700 dark:text-red-300 space-y-1">
+                                    {templateResults.failed.map((failure, index) => (
+                                      <li key={index}>
+                                        Row {failure.row}: {failure.error}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Template Format Help */}
+                      <div className="border rounded-lg p-6">
+                        <h3 className="text-lg font-semibold mb-2">Template Format Help</h3>
+                        <div className="text-sm text-muted-foreground space-y-2">
+                          <p><strong>Required columns:</strong> asOf (date in YYYY-MM-DD format), source</p>
+                          <p><strong>Optional columns:</strong> All blood markers with their corresponding unit columns</p>
+                          <p><strong>Date format:</strong> Use YYYY-MM-DD format (e.g., 2024-01-15)</p>
+                          <p><strong>Empty values:</strong> Leave cells blank if you don't have data for that marker</p>
+                          <p><strong>Units:</strong> Use standard units like ng/dL, mg/dL, pg/mL, etc.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="rhythm" className="space-y-4 mt-6">
+                    <div className="space-y-4">
+                      <div className="flex gap-2">
+                        <Button
+                          variant={importFormat === "csv" ? "default" : "outline"}
+                          onClick={() => setImportFormat("csv")}
+                          className="flex-1"
+                          data-testid="button-csv-format"
+                        >
+                          <FileText className="w-4 h-4 mr-2" />
+                          CSV Format
+                        </Button>
+                        <Button
+                          variant={importFormat === "json" ? "default" : "outline"}
+                          onClick={() => setImportFormat("json")}
+                          className="flex-1"
+                          data-testid="button-json-format"
+                        >
+                          JSON Format
+                        </Button>
+                      </div>
+                      
+                      {importFormat === "csv" ? (
+                        <div>
+                          <Label htmlFor="csv-import">Rhythm Health CSV Export</Label>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            Paste CSV data from your bloodwork provider (format: marker,value,unit,reference_range,status,time)
+                          </p>
+                          <Textarea
+                            id="csv-import"
+                            placeholder={`marker,value,unit,reference_range,status,time\nSHBG,27.4,nmol/L,13.3 - 89.5,average,2025-08-16\nTotal Testosterone,390,ng/dL,250 - 900,average,2025-08-16\n...`}
+                            value={csvImportData}
+                            onChange={(e) => setCsvImportData(e.target.value)}
+                            className="min-h-[200px] font-mono text-sm"
+                          />
+                        </div>
+                      ) : (
+                        <div>
+                          <Label htmlFor="json-import">Lab Results JSON Data</Label>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            Paste JSON data in the original format
+                          </p>
+                          <Textarea
+                            id="json-import"
+                            placeholder="Paste your lab results JSON here..."
+                            value={importData}
+                            onChange={(e) => setImportData(e.target.value)}
+                            className="min-h-[200px] font-mono text-sm"
+                          />
+                        </div>
+                      )}
+                      
+                      <Button 
+                        onClick={importBloodData}
+                        disabled={isImporting || (importFormat === "csv" ? !csvImportData.trim() : !importData.trim())}
+                        className="w-full"
+                        data-testid="button-import-rhythm-data"
+                      >
+                        {isImporting ? "Importing..." : `Import ${importFormat.toUpperCase()} Lab Results`}
+                      </Button>
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </DialogContent>
             </Dialog>
           </div>
@@ -880,69 +1642,105 @@ export default function BloodTracking() {
             <p className="text-muted-foreground mb-4">Import lab data to start tracking</p>
             <Dialog>
               <DialogTrigger asChild>
-                <Button>
+                <Button data-testid="button-add-first-blood-data">
                   <Plus className="w-4 h-4 mr-2" />
-                  Import First Lab Results
+                  Add First Lab Results
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-4xl">
                 <DialogHeader>
-                  <DialogTitle>Import Blood Lab Data</DialogTitle>
+                  <DialogTitle>Add Blood Lab Data</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4">
-                  <div className="flex gap-2">
-                    <Button
-                      variant={importFormat === "csv" ? "default" : "outline"}
-                      onClick={() => setImportFormat("csv")}
-                      className="flex-1"
-                    >
+                <Tabs defaultValue="manual" className="w-full">
+                  <TabsList className="grid grid-cols-3 w-full">
+                    <TabsTrigger value="manual" data-testid="tab-manual-input-empty">
+                      <Edit3 className="w-4 h-4 mr-2" />
+                      Manual Input
+                    </TabsTrigger>
+                    <TabsTrigger value="template" data-testid="tab-template-import-empty">
                       <FileText className="w-4 h-4 mr-2" />
-                      CSV Format
-                    </Button>
-                    <Button
-                      variant={importFormat === "json" ? "default" : "outline"}
-                      onClick={() => setImportFormat("json")}
-                      className="flex-1"
-                    >
-                      JSON Format
-                    </Button>
-                  </div>
+                      Template Import
+                    </TabsTrigger>
+                    <TabsTrigger value="rhythm" data-testid="tab-rhythm-csv-empty">
+                      <Upload className="w-4 h-4 mr-2" />
+                      Rhythm Health CSV
+                    </TabsTrigger>
+                  </TabsList>
                   
-                  {importFormat === "csv" ? (
-                    <div>
-                      <Label htmlFor="csv-import-empty">Rhythm Health CSV Export</Label>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Paste CSV data from your bloodwork provider
-                      </p>
-                      <Textarea
-                        id="csv-import-empty"
-                        placeholder={`marker,value,unit,reference_range,status,time\nSHBG,27.4,nmol/L,13.3 - 89.5,average,2025-08-16\n...`}
-                        value={csvImportData}
-                        onChange={(e) => setCsvImportData(e.target.value)}
-                        className="min-h-[200px] font-mono text-sm"
-                      />
+                  <TabsContent value="manual" className="space-y-4 mt-6">
+                    <div className="text-center py-8">
+                      <div className="text-2xl mb-2">📝</div>
+                      <p className="text-muted-foreground">Manual input form coming soon...</p>
                     </div>
-                  ) : (
-                    <div>
-                      <Label htmlFor="json-import-empty">Lab Results JSON Data</Label>
-                      <Textarea
-                        id="json-import-empty"
-                        placeholder="Paste your lab results JSON here..."
-                        value={importData}
-                        onChange={(e) => setImportData(e.target.value)}
-                        className="min-h-[200px] font-mono text-sm"
-                      />
-                    </div>
-                  )}
+                  </TabsContent>
                   
-                  <Button 
-                    onClick={importBloodData}
-                    disabled={isImporting || (importFormat === "csv" ? !csvImportData.trim() : !importData.trim())}
-                    className="w-full"
-                  >
-                    {isImporting ? "Importing..." : `Import ${importFormat.toUpperCase()} Lab Results`}
-                  </Button>
-                </div>
+                  <TabsContent value="template" className="space-y-4 mt-6">
+                    <div className="text-center py-8">
+                      <div className="text-2xl mb-2">📊</div>
+                      <p className="text-muted-foreground">Template import coming soon...</p>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="rhythm" className="space-y-4 mt-6">
+                    <div className="space-y-4">
+                      <div className="flex gap-2">
+                        <Button
+                          variant={importFormat === "csv" ? "default" : "outline"}
+                          onClick={() => setImportFormat("csv")}
+                          className="flex-1"
+                          data-testid="button-csv-format-empty"
+                        >
+                          <FileText className="w-4 h-4 mr-2" />
+                          CSV Format
+                        </Button>
+                        <Button
+                          variant={importFormat === "json" ? "default" : "outline"}
+                          onClick={() => setImportFormat("json")}
+                          className="flex-1"
+                          data-testid="button-json-format-empty"
+                        >
+                          JSON Format
+                        </Button>
+                      </div>
+                      
+                      {importFormat === "csv" ? (
+                        <div>
+                          <Label htmlFor="csv-import-empty">Rhythm Health CSV Export</Label>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            Paste CSV data from your bloodwork provider
+                          </p>
+                          <Textarea
+                            id="csv-import-empty"
+                            placeholder={`marker,value,unit,reference_range,status,time\nSHBG,27.4,nmol/L,13.3 - 89.5,average,2025-08-16\n...`}
+                            value={csvImportData}
+                            onChange={(e) => setCsvImportData(e.target.value)}
+                            className="min-h-[200px] font-mono text-sm"
+                          />
+                        </div>
+                      ) : (
+                        <div>
+                          <Label htmlFor="json-import-empty">Lab Results JSON Data</Label>
+                          <Textarea
+                            id="json-import-empty"
+                            placeholder="Paste your lab results JSON here..."
+                            value={importData}
+                            onChange={(e) => setImportData(e.target.value)}
+                            className="min-h-[200px] font-mono text-sm"
+                          />
+                        </div>
+                      )}
+                      
+                      <Button 
+                        onClick={importBloodData}
+                        disabled={isImporting || (importFormat === "csv" ? !csvImportData.trim() : !importData.trim())}
+                        className="w-full"
+                        data-testid="button-import-rhythm-data-empty"
+                      >
+                        {isImporting ? "Importing..." : `Import ${importFormat.toUpperCase()} Lab Results`}
+                      </Button>
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </DialogContent>
             </Dialog>
           </div>
