@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Upload, Database, FileText, Activity, Droplets, FileDown, MessageSquare, Settings, Lock } from "lucide-react";
+import { Download, Upload, Database, FileText, Activity, Droplets, FileDown, MessageSquare, Settings, Lock, Edit3, Save, X } from "lucide-react";
 import { type Exercise, type WeightEntry, type Quote, type ShortcutSettings, type TabSettings } from "@shared/schema";
 import { Switch } from "@/components/ui/switch";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
@@ -19,6 +19,10 @@ export default function Admin() {
   const [weightImportData, setWeightImportData] = useState("");
   const [quotesImportData, setQuotesImportData] = useState("");
   const [isImporting, setIsImporting] = useState(false);
+  
+  // Edit shortcut state
+  const [editingShortcut, setEditingShortcut] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<{ shortcutName: string; routePath: string }>({ shortcutName: "", routePath: "" });
 
   const { data: exercises = [] } = useQuery<Exercise[]>({
     queryKey: ["/api/exercises"],
@@ -61,8 +65,51 @@ export default function Admin() {
     },
   });
 
+  const editShortcutMutation = useMutation({
+    mutationFn: async ({ shortcutKey, shortcutName, routePath }: { shortcutKey: string; shortcutName: string; routePath: string }) => {
+      return apiRequest("PATCH", `/api/shortcut-settings/${shortcutKey}`, { shortcutName, routePath });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/shortcut-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shortcut-settings/visible"] });
+      setEditingShortcut(null);
+      setEditValues({ shortcutName: "", routePath: "" });
+      toast({
+        title: "Shortcut Updated",
+        description: "Shortcut details saved successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update shortcut details",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleShortcutToggle = (shortcutKey: string, isVisible: boolean) => {
     updateShortcutMutation.mutate({ shortcutKey, isVisible });
+  };
+
+  const handleEditShortcut = (shortcut: ShortcutSettings) => {
+    setEditingShortcut(shortcut.shortcutKey);
+    setEditValues({ shortcutName: shortcut.shortcutName, routePath: shortcut.routePath });
+  };
+
+  const handleSaveShortcut = () => {
+    if (editingShortcut) {
+      editShortcutMutation.mutate({
+        shortcutKey: editingShortcut,
+        shortcutName: editValues.shortcutName,
+        routePath: editValues.routePath
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingShortcut(null);
+    setEditValues({ shortcutName: "", routePath: "" });
   };
 
   const updateTabMutation = useMutation({
@@ -697,7 +744,7 @@ export default function Admin() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Control which shortcuts are visible. Toggle any shortcut on or off to customize your navigation.
+                Control which shortcuts are visible. Toggle shortcuts on or off, or click the edit button to modify shortcut names and paths.
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
                 {/* Always show Home shortcut as locked placeholder */}
@@ -739,56 +786,135 @@ export default function Admin() {
                   <div className="absolute inset-0 bg-white/10 dark:bg-black/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
                 </button>
                 
-                {shortcutSettings.map((shortcut) => (
-                  <button
-                    key={shortcut.shortcutKey}
-                    onClick={() => handleShortcutToggle(shortcut.shortcutKey, shortcut.isVisible !== 1)}
-                    disabled={updateShortcutMutation.isPending}
-                    className={`
-                      relative p-1 sm:p-1.5 rounded-lg transition-all duration-300 cursor-pointer group aspect-square
-                      backdrop-blur-lg border shadow-2xl
-                      ${shortcut.isVisible === 1
-                        ? 'bg-green-100/20 dark:bg-green-950/20 border-green-300/30 dark:border-green-700/40 text-green-700 dark:text-green-300 shadow-green-400/20' 
-                        : 'bg-red-100/20 dark:bg-red-950/20 border-red-300/30 dark:border-red-700/40 text-red-700 dark:text-red-300 shadow-red-400/20'
-                      }
-                      hover:-translate-y-1 hover:scale-105 hover:shadow-3xl
-                      disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0
-                    `}
-                    data-testid={`button-shortcut-${shortcut.shortcutKey}`}
-                  >
-                    {/* Status indicator circle */}
-                    <div className={`
-                      absolute top-1 right-1 w-2 h-2 rounded-full border transition-colors
-                      ${shortcut.isVisible === 1
-                        ? 'bg-green-500 border-green-600 shadow-green-400/50' 
-                        : 'bg-red-500 border-red-600 shadow-red-400/50'
-                      }
-                      shadow-lg
-                    `} />
-                    
-                    {/* Main content */}
-                    <div className="text-left space-y-0.5">
-                      <h3 className="font-semibold text-xs">{shortcut.shortcutName}</h3>
-                      <p className="text-[10px] opacity-70">{shortcut.routePath}</p>
-                      <div className="flex items-center gap-1 text-[9px] font-medium">
-                        <div className={`
-                          w-1 h-1 rounded-full
-                          ${shortcut.isVisible === 1 ? 'bg-green-500' : 'bg-red-500'}
-                        `} />
-                        {shortcut.isVisible === 1 ? 'ON' : 'OFF'}
+                {shortcutSettings.map((shortcut) => {
+                  const isEditing = editingShortcut === shortcut.shortcutKey;
+                  
+                  if (isEditing) {
+                    // Edit mode - show form instead of button
+                    return (
+                      <div
+                        key={shortcut.shortcutKey}
+                        className="col-span-2 p-3 rounded-lg border bg-card text-card-foreground shadow-sm"
+                      >
+                        <div className="space-y-3">
+                          <div>
+                            <Label htmlFor={`edit-name-${shortcut.shortcutKey}`} className="text-xs">
+                              Shortcut Name
+                            </Label>
+                            <Input
+                              id={`edit-name-${shortcut.shortcutKey}`}
+                              value={editValues.shortcutName}
+                              onChange={(e) => setEditValues(prev => ({ ...prev, shortcutName: e.target.value }))}
+                              className="h-8 text-xs"
+                              data-testid={`input-shortcut-name-${shortcut.shortcutKey}`}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`edit-path-${shortcut.shortcutKey}`} className="text-xs">
+                              Route Path
+                            </Label>
+                            <Input
+                              id={`edit-path-${shortcut.shortcutKey}`}
+                              value={editValues.routePath}
+                              onChange={(e) => setEditValues(prev => ({ ...prev, routePath: e.target.value }))}
+                              className="h-8 text-xs"
+                              placeholder="/example"
+                              data-testid={`input-route-path-${shortcut.shortcutKey}`}
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={handleSaveShortcut}
+                              disabled={editShortcutMutation.isPending || !editValues.shortcutName.trim() || !editValues.routePath.trim()}
+                              size="sm"
+                              className="h-7 text-xs"
+                              data-testid={`button-save-shortcut-${shortcut.shortcutKey}`}
+                            >
+                              <Save className="w-3 h-3 mr-1" />
+                              Save
+                            </Button>
+                            <Button
+                              onClick={handleCancelEdit}
+                              disabled={editShortcutMutation.isPending}
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs"
+                              data-testid={`button-cancel-shortcut-${shortcut.shortcutKey}`}
+                            >
+                              <X className="w-3 h-3 mr-1" />
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
                       </div>
+                    );
+                  }
+                  
+                  // Normal mode - show shortcut button
+                  return (
+                    <div key={shortcut.shortcutKey} className="relative">
+                      <button
+                        onClick={() => handleShortcutToggle(shortcut.shortcutKey, shortcut.isVisible !== 1)}
+                        disabled={updateShortcutMutation.isPending}
+                        className={`
+                          w-full relative p-1 sm:p-1.5 rounded-lg transition-all duration-300 cursor-pointer group aspect-square
+                          backdrop-blur-lg border shadow-2xl
+                          ${shortcut.isVisible === 1
+                            ? 'bg-green-100/20 dark:bg-green-950/20 border-green-300/30 dark:border-green-700/40 text-green-700 dark:text-green-300 shadow-green-400/20' 
+                            : 'bg-red-100/20 dark:bg-red-950/20 border-red-300/30 dark:border-red-700/40 text-red-700 dark:text-red-300 shadow-red-400/20'
+                          }
+                          hover:-translate-y-1 hover:scale-105 hover:shadow-3xl
+                          disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0
+                        `}
+                        data-testid={`button-shortcut-${shortcut.shortcutKey}`}
+                      >
+                        {/* Status indicator circle */}
+                        <div className={`
+                          absolute top-1 right-1 w-2 h-2 rounded-full border transition-colors
+                          ${shortcut.isVisible === 1
+                            ? 'bg-green-500 border-green-600 shadow-green-400/50' 
+                            : 'bg-red-500 border-red-600 shadow-red-400/50'
+                          }
+                          shadow-lg
+                        `} />
+                        
+                        {/* Main content */}
+                        <div className="text-left space-y-0.5">
+                          <h3 className="font-semibold text-xs">{shortcut.shortcutName}</h3>
+                          <p className="text-[10px] opacity-70">{shortcut.routePath}</p>
+                          <div className="flex items-center gap-1 text-[9px] font-medium">
+                            <div className={`
+                              w-1 h-1 rounded-full
+                              ${shortcut.isVisible === 1 ? 'bg-green-500' : 'bg-red-500'}
+                            `} />
+                            {shortcut.isVisible === 1 ? 'ON' : 'OFF'}
+                          </div>
+                        </div>
+                        
+                        {/* 3D Glass Effect */}
+                        <div className="absolute inset-0 bg-gradient-to-b from-white/15 to-black/5 dark:from-gray-300/15 dark:to-gray-700/5 rounded-lg"></div>
+                        
+                        {/* Inner Glass Highlight */}
+                        <div className="absolute inset-0.5 bg-gradient-to-b from-white/20 to-transparent dark:from-gray-300/20 rounded-lg opacity-50"></div>
+                        
+                        {/* Hover effect overlay */}
+                        <div className="absolute inset-0 bg-white/10 dark:bg-black/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </button>
+                      
+                      {/* Edit button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditShortcut(shortcut);
+                        }}
+                        className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center transition-colors z-10"
+                        data-testid={`button-edit-shortcut-${shortcut.shortcutKey}`}
+                      >
+                        <Edit3 className="w-2.5 h-2.5" />
+                      </button>
                     </div>
-                    
-                    {/* 3D Glass Effect */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/15 to-black/5 dark:from-gray-300/15 dark:to-gray-700/5 rounded-lg"></div>
-                    
-                    {/* Inner Glass Highlight */}
-                    <div className="absolute inset-0.5 bg-gradient-to-b from-white/20 to-transparent dark:from-gray-300/20 rounded-lg opacity-50"></div>
-                    
-                    {/* Hover effect overlay */}
-                    <div className="absolute inset-0 bg-white/10 dark:bg-black/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </button>
-                ))}
+                  );
+                })}
               </div>
               {shortcutSettings.length === 0 && (
                 <p className="text-sm text-muted-foreground italic">
