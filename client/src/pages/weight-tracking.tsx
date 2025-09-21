@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Bar } from "recharts";
-import { Calendar, Upload, Plus, Trash2, Download, X, BarChart, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Target } from "lucide-react";
+import { Calendar, Upload, Plus, Trash2, Download, X, BarChart, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Target, HelpCircle } from "lucide-react";
 import { format, subDays, subMonths, parseISO } from "date-fns";
 import { type WeightEntry, type InsertWeightEntry } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -745,41 +745,72 @@ export default function WeightTracking() {
           </Card>
         </Tabs>
 
-        {/* RENPHO CSV Format Information (moved to bottom) */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">RENPHO CSV Format Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-medium mb-2">Import Instructions:</h4>
-                <p className="text-sm text-muted-foreground mb-3">
-                  You can import your RENPHO health data by exporting from the RENPHO app and uploading the CSV file here. 
-                  The system will automatically parse all health metrics including weight, body fat, muscle mass, BMI, and more.
-                </p>
-              </div>
-              
-              <div>
-                <h4 className="font-medium mb-2">Expected CSV Format:</h4>
-                <div className="bg-muted p-3 rounded-md overflow-x-auto">
-                  <code className="text-xs whitespace-pre">
+        {/* Import Help Accordion */}
+        <Card className="bg-gradient-to-br from-orange-50/50 to-amber-50/50 dark:from-orange-950/20 dark:to-amber-950/20 border-orange-200/30 dark:border-orange-800/30">
+          <Accordion type="single" collapsible>
+            <AccordionItem value="import-help" className="border-none">
+              <AccordionTrigger 
+                className="px-6 py-4 hover:no-underline"
+                data-testid="accordion-trigger-import-help"
+              >
+                <div className="flex items-center gap-3 text-orange-700 dark:text-orange-300">
+                  <HelpCircle className="w-5 h-5" />
+                  <span className="font-semibold">Import Help & RENPHO Format Guide</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6">
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="font-semibold mb-3 text-orange-800 dark:text-orange-200">How to Import RENPHO Data:</h4>
+                    <div className="space-y-2 text-sm text-orange-700 dark:text-orange-300">
+                      <p className="flex items-start gap-2">
+                        <span className="font-medium min-w-[20px]">1.</span>
+                        <span>Open the RENPHO app on your phone</span>
+                      </p>
+                      <p className="flex items-start gap-2">
+                        <span className="font-medium min-w-[20px]">2.</span>
+                        <span>Go to Profile → Data Export → Export CSV</span>
+                      </p>
+                      <p className="flex items-start gap-2">
+                        <span className="font-medium min-w-[20px]">3.</span>
+                        <span>Save the CSV file to your device</span>
+                      </p>
+                      <p className="flex items-start gap-2">
+                        <span className="font-medium min-w-[20px]">4.</span>
+                        <span>Click "Import RENPHO" button above and select your file</span>
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-3 text-orange-800 dark:text-orange-200">Expected CSV Format:</h4>
+                    <div className="bg-orange-100/70 dark:bg-orange-900/30 p-4 rounded-lg overflow-x-auto border border-orange-200/50 dark:border-orange-800/50">
+                      <code className="text-xs whitespace-pre text-orange-900 dark:text-orange-100">
 {`Date, Time, Weight(lb),Body Fat(%),Fat-Free Mass(lb),Muscle Mass(lb),BMI,Subcutaneous Fat(%),Skeletal Muscle(%),...
 8/24/25,11:52:37 AM,166.4,15.0,141.4,134.2,26.8,12.4,54.9,61.4,9,7.2,19.4,1769,31,--,--,--,--,--,--
 8/21/25,7:47:06 AM,167.4,15.1,142.0,135.0,27.0,12.5,54.8,61.3,10,7.0,19.4,1747,31,--,--,--,--,--,--`}
-                  </code>
+                      </code>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-3 text-orange-800 dark:text-orange-200">Export Your Data:</h4>
+                    <p className="text-sm text-orange-700 dark:text-orange-300">
+                      Use the "Export CSV" button above to download your current data in RENPHO format. 
+                      You can edit this file and re-import it to update or add new entries.
+                    </p>
+                  </div>
+                  
+                  <div className="bg-orange-100/50 dark:bg-orange-900/20 p-4 rounded-lg border border-orange-200/50 dark:border-orange-800/50">
+                    <h4 className="font-medium mb-2 text-orange-800 dark:text-orange-200">💡 Pro Tip:</h4>
+                    <p className="text-sm text-orange-700 dark:text-orange-300">
+                      The system automatically parses all health metrics including weight, body fat, muscle mass, BMI, and more advanced metrics like visceral fat and metabolic age.
+                    </p>
+                  </div>
                 </div>
-              </div>
-              
-              <div>
-                <h4 className="font-medium mb-2">Export Template:</h4>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Use the "Export CSV" button above to download your current data in RENPHO format. 
-                  You can then edit this file and re-import it to update or add new entries.
-                </p>
-              </div>
-            </div>
-          </CardContent>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </Card>
       </main>
     </>
