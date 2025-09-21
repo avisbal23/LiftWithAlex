@@ -68,6 +68,7 @@ export default function WeightTracking() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/weight-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/weight-audit"] });
       setNewEntry({
         weight: "",
         date: format(new Date(), "yyyy-MM-dd"),
@@ -90,6 +91,7 @@ export default function WeightTracking() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/weight-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/weight-audit"] });
       toast({
         title: "Entry deleted",
         description: "Health data entry has been removed.",

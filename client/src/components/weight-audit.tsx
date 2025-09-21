@@ -11,12 +11,8 @@ export default function WeightAudit() {
   const [isCollapsed, setIsCollapsed] = useState(true);
 
   // Query to get weight audit entries
-  const { data: auditEntries, isLoading } = useQuery<WeightAudit[]>({
+  const { data: auditEntries, isLoading, error } = useQuery<WeightAudit[]>({
     queryKey: ["/api/weight-audit"],
-    queryFn: async () => {
-      const response = await apiRequest("GET", "/api/weight-audit");
-      return response.json();
-    },
   });
 
   const handleCollapseChange = (open: boolean) => {
@@ -52,15 +48,26 @@ export default function WeightAudit() {
     }
   };
 
+  const getSourceLabel = (source: string) => {
+    switch (source) {
+      case 'manual':
+        return 'Manual Entry';
+      case 'renpho_csv':
+        return 'RENPHO CSV';
+      default:
+        return source || 'Unknown';
+    }
+  };
+
   const formatValue = (value: number | null | undefined, unit?: string) => {
     if (value === null || value === undefined) return '-';
-    return unit ? `${value}${unit}` : value.toString();
+    return unit ? `${value} ${unit}` : value.toString();
   };
 
   const formatDelta = (delta: number | null | undefined, unit?: string) => {
     if (delta === null || delta === undefined || delta === 0) return null;
     const sign = delta > 0 ? '+' : '';
-    const formatted = unit ? `${sign}${delta}${unit}` : `${sign}${delta}`;
+    const formatted = unit ? `${sign}${delta} ${unit}` : `${sign}${delta}`;
     const color = delta > 0 ? 'text-green-600' : 'text-red-600';
     return <span className={color}>({formatted})</span>;
   };
@@ -95,6 +102,10 @@ export default function WeightAudit() {
               <div className="text-center py-4 text-green-600 dark:text-green-400">
                 Loading audit history...
               </div>
+            ) : error ? (
+              <div className="text-center py-4 text-red-600 dark:text-red-400">
+                Failed to load audit history. Please try refreshing the page.
+              </div>
             ) : !auditEntries || auditEntries.length === 0 ? (
               <div className="text-center py-4 text-green-600/70 dark:text-green-400/70">
                 No weight changes recorded yet
@@ -114,7 +125,7 @@ export default function WeightAudit() {
                           {getActionLabel(entry.action)}
                         </span>
                         <span className="text-sm text-green-600/70 dark:text-green-400/70">
-                          via {entry.source === 'manual' ? 'Manual Entry' : 'RENPHO CSV'}
+                          via {getSourceLabel(entry.source)}
                         </span>
                       </div>
                       <span className="text-sm text-green-600/70 dark:text-green-400/70">
@@ -129,9 +140,9 @@ export default function WeightAudit() {
                           <span className="text-green-600/70 dark:text-green-400/70">Weight:</span>
                           <div className="text-green-700 dark:text-green-300">
                             {entry.action === 'delete' 
-                              ? formatValue(entry.previousWeight, 'kg')
-                              : formatValue(entry.newWeight, 'kg')
-                            } {formatDelta(entry.weightDelta, 'kg')}
+                              ? formatValue(entry.previousWeight, 'lbs')
+                              : formatValue(entry.newWeight, 'lbs')
+                            } {formatDelta(entry.weightDelta, 'lbs')}
                           </div>
                         </div>
                       )}
@@ -155,9 +166,9 @@ export default function WeightAudit() {
                           <span className="text-green-600/70 dark:text-green-400/70">Muscle Mass:</span>
                           <div className="text-green-700 dark:text-green-300">
                             {entry.action === 'delete' 
-                              ? formatValue(entry.previousMuscleMass, 'kg')
-                              : formatValue(entry.newMuscleMass, 'kg')
-                            } {formatDelta(entry.muscleMassDelta, 'kg')}
+                              ? formatValue(entry.previousMuscleMass, 'lbs')
+                              : formatValue(entry.newMuscleMass, 'lbs')
+                            } {formatDelta(entry.muscleMassDelta, 'lbs')}
                           </div>
                         </div>
                       )}
