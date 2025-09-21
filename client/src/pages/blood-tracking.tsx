@@ -469,18 +469,7 @@ export default function BloodTracking() {
             {/* Hormone Balance */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Testosterone</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {getLatestMarkerValue('totalTestosterone', 'totalTestosteroneUnit')}
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Free Testosterone</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Testosterone</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600 dark:text-green-400">
@@ -491,72 +480,15 @@ export default function BloodTracking() {
             
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Estradiol</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Testosterone</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-pink-600 dark:text-pink-400">
-                  {getLatestMarkerValue('estradiol', 'estradiolUnit')}
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {getLatestMarkerValue('totalTestosterone', 'totalTestosteroneUnit')}
                 </div>
               </CardContent>
             </Card>
             
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">T/E Ratio</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                  {calculateRatio('totalTestosterone', 'estradiol')}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Lipids */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">LDL Cholesterol</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                  {getLatestMarkerValue('ldlCalc', 'ldlCalcUnit')}
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">HDL Cholesterol</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                  {getLatestMarkerValue('hdl', 'hdlUnit')}
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Triglycerides</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                  {getLatestMarkerValue('triglycerides', 'triglyceridesUnit')}
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">TG/HDL Ratio</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                  {calculateRatio('triglycerides', 'hdl')}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Thyroid & Vitamins */}
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">TSH</CardTitle>
@@ -570,22 +502,22 @@ export default function BloodTracking() {
             
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Free T3</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">LDL</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">
-                  {getLatestMarkerValue('freeT3', 'freeT3Unit')}
+                <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                  {getLatestMarkerValue('ldlCalc', 'ldlCalcUnit')}
                 </div>
               </CardContent>
             </Card>
             
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Vitamin D</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">SHBG</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                  {getLatestMarkerValue('vitaminD25oh', 'vitaminD25ohUnit')}
+                <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                  {getLatestMarkerValue('shbg', 'shbgUnit')}
                 </div>
               </CardContent>
             </Card>
@@ -597,6 +529,28 @@ export default function BloodTracking() {
               <CardContent>
                 <div className="text-2xl font-bold text-slate-600 dark:text-slate-400">
                   {getLatestMarkerValue('hba1c', 'hba1cUnit')}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">APOB</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                  {getLatestMarkerValue('apob', 'apobUnit')}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Vitamin D</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                  {getLatestMarkerValue('vitaminD25oh', 'vitaminD25ohUnit')}
                 </div>
               </CardContent>
             </Card>
