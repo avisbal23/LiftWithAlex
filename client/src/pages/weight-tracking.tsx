@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -49,6 +50,9 @@ export default function WeightTracking() {
   
   // State for chart/table tabs
   const [activeTab, setActiveTab] = useState("chart");
+  
+  // State for add entry dialog advanced fields
+  const [showAdvancedFields, setShowAdvancedFields] = useState(false);
 
   // Fetch weight entries
   const { data: weightEntries = [], isLoading } = useQuery<WeightEntry[]>({
@@ -334,35 +338,38 @@ export default function WeightTracking() {
                   Add Entry
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>Add Health Data Entry</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="weight">Weight (lbs) *</Label>
-                      <Input
-                        id="weight"
-                        type="number"
-                        step="0.1"
-                        value={newEntry.weight}
-                        onChange={(e) => setNewEntry(prev => ({ ...prev, weight: e.target.value }))}
-                        placeholder="172.8"
-                      />
+                  {/* Essential Fields */}
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="weight">Weight (lbs) *</Label>
+                        <Input
+                          id="weight"
+                          type="number"
+                          step="0.1"
+                          value={newEntry.weight}
+                          onChange={(e) => setNewEntry(prev => ({ ...prev, weight: e.target.value }))}
+                          placeholder="172.8"
+                          data-testid="input-weight"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="date">Date *</Label>
+                        <Input
+                          id="date"
+                          type="date"
+                          value={newEntry.date}
+                          onChange={(e) => setNewEntry(prev => ({ ...prev, date: e.target.value }))}
+                          data-testid="input-date"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <Label htmlFor="date">Date *</Label>
-                      <Input
-                        id="date"
-                        type="date"
-                        value={newEntry.date}
-                        onChange={(e) => setNewEntry(prev => ({ ...prev, date: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
+                    
                     <div>
                       <Label htmlFor="time">Time</Label>
                       <Input
@@ -370,52 +377,72 @@ export default function WeightTracking() {
                         value={newEntry.time}
                         onChange={(e) => setNewEntry(prev => ({ ...prev, time: e.target.value }))}
                         placeholder="9:15:29 AM"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="bodyFat">Body Fat %</Label>
-                      <Input
-                        id="bodyFat"
-                        type="number"
-                        step="0.1"
-                        value={newEntry.bodyFat}
-                        onChange={(e) => setNewEntry(prev => ({ ...prev, bodyFat: e.target.value }))}
-                        placeholder="15.1"
+                        data-testid="input-time"
                       />
                     </div>
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="muscleMass">Muscle Mass (lbs)</Label>
-                      <Input
-                        id="muscleMass"
-                        type="number"
-                        step="0.1"
-                        value={newEntry.muscleMass}
-                        onChange={(e) => setNewEntry(prev => ({ ...prev, muscleMass: e.target.value }))}
-                        placeholder="139.4"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="bmi">BMI</Label>
-                      <Input
-                        id="bmi"
-                        type="number"
-                        step="0.1"
-                        value={newEntry.bmi}
-                        onChange={(e) => setNewEntry(prev => ({ ...prev, bmi: e.target.value }))}
-                        placeholder="27.1"
-                      />
-                    </div>
-                  </div>
+
+                  {/* Advanced Fields Accordion */}
+                  <Accordion type="single" collapsible className="border rounded-lg">
+                    <AccordionItem value="advanced-fields" className="border-none">
+                      <AccordionTrigger 
+                        className="px-4 py-3 text-sm font-medium hover:no-underline"
+                        data-testid="accordion-trigger-more-fields"
+                      >
+                        More Fields (Optional)
+                      </AccordionTrigger>
+                      <AccordionContent className="px-4 pb-4">
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="bodyFat" className="text-sm">Body Fat %</Label>
+                              <Input
+                                id="bodyFat"
+                                type="number"
+                                step="0.1"
+                                value={newEntry.bodyFat}
+                                onChange={(e) => setNewEntry(prev => ({ ...prev, bodyFat: e.target.value }))}
+                                placeholder="15.1"
+                                data-testid="input-body-fat"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="muscleMass" className="text-sm">Muscle Mass (lbs)</Label>
+                              <Input
+                                id="muscleMass"
+                                type="number"
+                                step="0.1"
+                                value={newEntry.muscleMass}
+                                onChange={(e) => setNewEntry(prev => ({ ...prev, muscleMass: e.target.value }))}
+                                placeholder="139.4"
+                                data-testid="input-muscle-mass"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <Label htmlFor="bmi" className="text-sm">BMI</Label>
+                            <Input
+                              id="bmi"
+                              type="number"
+                              step="0.1"
+                              value={newEntry.bmi}
+                              onChange={(e) => setNewEntry(prev => ({ ...prev, bmi: e.target.value }))}
+                              placeholder="27.1"
+                              data-testid="input-bmi"
+                            />
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                   
                   <Button 
                     onClick={handleAddEntry} 
                     disabled={createMutation.isPending}
                     className="w-full"
+                    data-testid="button-submit-entry"
                   >
-                    Add Entry
+                    {createMutation.isPending ? "Adding..." : "Add Entry"}
                   </Button>
                 </div>
               </DialogContent>
