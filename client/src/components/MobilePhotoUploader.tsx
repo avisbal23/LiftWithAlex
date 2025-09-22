@@ -280,7 +280,7 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
               <Image className="w-12 h-12 text-gray-400" />
             </div>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Take a new photo or select an existing one
+              Take a new photo/video or select from your gallery
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button
@@ -289,7 +289,7 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
                 data-testid="button-take-photo"
               >
                 <Camera className="w-4 h-4 mr-2" />
-                Take Photo
+                Take Photo/Video
               </Button>
               <Button
                 onClick={() => fileInputRef.current?.click()}
@@ -298,14 +298,14 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
                 data-testid="button-select-photo"
               >
                 <Image className="w-4 h-4 mr-2" />
-                Select from Gallery
+                Select Photo/Video
               </Button>
             </div>
             {/* Camera input - opens camera directly */}
             <input
               ref={cameraInputRef}
               type="file"
-              accept="image/*,video/*"
+              accept="image/*,video/mp4,video/mov,video/avi,video/webm,video/quicktime"
               capture="environment"
               onChange={handleFileSelect}
               className="hidden"
@@ -315,7 +315,7 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*,video/*"
+              accept="image/*,video/mp4,video/mov,video/avi,video/webm,video/quicktime"
               onChange={handleFileSelect}
               className="hidden"
               data-testid="input-gallery-file"
