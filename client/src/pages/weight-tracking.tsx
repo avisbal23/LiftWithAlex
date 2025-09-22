@@ -45,7 +45,6 @@ export default function WeightTracking() {
   });
   
   // State for dismissible callout
-  const [showCallout, setShowCallout] = useState(true);
   
   // State for chart controls collapsible
   
@@ -302,33 +301,6 @@ export default function WeightTracking() {
           </div>
         </div>
 
-        {/* RENPHO Import Callout */}
-        {showCallout && (
-          <div className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border border-orange-200 dark:border-orange-800 rounded-lg p-4 mb-8 relative">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowCallout(false)}
-              className="absolute top-2 right-2 h-6 w-6 p-0 text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-200 hover:bg-orange-100 dark:hover:bg-orange-900/50"
-              data-testid="button-close-callout"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-            <div className="flex items-start gap-3 pr-8">
-              <div className="bg-orange-100 dark:bg-orange-900 p-2 rounded-lg">
-                <Calendar className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-orange-900 dark:text-orange-100 mb-1">
-                  💡 Import Data from RENPHO App
-                </h3>
-                <p className="text-sm text-orange-800 dark:text-orange-200">
-                  Export from RENPHO app and import to sync all your weight and body metrics.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className="flex items-center justify-between mb-6">
           <div></div>
