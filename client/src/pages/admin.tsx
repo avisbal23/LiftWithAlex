@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Upload, Database, FileText, Activity, Droplets, FileDown, MessageSquare, Settings, Lock, Edit3, Save, X, Circle } from "lucide-react";
-import { type Exercise, type WeightEntry, type Quote, type ShortcutSettings, type TabSettings, type UserSettings } from "@shared/schema";
+import { Download, Upload, Database, FileDown, MessageSquare, Settings, Lock, Edit3, Save, X, Circle } from "lucide-react";
+import { type Exercise, type Quote, type ShortcutSettings, type TabSettings, type UserSettings } from "@shared/schema";
 import { Switch } from "@/components/ui/switch";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
 
@@ -16,7 +16,6 @@ export default function Admin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [workoutImportData, setWorkoutImportData] = useState("");
-  const [weightImportData, setWeightImportData] = useState("");
   const [quotesImportData, setQuotesImportData] = useState("");
   const [isImporting, setIsImporting] = useState(false);
   
@@ -36,9 +35,6 @@ export default function Admin() {
     queryKey: ["/api/exercises"],
   });
 
-  const { data: weightEntries = [] } = useQuery<WeightEntry[]>({
-    queryKey: ["/api/weight-entries"],
-  });
 
   const { data: quotes = [] } = useQuery<Quote[]>({
     queryKey: ["/api/quotes"],
@@ -299,27 +295,6 @@ export default function Admin() {
     });
   };
 
-  const downloadWeightTemplate = () => {
-    const sampleRows = [
-      '2025-01-09|08:30|185.5|15.2|150.3',
-      '2025-01-08|08:15|186.0|15.4|149.8',
-      '2025-01-07|08:20|186.3|15.6|149.5'
-    ];
-    
-    const content = sampleRows.join('\n');
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'weight-import-template.txt';
-    link.click();
-    window.URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Template Downloaded",
-      description: "Weight import template downloaded (DATE|TIME|WEIGHT|BODYFATPERCENTAGE|LEANMASS format)",
-    });
-  };
 
   const exportWorkouts = () => {
     if (exercises.length === 0) {
@@ -352,37 +327,6 @@ export default function Admin() {
     });
   };
 
-  const exportWeights = () => {
-    if (weightEntries.length === 0) {
-      toast({
-        title: "No Data",
-        description: "No weight entries to export",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const csvHeaders = 'Date,Time,Weight(lb),Body Fat(%),Fat-Free Mass(lb),Muscle Mass(lb),BMI,Subcutaneous Fat(%),Skeletal Muscle(%),Body Water(%),Visceral Fat,Bone Mass(lb),Protein (%),BMR(kcal),Metabolic Age';
-    const csvRows = weightEntries.map(entry => {
-      const date = new Date(entry.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }).replace(/\//g, '/');
-      const time = entry.time || '12:00:00 PM';
-      return `${date},${time},${entry.weight || 0},${entry.bodyFat || 0},${entry.fatFreeMass || 0},${entry.muscleMass || 0},${entry.bmi || 0},${entry.subcutaneousFat || 0},${entry.skeletalMuscle || 0},${entry.bodyWater || 0},${entry.visceralFat || 0},${entry.boneMass || 0},${entry.protein || 0},${entry.bmr || 0},${entry.metabolicAge || 0}`;
-    });
-    
-    const csvContent = [csvHeaders, ...csvRows].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `visbal-gym-weights-${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    window.URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Weight Data Exported",
-      description: `${weightEntries.length} weight entries exported to CSV`,
-    });
-  };
 
   const importWorkouts = async () => {
     if (!workoutImportData.trim()) {
@@ -463,160 +407,6 @@ export default function Admin() {
     }
   };
 
-  const importWeights = async () => {
-    if (!weightImportData.trim()) {
-      toast({
-        title: "Error", 
-        description: "Please paste weight data to import",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsImporting(true);
-    try {
-      const lines = weightImportData.trim().split('\n');
-      if (lines.length < 1) {
-        throw new Error("Data must have at least one row");
-      }
-      
-      const rows = lines.map(line => {
-        const values = line.split('|').map(v => v.trim());
-        
-        if (values.length < 5) {
-          throw new Error("Each line must have 5 pipe-separated values: DATE|TIME|WEIGHT|BODYFATPERCENTAGE|LEANMASS");
-        }
-        
-        const [rawDate, rawTime, weight, bodyFat, leanMass] = values;
-        
-        // Convert date from M/D/YY to YYYY-MM-DD
-        let formattedDate = rawDate;
-        const dateMatch = rawDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
-        if (dateMatch) {
-          const [, month, day, year] = dateMatch;
-          const fullYear = parseInt(year) < 50 ? `20${year}` : `19${year}`; // Assume 00-49 is 2000s, 50-99 is 1900s
-          formattedDate = `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-        } else if (!rawDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-          throw new Error(`Invalid date format "${rawDate}". Use M/D/YY or YYYY-MM-DD format.`);
-        }
-        
-        // Convert time from 12-hour to 24-hour format if needed
-        let formattedTime = rawTime;
-        const timeMatch = rawTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-        if (timeMatch) {
-          const [, hours, minutes, period] = timeMatch;
-          let hour24 = parseInt(hours);
-          if (period.toUpperCase() === 'PM' && hour24 !== 12) {
-            hour24 += 12;
-          } else if (period.toUpperCase() === 'AM' && hour24 === 12) {
-            hour24 = 0;
-          }
-          formattedTime = `${hour24.toString().padStart(2, '0')}:${minutes}`;
-        } else if (rawTime.match(/^\d{1,2}:\d{2}$/)) {
-          // Handle 24-hour format - just ensure proper padding
-          const [hours, minutes] = rawTime.split(':');
-          formattedTime = `${hours.padStart(2, '0')}:${minutes}`;
-        } else {
-          throw new Error(`Invalid time format "${rawTime}". Use HH:MM or H:MM AM/PM format.`);
-        }
-        
-        // Handle null or numeric body fat percentage
-        let parsedBodyFat = 0;
-        if (bodyFat.toLowerCase() === 'null' || bodyFat === '') {
-          parsedBodyFat = 0;
-        } else {
-          parsedBodyFat = parseFloat(bodyFat);
-          if (isNaN(parsedBodyFat)) {
-            throw new Error(`Invalid body fat value "${bodyFat}". Use a number or "null".`);
-          }
-        }
-
-        // Handle null or numeric lean mass
-        let parsedLeanMass = 0;
-        if (leanMass.toLowerCase() === 'null' || leanMass === '') {
-          parsedLeanMass = 0;
-        } else {
-          parsedLeanMass = parseFloat(leanMass);
-          if (isNaN(parsedLeanMass)) {
-            throw new Error(`Invalid lean mass value "${leanMass}". Use a number or "null".`);
-          }
-        }
-        
-        return {
-          date: new Date(formattedDate),
-          time: formattedTime,
-          weight: parseFloat(weight),
-          bodyFat: parsedBodyFat,
-          fatFreeMass: parsedLeanMass
-        };
-      });
-
-      // Validate numeric values
-      rows.forEach((row, index) => {
-        if (isNaN(row.weight) || row.weight <= 0) {
-          throw new Error(`Invalid weight value on line ${index + 1}: "${row.weight}"`);
-        }
-        if (isNaN(row.bodyFat) || row.bodyFat < 0 || row.bodyFat > 100) {
-          throw new Error(`Invalid body fat percentage on line ${index + 1}: "${row.bodyFat}"`);
-        }
-        if (isNaN(row.fatFreeMass) || row.fatFreeMass < 0) {
-          throw new Error(`Invalid lean mass value on line ${index + 1}: "${row.fatFreeMass}"`);
-        }
-      });
-
-      // Clear existing weight entries first (ignore 404 errors)
-      const deletePromises = weightEntries.map(async (entry) => {
-        try {
-          await apiRequest("DELETE", `/api/weight-entries/${entry.id}`);
-        } catch (error) {
-          // Ignore 404 errors - entry might already be deleted
-          console.log(`Entry ${entry.id} already deleted or not found`);
-        }
-      });
-      await Promise.all(deletePromises);
-
-      // Import new weight entries
-      const importPromises = rows.map((row) => {
-        const payload = {
-          date: row.date.toISOString(), // Convert Date to ISO string for JSON
-          time: row.time,
-          weight: row.weight,
-          bodyFat: row.bodyFat,
-          fatFreeMass: row.fatFreeMass,
-          muscleMass: row.fatFreeMass, // Using lean mass for muscle mass
-          bmi: 0, // Will be calculated if needed
-          subcutaneousFat: 0,
-          skeletalMuscle: 0,
-          bodyWater: 0,
-          visceralFat: 0,
-          boneMass: 0,
-          protein: 0,
-          bmr: 0,
-          metabolicAge: 0
-        };
-        console.log("Sending weight entry:", payload);
-        return apiRequest("POST", "/api/weight-entries", payload);
-      });
-      await Promise.all(importPromises);
-
-      // Refresh data
-      queryClient.invalidateQueries({ queryKey: ["/api/weight-entries"] });
-      
-      toast({
-        title: "Import Successful",
-        description: `${rows.length} weight entries imported`,
-      });
-      setWeightImportData("");
-    } catch (error) {
-      toast({
-        title: "Import Failed",
-        description: error instanceof Error ? error.message : "Invalid data format",
-        variant: "destructive",
-      });
-    } finally {
-      setIsImporting(false);
-    }
-  };
 
   const downloadQuotesTemplate = () => {
     const sampleQuotes = [
@@ -815,63 +605,6 @@ export default function Admin() {
             </CardContent>
           </Card>
 
-          {/* Weight Data Management */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="w-5 h-5" />
-                Weight Data Management
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-2">
-                <Button 
-                  onClick={exportWeights}
-                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
-                  data-testid="button-export-weights"
-                >
-                  <Download className="w-4 h-4" />
-                  Export Weight Data
-                </Button>
-                <Button 
-                  onClick={downloadWeightTemplate}
-                  variant="outline"
-                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
-                  data-testid="button-download-weight-template"
-                >
-                  <FileDown className="w-4 h-4" />
-                  Download Template
-                </Button>
-                <span className="text-xs sm:text-sm text-muted-foreground flex items-center justify-center sm:justify-start px-3 py-2 sm:px-0 sm:py-0">
-                  ({weightEntries.length} entries)
-                </span>
-              </div>
-              
-              <div className="space-y-3">
-                <Label htmlFor="weight-import" className="text-sm font-medium">Import Weight Data</Label>
-                <Textarea
-                  id="weight-import"
-                  placeholder="Paste your weight data here...\nFormat: DATE|TIME|WEIGHT|BODYFATPERCENTAGE|LEANMASS\nExample: 5/6/25|06:05|177.4|15.7|null\nSupports: M/D/YY dates, 24-hour time, and null values"
-                  value={weightImportData}
-                  onChange={(e) => setWeightImportData(e.target.value)}
-                  className="min-h-[100px] sm:min-h-[120px] font-mono text-xs sm:text-sm resize-none"
-                />
-                <Button 
-                  onClick={importWeights}
-                  disabled={isImporting || !weightImportData.trim()}
-                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
-                  variant="outline"
-                  data-testid="button-import-weights"
-                >
-                  <Upload className="w-4 h-4" />
-                  {isImporting ? "Importing..." : "Import Weight Data"}
-                </Button>
-                <p className="text-xs text-muted-foreground">
-                  ⚠️ This will replace ALL existing weight data
-                </p>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Home Screen Shortcut Management */}
           <Card>
@@ -1134,59 +867,6 @@ export default function Admin() {
             </CardContent>
           </Card>
 
-          {/* Data Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                CSV Export/Import Format
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4 text-sm">
-                <div>
-                  <h4 className="font-medium mb-2">Workout CSV Format:</h4>
-                  <pre className="bg-muted p-2 rounded text-xs overflow-x-auto">
-{`name,category,weight,reps,notes,duration,distance,pace,calories,rpe,createdAt
-"Flat Dumbbell Press","push",80,6,"80, 75 lbs | 5–7 reps","","","",0,0,"2025-01-24T12:00:00.000Z"
-"Incline Dumbbell Press","push",70,10,"Good form","","","",0,0,"2025-01-24T12:05:00.000Z"
-"Cardio Run","cardio",0,0,"Morning run","30:00","3.5 miles","8:34/mi",350,7,"2025-01-24T07:00:00.000Z"`}
-                  </pre>
-                </div>
-                
-                <div>
-                  <h4 className="font-medium mb-2">Weight CSV Format (RENPHO Compatible):</h4>
-                  <pre className="bg-muted p-2 rounded text-xs overflow-x-auto">
-{`Date,Time,Weight(lb),Body Fat(%),Fat-Free Mass(lb),Muscle Mass(lb),BMI,Subcutaneous Fat(%),Skeletal Muscle(%),Body Water(%),Visceral Fat,Bone Mass(lb),Protein (%),BMR(kcal),Metabolic Age
-8/24/25,11:52:37 AM,166.4,15.0,141.4,134.2,26.8,12.4,54.9,61.4,9,7.2,19.4,1769,31
-8/21/25,7:47:06 AM,167.4,15.1,142.0,135.0,27.0,12.5,54.8,61.3,10,7.0,19.4,1747,31`}
-                  </pre>
-                </div>
-                
-                <div>
-                  <h4 className="font-medium mb-2">Quotes Text Format:</h4>
-                  <pre className="bg-muted p-2 rounded text-xs overflow-x-auto">
-{`"Fear = Fuel" - Me
-"OUT WORK, OUT BELIEVE" - Me
-"The Gym Is the Only Place I Love to Be a Failure" - Me
-"Control the Controlables" - Unknown
-"It's Easy to Be on the Bottom. It Doesn't Take Any Effort to Be a Loser." - Unknown`}
-                  </pre>
-                </div>
-                
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg dark:bg-blue-950">
-                  <h5 className="font-medium text-blue-900 dark:text-blue-100 mb-1">💡 Data Import Sources:</h5>
-                  <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
-                    <li>• <strong>Weight Data:</strong> Import directly from RENPHO app CSV exports</li>
-                    <li>• <strong>Blood Labs:</strong> Import directly from Rhythm Health platform exports</li>
-                    <li>• <strong>Quotes:</strong> Import your custom motivational quotes in simple text format</li>
-                    <li>• All exports work with Excel, Google Sheets, or other CSV apps</li>
-                    <li>• All imports will replace existing data - backup first if needed</li>
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Quotes Management */}
           <Card>
