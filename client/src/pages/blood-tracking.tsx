@@ -90,6 +90,9 @@ export default function BloodTracking() {
   // Flip card state
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
   
+  // Editing state for optimal ranges
+  const [editingBiomarker, setEditingBiomarker] = useState<keyof typeof BIOMARKER_INFO | null>(null);
+  
   // Import state
   const [importData, setImportData] = useState("");
   const [csvImportData, setCsvImportData] = useState("");
@@ -337,6 +340,47 @@ export default function BloodTracking() {
     );
   };
 
+  // Helper function to get display name from biomarker key
+  const getBiomarkerDisplayName = (key: keyof typeof BIOMARKER_INFO): string => {
+    const nameMap: Record<keyof typeof BIOMARKER_INFO, string> = {
+      freeTestosterone: "Free Testosterone",
+      totalTestosterone: "Total Testosterone", 
+      tsh: "TSH",
+      ldlCalc: "LDL Cholesterol",
+      triglycerides: "Triglycerides",
+      hdl: "HDL Cholesterol",
+      vitaminD25oh: "Vitamin D"
+    };
+    return nameMap[key] || key;
+  };
+
+  // Edit Range Modal
+  const EditRangeModal = () => {
+    if (!editingBiomarker) return null;
+
+    const info = BIOMARKER_INFO[editingBiomarker];
+    const currentRange = bloodOptimalRanges.find(range => range.markerKey === editingBiomarker);
+    const displayName = getBiomarkerDisplayName(editingBiomarker);
+
+    return (
+      <Dialog open={!!editingBiomarker} onOpenChange={(open) => setEditingBiomarker(open ? editingBiomarker : null)}>
+        <DialogContent className="sm:max-w-md" data-testid={`dialog-edit-${editingBiomarker}`}>
+          <DialogHeader>
+            <DialogTitle>Edit {displayName} Optimal Range</DialogTitle>
+          </DialogHeader>
+          <OptimalRangeEditor
+            biomarkerKey={editingBiomarker}
+            info={info}
+            currentRange={currentRange}
+            onSave={() => {
+              setEditingBiomarker(null);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
   // Mutations for immediate file attachment
   const addAttachment = useMutation({
     mutationFn: ({ entryId, file }: { entryId: string; file: {fileName: string; fileUrl: string; fileType: string; fileSize: number} }) =>
@@ -480,8 +524,20 @@ export default function BloodTracking() {
               <div className={`text-2xl font-bold ${colorClass}`}>
                 {value}
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1" data-testid={`text-optimal-${biomarkerKey}`}>
-                Optimal: {getOptimalRange(biomarkerKey, currentUnit)}
+              <div className="flex items-center justify-between mt-1">
+                <div className="text-xs text-gray-500 dark:text-gray-400" data-testid={`text-optimal-${biomarkerKey}`}>
+                  Optimal: {getOptimalRange(biomarkerKey, currentUnit)}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEditingBiomarker(biomarkerKey)}
+                  className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  aria-label={`Edit ${title} optimal range`}
+                  data-testid={`button-edit-${biomarkerKey}`}
+                >
+                  <Target className="h-4 w-4" />
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -490,7 +546,7 @@ export default function BloodTracking() {
           <Card className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)]">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Edit {title} Range
+                {title}
               </CardTitle>
               <Button
                 variant="ghost"
@@ -504,15 +560,19 @@ export default function BloodTracking() {
               </Button>
             </CardHeader>
             <CardContent className="pt-0" data-testid={`panel-back-${biomarkerKey}`}>
-              <OptimalRangeEditor
-                biomarkerKey={biomarkerKey}
-                info={info}
-                currentRange={bloodOptimalRanges.find(range => range.markerKey === biomarkerKey)}
-                onSave={() => {
-                  // Flip back to front after saving
-                  toggleCardFlip(biomarkerKey);
-                }}
-              />
+              <div className="space-y-2">
+                <p className="text-xs text-gray-600 dark:text-gray-400 leading-tight">
+                  {info.description}
+                </p>
+                <div className="border-t pt-2">
+                  <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                    Optimal: {relevantRange.optimal}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {relevantRange.note}
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -1660,6 +1720,9 @@ export default function BloodTracking() {
           </div>
         </div>
       </div>
+      
+      {/* Edit Range Modal */}
+      <EditRangeModal />
     </div>
   );
 }
