@@ -666,6 +666,7 @@ export default function WeightTracking() {
                           <SelectItem value="90">90 Days</SelectItem>
                           <SelectItem value="180">6 Months</SelectItem>
                           <SelectItem value="365">1 Year</SelectItem>
+                          <SelectItem value="1825">5 Years</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
