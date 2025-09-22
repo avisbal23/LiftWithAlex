@@ -281,6 +281,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add attachment to blood entry
+  app.post("/api/blood-entries/:id/attachments", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const { fileName, fileUrl, fileType, fileSize } = req.body;
+      
+      if (!fileName || !fileUrl || !fileType || !fileSize) {
+        return res.status(400).json({ message: "Missing required attachment fields" });
+      }
+
+      // Get current entry by fetching all and finding by ID
+      const allEntries = await storage.getAllBloodEntries();
+      const currentEntry = allEntries.find(entry => entry.id === id);
+      
+      if (!currentEntry) {
+        return res.status(404).json({ message: "Blood entry not found" });
+      }
+
+      // Add new attachment to existing attachments
+      const newAttachment = JSON.stringify({ fileName, fileUrl, fileType, fileSize });
+      const updatedAttachments = [...(currentEntry.attachedFiles || []), newAttachment];
+      
+      // Update entry with new attachments
+      const updatedEntry = await storage.updateBloodEntry(id, { 
+        attachedFiles: updatedAttachments 
+      });
+      
+      if (!updatedEntry) {
+        return res.status(404).json({ message: "Blood entry not found" });
+      }
+      
+      res.json(updatedEntry);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to add attachment" });
+    }
+  });
+
+  // Remove attachment from blood entry
+  app.delete("/api/blood-entries/:id/attachments", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const { fileUrl } = req.body;
+      
+      if (!fileUrl) {
+        return res.status(400).json({ message: "Missing fileUrl" });
+      }
+
+      // Get current entry by fetching all and finding by ID
+      const allEntries = await storage.getAllBloodEntries();
+      const currentEntry = allEntries.find(entry => entry.id === id);
+      
+      if (!currentEntry) {
+        return res.status(404).json({ message: "Blood entry not found" });
+      }
+
+      // Remove attachment with matching fileUrl
+      const updatedAttachments = (currentEntry.attachedFiles || []).filter((fileStr: string) => {
+        try {
+          const file = JSON.parse(fileStr);
+          return file.fileUrl !== fileUrl;
+        } catch {
+          return true; // Keep malformed entries
+        }
+      });
+      
+      // Update entry with filtered attachments
+      const updatedEntry = await storage.updateBloodEntry(id, { 
+        attachedFiles: updatedAttachments 
+      });
+      
+      if (!updatedEntry) {
+        return res.status(404).json({ message: "Blood entry not found" });
+      }
+      
+      res.json(updatedEntry);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to remove attachment" });
+    }
+  });
+
   // Photo Progress Routes
 
   // Get all photo progress entries
