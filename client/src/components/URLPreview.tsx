@@ -190,7 +190,7 @@ export const renderTextWithURLs = (text: string) => {
   }
 
   // Split text and insert URL previews
-  let parts = [text];
+  let parts: (string | { type: 'url'; url: string })[] = [text];
   urls.forEach(url => {
     const newParts: (string | { type: 'url'; url: string })[] = [];
     parts.forEach(part => {
@@ -241,7 +241,7 @@ export const renderTextWithURLs = (text: string) => {
               </a>
             );
           }
-          return <span key={index}>{part}</span>;
+          return <span key={index}>{typeof part === 'string' ? part : ''}</span>;
         })}
       </div>
       
