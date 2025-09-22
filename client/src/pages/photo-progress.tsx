@@ -197,63 +197,80 @@ export default function PhotoProgressPage() {
             <Card key={photo.id} className="overflow-hidden hover:shadow-lg transition-shadow">
               <div className="aspect-square relative overflow-hidden bg-gray-100 dark:bg-gray-800">
                 {photo.fileType === 'video' ? (
-                  <video
-                    src={photo.photoUrl}
-                    className="w-full h-full object-cover"
-                    controls
-                    data-testid={`video-${photo.id}`}
-                  >
-                    Your browser does not support video playback.
-                  </video>
-                ) : (
-                  <img
-                    src={photo.photoUrl}
-                    alt={photo.title}
-                    className="w-full h-full object-cover"
-                    data-testid={`img-photo-${photo.id}`}
-                  />
-                )}
-                <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center opacity-0 hover:opacity-100">
-                  <div className="flex gap-2">
+                  <>
+                    <video
+                      src={photo.photoUrl}
+                      className="w-full h-full object-cover"
+                      controls
+                      preload="metadata"
+                      data-testid={`video-${photo.id}`}
+                    >
+                      Your browser does not support video playback.
+                    </video>
                     <Button
                       size="sm"
                       variant="secondary"
+                      className="absolute top-2 right-2"
                       onClick={() => startEdit(photo)}
                       data-testid={`button-edit-${photo.id}`}
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => {
-                        if (confirm(`Are you sure you want to delete this ${photo.fileType === 'video' ? 'video' : 'photo'}?`)) {
-                          deleteMutation.mutate(photo.id);
-                        }
-                      }}
-                      data-testid={`button-delete-${photo.id}`}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
+                  </>
+                ) : (
+                  <>
+                    <img
+                      src={photo.photoUrl}
+                      alt={photo.title}
+                      className="w-full h-full object-cover"
+                      data-testid={`img-photo-${photo.id}`}
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center opacity-0 hover:opacity-100">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => startEdit(photo)}
+                        data-testid={`button-edit-${photo.id}`}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg" data-testid={`title-${photo.id}`}>
-                  {photo.title}
-                </CardTitle>
-                <CardDescription className="flex items-center gap-4 text-sm">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    {format(new Date(photo.takenAt), "MMM d, yyyy")}
-                  </span>
-                  {photo.weight && (
-                    <span className="flex items-center gap-1">
-                      <User className="w-4 h-4" />
-                      {photo.weight} lbs
-                    </span>
-                  )}
-                </CardDescription>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg" data-testid={`title-${photo.id}`}>
+                      {photo.title}
+                    </CardTitle>
+                    <CardDescription className="flex items-center gap-4 text-sm">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        {format(new Date(photo.takenAt), "MMM d, yyyy")}
+                      </span>
+                      {photo.weight && (
+                        <span className="flex items-center gap-1">
+                          <User className="w-4 h-4" />
+                          {photo.weight} lbs
+                        </span>
+                      )}
+                    </CardDescription>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="ml-2"
+                    onClick={() => {
+                      if (confirm(`Are you sure you want to delete this ${photo.fileType === 'video' ? 'video' : 'photo'}?`)) {
+                        deleteMutation.mutate(photo.id);
+                      }
+                    }}
+                    data-testid={`button-delete-${photo.id}`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </CardHeader>
               {(photo.description || photo.bodyPart) && (
                 <CardContent className="pt-0">
