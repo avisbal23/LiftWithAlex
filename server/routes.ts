@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import path from "path";
 import fs from "fs";
-import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema, insertExerciseTemplateSchema, updateExerciseTemplateSchema, insertChangesAuditSchema, updateChangesAuditSchema, insertPRChangesAuditSchema, insertWeightAuditSchema, updateWeightAuditSchema, insertWorkoutTimerSchema, updateWorkoutTimerSchema, insertTimerLapTimeSchema, updateTimerLapTimeSchema } from "@shared/schema";
+import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertBloodOptimalRangeSchema, updateBloodOptimalRangeSchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema, insertExerciseTemplateSchema, updateExerciseTemplateSchema, insertChangesAuditSchema, updateChangesAuditSchema, insertPRChangesAuditSchema, insertWeightAuditSchema, updateWeightAuditSchema, insertWorkoutTimerSchema, updateWorkoutTimerSchema, insertTimerLapTimeSchema, updateTimerLapTimeSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -358,6 +358,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedEntry);
     } catch (error) {
       res.status(500).json({ message: "Failed to remove attachment" });
+    }
+  });
+
+  // Blood Optimal Range Routes
+  // Get all blood optimal ranges
+  app.get("/api/blood-optimal-ranges", async (req, res) => {
+    try {
+      const ranges = await storage.getAllBloodOptimalRanges();
+      res.json(ranges);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch blood optimal ranges" });
+    }
+  });
+
+  // Get blood optimal range by marker key
+  app.get("/api/blood-optimal-ranges/:markerKey", async (req, res) => {
+    try {
+      const markerKey = req.params.markerKey;
+      const range = await storage.getBloodOptimalRange(markerKey);
+      
+      if (!range) {
+        return res.status(404).json({ message: "Blood optimal range not found" });
+      }
+      
+      res.json(range);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch blood optimal range" });
+    }
+  });
+
+  // Create or update blood optimal range
+  app.put("/api/blood-optimal-ranges/:markerKey", async (req, res) => {
+    try {
+      const markerKey = req.params.markerKey;
+      const bodyWithMarkerKey = { ...req.body, markerKey };
+      const validatedData = insertBloodOptimalRangeSchema.parse(bodyWithMarkerKey);
+      const range = await storage.upsertBloodOptimalRange(validatedData);
+      
+      res.json(range);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to save blood optimal range" });
+      }
+    }
+  });
+
+  // Delete blood optimal range
+  app.delete("/api/blood-optimal-ranges/:markerKey", async (req, res) => {
+    try {
+      const markerKey = req.params.markerKey;
+      const deleted = await storage.deleteBloodOptimalRange(markerKey);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Blood optimal range not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete blood optimal range" });
     }
   });
 
