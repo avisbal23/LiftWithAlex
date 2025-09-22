@@ -215,15 +215,15 @@ export default function BloodTracking() {
     const relevantRange = info.ranges.find(range => range.unit === currentUnit) || info.ranges[0];
 
     return (
-      <div className="relative h-32 perspective-1000" data-testid={`kpi-card-${biomarkerKey}`}>
+      <div className="relative h-32 [perspective:1000px]" data-testid={`kpi-card-${biomarkerKey}`}>
         <div 
-          className={`
-            relative w-full h-full transition-transform duration-500 transform-style-preserve-3d
-            ${isFlipped ? 'rotate-y-180' : ''}
-          `}
+          className="relative w-full h-full transition-transform duration-500 [transform-style:preserve-3d]"
+          style={{ 
+            transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)' 
+          }}
         >
           {/* Front of card */}
-          <Card className={`absolute inset-0 backface-hidden ${isFlipped ? 'invisible' : 'visible'}`}>
+          <Card className="absolute inset-0 [backface-visibility:hidden]">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
                 {title}
@@ -247,7 +247,7 @@ export default function BloodTracking() {
           </Card>
 
           {/* Back of card */}
-          <Card className={`absolute inset-0 backface-hidden rotate-y-180 ${!isFlipped ? 'invisible' : 'visible'}`}>
+          <Card className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)]">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
                 {title}
