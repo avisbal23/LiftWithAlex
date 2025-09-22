@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Camera, Upload, X, Check, Loader2 } from "lucide-react";
+import { Camera, Upload, X, Check, Loader2, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { InsertPhotoProgress } from "@shared/schema";
@@ -28,6 +28,8 @@ interface MobilePhotoUploaderProps {
 
 export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStep, setUploadStep] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -41,13 +43,54 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Image compression function
+  const compressImage = (file: File, maxWidth: number = 1200, quality: number = 0.8): Promise<File> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const img = new Image();
+
+      img.onload = () => {
+        // Calculate new dimensions
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        // Draw and compress
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const compressedFile = new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            } else {
+              resolve(file); // Fallback to original
+            }
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 10485760) { // 10MB limit
+      if (file.size > 50485760) { // 50MB absolute limit
         toast({
           title: "File too large",
-          description: "Please select a file smaller than 10MB",
+          description: "Please select a file smaller than 50MB",
           variant: "destructive",
         });
         return;
@@ -62,9 +105,34 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
         return;
       }
 
-      setSelectedFile(file);
-      const url = URL.createObjectURL(file);
+      // Compress image if it's large
+      let processedFile = file;
+      if (file.size > 2097152) { // 2MB - compress larger files
+        setUploadStep("Optimizing image...");
+        setUploadProgress(10);
+        try {
+          processedFile = await compressImage(file);
+          setUploadProgress(20);
+          setUploadStep("");
+        } catch (error) {
+          console.warn("Image compression failed, using original:", error);
+          processedFile = file;
+        }
+      }
+
+      setSelectedFile(processedFile);
+      const url = URL.createObjectURL(processedFile);
       setPreviewUrl(url);
+      setUploadProgress(0);
+
+      // Show compression savings if file was compressed
+      if (processedFile.size < file.size) {
+        const savings = ((file.size - processedFile.size) / file.size * 100).toFixed(0);
+        toast({
+          title: "Image optimized",
+          description: `File size reduced by ${savings}% for faster upload`,
+        });
+      }
     }
   };
 
@@ -97,11 +165,15 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
     }
 
     setIsUploading(true);
+    setUploadProgress(0);
+    setUploadStep("Getting upload URL...");
 
     try {
       // Step 1: Get upload URL
       const uploadResponse = await apiRequest("POST", "/api/objects/upload");
       const uploadData = await uploadResponse.json() as { uploadURL: string };
+      setUploadProgress(25);
+      setUploadStep("Uploading image...");
       
       // Step 2: Upload file directly to object storage
       const uploadResult = await fetch(uploadData.uploadURL, {
@@ -113,11 +185,17 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
       });
 
       if (!uploadResult.ok) {
-        throw new Error('Upload failed');
+        throw new Error(`Upload failed with status: ${uploadResult.status}`);
       }
 
+      setUploadProgress(70);
+      setUploadStep("Setting permissions...");
+      
       // Step 3: Set ACL permissions
       await apiRequest("PUT", "/api/objects/set-acl", { photoURL: uploadData.uploadURL });
+      
+      setUploadProgress(90);
+      setUploadStep("Saving photo details...");
 
       // Step 4: Save photo progress entry
       const photoData: InsertPhotoProgress = {
@@ -130,6 +208,9 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
       };
 
       await apiRequest("POST", "/api/photo-progress", photoData);
+      
+      setUploadProgress(100);
+      setUploadStep("Complete!");
 
       toast({
         title: "Success!",
@@ -139,13 +220,16 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
       onSuccess();
     } catch (error) {
       console.error("Upload error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
       toast({
         title: "Upload failed",
-        description: "There was an error uploading your photo. Please try again.",
+        description: `Error: ${errorMessage}. Please try again.`,
         variant: "destructive",
       });
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
+      setUploadStep("");
     }
   };
 
@@ -295,24 +379,40 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
         >
           Cancel
         </Button>
-        <Button
-          onClick={handleUploadAndSave}
-          disabled={isUploading || !selectedFile}
-          className="w-full sm:flex-1"
-          data-testid="button-upload-save-mobile"
-        >
-          {isUploading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Uploading & Saving...
-            </>
-          ) : (
-            <>
-              <Upload className="w-4 h-4 mr-2" />
-              Upload & Save Photo
-            </>
+        <div className="space-y-3">
+          {isUploading && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">{uploadStep}</span>
+                <span className="text-muted-foreground">{uploadProgress}%</span>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out" 
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            </div>
           )}
-        </Button>
+          <Button
+            onClick={handleUploadAndSave}
+            disabled={isUploading || !selectedFile}
+            className="w-full sm:flex-1"
+            data-testid="button-upload-save-mobile"
+          >
+            {isUploading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {uploadStep || "Processing..."}
+              </>
+            ) : (
+              <>
+                <Zap className="w-4 h-4 mr-2" />
+                Upload & Save Photo
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );

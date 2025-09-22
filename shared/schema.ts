@@ -369,6 +369,12 @@ export const updateBloodEntrySchema = insertBloodEntrySchema.partial();
 export const insertPhotoProgressSchema = createInsertSchema(photoProgress).omit({
   id: true,
   createdAt: true,
+}).extend({
+  // Allow string dates and Date objects to be coerced properly
+  takenAt: z.union([
+    z.string().transform((str) => new Date(str)),
+    z.date()
+  ]).transform((date) => date instanceof Date ? date : new Date(date)),
 });
 
 export const updatePhotoProgressSchema = insertPhotoProgressSchema.partial();
