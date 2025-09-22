@@ -1,7 +1,6 @@
-import { Moon, Sun, Home, Menu, Dumbbell, Activity, Heart } from "lucide-react";
+import { Moon, Sun, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "wouter";
 import { NavigationMenu } from "@/components/NavigationMenu";
 import MiniStopwatch from "@/components/mini-stopwatch";
 import { useQuery } from "@tanstack/react-query";
@@ -10,7 +9,6 @@ import { type UserSettings } from "@shared/schema";
 export default function Header() {
   const [isDark, setIsDark] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [location] = useLocation();
 
   // Fetch user settings for dynamic app title
   const { data: userSettings } = useQuery<UserSettings[]>({
@@ -63,41 +61,8 @@ export default function Header() {
               </h1>
             </div>
 
-            {/* Center: Main Navigation */}
-            <div className="flex items-center space-x-1 sm:space-x-2">
-              {[
-                { path: "/", icon: Home, label: "Home" },
-                { path: "/push", icon: Dumbbell, label: "Push" },
-                { path: "/pull", icon: Dumbbell, label: "Pull" },
-                { path: "/legs", icon: Dumbbell, label: "Legs" },
-                { path: "/cardio", icon: Activity, label: "Cardio" }
-              ].map(({ path, icon: Icon, label }) => {
-                const isActive = location === path;
-                return (
-                  <Link key={path} href={path}>
-                    <a
-                      className={`
-                        relative backdrop-blur-sm border border-white/20 dark:border-gray-500/30 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 px-2 py-1.5 sm:px-3 sm:py-2
-                        ${isActive 
-                          ? 'bg-white/20 dark:bg-gray-500/30 text-white' 
-                          : 'bg-white/10 dark:bg-gray-600/20 text-white hover:bg-white/20 dark:hover:bg-gray-500/30'
-                        }
-                      `}
-                      data-testid={`nav-${label.toLowerCase()}`}
-                    >
-                      {/* Button 3D Effect */}
-                      <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
-                      <div className="relative z-10 flex items-center space-x-1 sm:space-x-2">
-                        <Icon className="h-4 w-4 text-white drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]" />
-                        <span className="text-xs sm:text-sm font-medium text-white drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]">
-                          {label}
-                        </span>
-                      </div>
-                    </a>
-                  </Link>
-                );
-              })}
-            </div>
+            {/* Center: Spacer */}
+            <div className="flex-1"></div>
             
             {/* Right: Mini Stopwatch, Hamburger Menu, Theme Toggle */}
             <div className="flex items-center space-x-2">
