@@ -347,8 +347,6 @@ export default function BloodTracking() {
       totalTestosterone: "Total Testosterone", 
       tsh: "TSH",
       ldlCalc: "LDL Cholesterol",
-      triglycerides: "Triglycerides",
-      hdl: "HDL Cholesterol",
       vitaminD25oh: "Vitamin D"
     };
     return nameMap[key] || key;
