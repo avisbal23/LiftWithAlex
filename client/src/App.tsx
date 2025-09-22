@@ -13,6 +13,7 @@ import Pull2 from "@/pages/pull2";
 import Legs2 from "@/pages/legs2";
 import Cardio from "@/pages/cardio";
 import WeightTracking from "@/pages/weight-tracking";
+import StepsTracking from "@/pages/steps-tracking";
 import BloodTracking from "@/pages/blood-tracking";
 import PhotoProgress from "@/pages/photo-progress";
 import Thoughts from "@/pages/thoughts";
@@ -42,6 +43,7 @@ function Router() {
         <Route path="/legs2" component={Legs2} />
         <Route path="/cardio" component={Cardio} />
         <Route path="/weight" component={WeightTracking} />
+        <Route path="/steps" component={StepsTracking} />
         <Route path="/blood" component={BloodTracking} />
         <Route path="/blood-tracking" component={BloodTracking} />
         <Route path="/photos" component={PhotoProgress} />

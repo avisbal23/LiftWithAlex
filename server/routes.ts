@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import path from "path";
 import fs from "fs";
-import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertBloodOptimalRangeSchema, updateBloodOptimalRangeSchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema, insertExerciseTemplateSchema, updateExerciseTemplateSchema, insertChangesAuditSchema, updateChangesAuditSchema, insertPRChangesAuditSchema, insertWeightAuditSchema, updateWeightAuditSchema, insertWorkoutTimerSchema, updateWorkoutTimerSchema, insertTimerLapTimeSchema, updateTimerLapTimeSchema, insertBodyMeasurementSchema, updateBodyMeasurementSchema } from "@shared/schema";
+import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertBloodOptimalRangeSchema, updateBloodOptimalRangeSchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema, insertExerciseTemplateSchema, updateExerciseTemplateSchema, insertChangesAuditSchema, updateChangesAuditSchema, insertPRChangesAuditSchema, insertWeightAuditSchema, updateWeightAuditSchema, insertWorkoutTimerSchema, updateWorkoutTimerSchema, insertTimerLapTimeSchema, updateTimerLapTimeSchema, insertBodyMeasurementSchema, updateBodyMeasurementSchema, insertStepEntrySchema, updateStepEntrySchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -291,6 +291,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete body measurement" });
+    }
+  });
+
+  // Step entry routes
+  
+  // Get all step entries
+  app.get("/api/step-entries", async (req, res) => {
+    try {
+      const entries = await storage.getAllStepEntries();
+      res.json(entries);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch step entries" });
+    }
+  });
+
+  // Get latest step entry
+  app.get("/api/step-entries/latest", async (req, res) => {
+    try {
+      const entry = await storage.getLatestStepEntry();
+      if (!entry) {
+        return res.status(404).json({ message: "No step entries found" });
+      }
+      res.json(entry);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch latest step entry" });
+    }
+  });
+
+  // Get step entries in date range
+  app.get("/api/step-entries/range", async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "startDate and endDate are required" });
+      }
+      
+      const entries = await storage.getStepEntriesInDateRange(
+        new Date(startDate as string),
+        new Date(endDate as string)
+      );
+      res.json(entries);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch step entries in range" });
+    }
+  });
+
+  // Create new step entry
+  app.post("/api/step-entries", async (req, res) => {
+    try {
+      const validatedData = insertStepEntrySchema.parse(req.body);
+      const entry = await storage.createStepEntry(validatedData);
+      res.status(201).json(entry);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create step entry" });
+      }
+    }
+  });
+
+  // Update step entry
+  app.patch("/api/step-entries/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const validatedData = updateStepEntrySchema.parse(req.body);
+      const entry = await storage.updateStepEntry(id, validatedData);
+      
+      if (!entry) {
+        return res.status(404).json({ message: "Step entry not found" });
+      }
+      
+      res.json(entry);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update step entry" });
+      }
+    }
+  });
+
+  // Delete step entry
+  app.delete("/api/step-entries/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const deleted = await storage.deleteStepEntry(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Step entry not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete step entry" });
     }
   });
 

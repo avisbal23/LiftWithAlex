@@ -26,6 +26,7 @@ export function UniversalNavigation() {
   // Additional pages for dropdown menu
   const dropdownPages = [
     { name: "Weight Tracking", path: "/weight", key: "weight" },
+    { name: "Steps Tracking", path: "/steps", key: "steps" },
     { name: "Blood Tracking", path: "/blood", key: "blood" },
     { name: "Photo Progress", path: "/photos", key: "photos" },
     { name: "Thoughts & Reflections", path: "/thoughts", key: "thoughts" },

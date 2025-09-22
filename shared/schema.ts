@@ -353,6 +353,16 @@ export const bodyMeasurements = pgTable("body_measurements", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Step Entries - daily step tracking from pedometer/phone
+export const stepEntries = pgTable("step_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  date: timestamp("date").notNull(),
+  steps: integer("steps").notNull(), // Daily step count
+  distance: real("distance"), // Distance traveled (miles)
+  floorsAscended: integer("floors_ascended"), // Floors climbed
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -594,6 +604,16 @@ export const insertBodyMeasurementSchema = createInsertSchema(bodyMeasurements).
 
 export const updateBodyMeasurementSchema = insertBodyMeasurementSchema.partial();
 
+export const insertStepEntrySchema = createInsertSchema(stepEntries).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  // Allow string dates to be coerced to Date objects
+  date: z.string().transform((str) => new Date(str)),
+});
+
+export const updateStepEntrySchema = insertStepEntrySchema.partial();
+
 export type ExerciseTemplate = typeof exerciseTemplates.$inferSelect;
 export type InsertExerciseTemplate = z.infer<typeof insertExerciseTemplateSchema>;
 export type UpdateExerciseTemplate = z.infer<typeof updateExerciseTemplateSchema>;
@@ -615,3 +635,6 @@ export type UpdateTimerLapTime = z.infer<typeof updateTimerLapTimeSchema>;
 export type BodyMeasurement = typeof bodyMeasurements.$inferSelect;
 export type InsertBodyMeasurement = z.infer<typeof insertBodyMeasurementSchema>;
 export type UpdateBodyMeasurement = z.infer<typeof updateBodyMeasurementSchema>;
+export type StepEntry = typeof stepEntries.$inferSelect;
+export type InsertStepEntry = z.infer<typeof insertStepEntrySchema>;
+export type UpdateStepEntry = z.infer<typeof updateStepEntrySchema>;
