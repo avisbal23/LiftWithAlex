@@ -43,7 +43,7 @@ export default function Header() {
           <div className="flex items-center justify-between h-16">
             {/* Left: App Title */}
             <div className="flex items-center space-x-4">
-              <h1 className="text-lg font-bold tracking-wide hidden sm:block" data-testid="app-title">
+              <h1 className="text-lg font-bold tracking-wide" data-testid="app-title">
                 <span className="relative inline-block">
                   {/* Outer glow effect */}
                   <span className="absolute inset-0 text-white blur-md opacity-30">
@@ -66,8 +66,8 @@ export default function Header() {
             
             {/* Right: Mini Stopwatch, Hamburger Menu, Theme Toggle */}
             <div className="flex items-center space-x-2">
-              {/* Mini Stopwatch - hidden on mobile */}
-              <div className="hidden md:block">
+              {/* Mini Stopwatch */}
+              <div>
                 <MiniStopwatch />
               </div>
 
