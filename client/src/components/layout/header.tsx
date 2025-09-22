@@ -4,11 +4,21 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { NavigationMenu } from "@/components/NavigationMenu";
 import MiniStopwatch from "@/components/mini-stopwatch";
+import { useQuery } from "@tanstack/react-query";
+import { type UserSettings } from "@shared/schema";
 
 export default function Header() {
   const [isDark, setIsDark] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [location] = useLocation();
+
+  // Fetch user settings for dynamic app title
+  const { data: userSettings } = useQuery<UserSettings[]>({
+    queryKey: ["/api/user-settings"],
+  });
+
+  // Get app title from settings or use default
+  const appTitle = userSettings?.[0]?.appTitle || "Visbal Gym Tracker";
 
   useEffect(() => {
     const saved = localStorage.getItem("theme");
@@ -39,15 +49,15 @@ export default function Header() {
                 <span className="relative inline-block">
                   {/* Outer glow effect */}
                   <span className="absolute inset-0 text-white blur-md opacity-30">
-                    Visbal Gym
+                    {appTitle}
                   </span>
                   {/* Inner glow effect */}
                   <span className="absolute inset-0 text-white blur-sm opacity-40">
-                    Visbal Gym
+                    {appTitle}
                   </span>
                   {/* Main Text with subtle glow */}
                   <span className="relative text-white font-extrabold drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]">
-                    Visbal Gym
+                    {appTitle}
                   </span>
                 </span>
               </h1>
