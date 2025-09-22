@@ -1,12 +1,14 @@
-import { Moon, Sun, Home, Menu } from "lucide-react";
+import { Moon, Sun, Home, Menu, Dumbbell, Activity, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import { Link, useLocation } from "wouter";
 import { NavigationMenu } from "@/components/NavigationMenu";
 import MiniStopwatch from "@/components/mini-stopwatch";
 
 export default function Header() {
   const [isDark, setIsDark] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [location] = useLocation();
 
   useEffect(() => {
     const saved = localStorage.getItem("theme");
@@ -33,31 +35,81 @@ export default function Header() {
           <div className="flex items-center justify-between h-16">
             {/* Left: App Title */}
             <div className="flex items-center space-x-4">
-              <h1 className="text-xl font-bold tracking-wide" data-testid="app-title">
+              <h1 className="text-lg font-bold tracking-wide hidden sm:block" data-testid="app-title">
                 <span className="relative inline-block">
                   {/* Outer glow effect */}
                   <span className="absolute inset-0 text-white blur-md opacity-30">
-                    Visbal Gym Tracker
+                    Visbal Gym
                   </span>
                   {/* Inner glow effect */}
                   <span className="absolute inset-0 text-white blur-sm opacity-40">
-                    Visbal Gym Tracker
+                    Visbal Gym
                   </span>
                   {/* Main Text with subtle glow */}
                   <span className="relative text-white font-extrabold drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]">
-                    Visbal Gym Tracker
+                    Visbal Gym
                   </span>
                 </span>
               </h1>
             </div>
 
-            {/* Center: Mini Stopwatch */}
-            <div className="flex-1 flex justify-center">
-              <MiniStopwatch />
+            {/* Center: Main Navigation */}
+            <div className="flex items-center space-x-1 sm:space-x-2">
+              {[
+                { path: "/", icon: Home, label: "Home" },
+                { path: "/push", icon: Dumbbell, label: "Push" },
+                { path: "/pull", icon: Dumbbell, label: "Pull" },
+                { path: "/legs", icon: Dumbbell, label: "Legs" },
+                { path: "/cardio", icon: Activity, label: "Cardio" }
+              ].map(({ path, icon: Icon, label }) => {
+                const isActive = location === path;
+                return (
+                  <Link key={path} href={path}>
+                    <a
+                      className={`
+                        relative backdrop-blur-sm border border-white/20 dark:border-gray-500/30 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 px-2 py-1.5 sm:px-3 sm:py-2
+                        ${isActive 
+                          ? 'bg-white/20 dark:bg-gray-500/30 text-white' 
+                          : 'bg-white/10 dark:bg-gray-600/20 text-white hover:bg-white/20 dark:hover:bg-gray-500/30'
+                        }
+                      `}
+                      data-testid={`nav-${label.toLowerCase()}`}
+                    >
+                      {/* Button 3D Effect */}
+                      <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
+                      <div className="relative z-10 flex items-center space-x-1 sm:space-x-2">
+                        <Icon className="h-4 w-4 text-white drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]" />
+                        <span className="text-xs sm:text-sm font-medium text-white drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]">
+                          {label}
+                        </span>
+                      </div>
+                    </a>
+                  </Link>
+                );
+              })}
             </div>
             
-            {/* Right: Theme Toggle */}
+            {/* Right: Mini Stopwatch, Hamburger Menu, Theme Toggle */}
             <div className="flex items-center space-x-2">
+              {/* Mini Stopwatch - hidden on mobile */}
+              <div className="hidden md:block">
+                <MiniStopwatch />
+              </div>
+
+              {/* Hamburger Menu Button */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setIsMenuOpen(true)}
+                data-testid="button-hamburger-menu"
+                className="relative backdrop-blur-sm bg-white/10 dark:bg-gray-600/20 border border-white/20 dark:border-gray-500/30 rounded-lg text-white hover:bg-white/20 dark:hover:bg-gray-500/30 transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+              >
+                {/* Button 3D Effect */}
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/10 to-transparent dark:from-gray-400/10"></div>
+                <Menu className="h-5 w-5 relative z-10 text-white drop-shadow-[0_0_4px_rgba(255,255,255,0.2)]" />
+              </Button>
+
+              {/* Theme Toggle */}
               <Button 
                 variant="ghost" 
                 size="icon" 
