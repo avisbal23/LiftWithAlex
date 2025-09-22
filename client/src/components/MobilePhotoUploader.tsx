@@ -157,8 +157,8 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
   const handleUploadAndSave = async () => {
     if (!selectedFile) {
       toast({
-        title: "No photo selected",
-        description: "Please select a photo to upload",
+        title: "No file selected",
+        description: "Please select a photo or video to upload",
         variant: "destructive",
       });
       return;
@@ -167,7 +167,7 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
     if (!formData.title.trim()) {
       toast({
         title: "Title required",
-        description: "Please enter a title for your photo",
+        description: "Please enter a title for your media",
         variant: "destructive",
       });
       return;
@@ -191,7 +191,7 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
       const uploadResponse = await apiRequest("POST", "/api/objects/upload");
       const uploadData = await uploadResponse.json() as { uploadURL: string };
       setUploadProgress(25);
-      setUploadStep("Uploading image...");
+      setUploadStep(`Uploading ${formData.fileType}...`);
       
       // Step 2: Upload file directly to object storage
       const uploadResult = await fetch(uploadData.uploadURL, {
@@ -214,7 +214,7 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
       const aclData = await aclResponse.json() as { objectPath: string };
       
       setUploadProgress(90);
-      setUploadStep("Saving photo details...");
+      setUploadStep("Saving details...");
 
       // Step 4: Save photo progress entry with proper display path
       const photoData: InsertPhotoProgress = {
@@ -466,7 +466,7 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
             ) : (
               <>
                 <Zap className="w-4 h-4 mr-2" />
-                Upload & Save Photo
+                Upload & Save {formData.fileType === 'video' ? 'Video' : 'Photo'}
               </>
             )}
           </Button>
