@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,15 +53,16 @@ export default function Admin() {
 
   const { data: userSettings } = useQuery<UserSettings[]>({
     queryKey: ["/api/user-settings"],
-    onSuccess: (data) => {
-      // Initialize app title state when user settings are loaded
-      if (data && data.length > 0 && data[0].appTitle) {
-        setAppTitle(data[0].appTitle);
-      } else {
-        setAppTitle("Visbal Gym Tracker"); // Default value
-      }
-    },
   });
+
+  // Initialize app title when userSettings loads (React Query v5 pattern)
+  useEffect(() => {
+    if (userSettings && userSettings.length > 0 && userSettings[0].appTitle) {
+      setAppTitle(userSettings[0].appTitle);
+    } else {
+      setAppTitle("Visbal Gym Tracker"); // Default value
+    }
+  }, [userSettings]);
 
   const updateShortcutMutation = useMutation({
     mutationFn: async ({ shortcutKey, isVisible }: { shortcutKey: string; isVisible: boolean }) => {
@@ -132,7 +133,7 @@ export default function Admin() {
 
   const updateAppTitleMutation = useMutation({
     mutationFn: async ({ appTitle }: { appTitle: string }) => {
-      const settingsId = userSettings?.[0]?.id;
+      const settingsId = userSettings && userSettings.length > 0 ? userSettings[0].id : null;
       if (settingsId) {
         return apiRequest("PATCH", `/api/user-settings/${settingsId}`, { appTitle });
       } else {
