@@ -198,6 +198,7 @@ export const workoutNotes = pgTable("workout_notes", {
 export const userSettings = pgTable("user_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   currentBodyWeight: real("current_body_weight"), // Current body weight in lbs
+  appTitle: text("app_title").default("Visbal Gym Tracker"), // Customizable app title
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
