@@ -171,7 +171,7 @@ export default function ThoughtsPage() {
         {/* Thoughts Feed */}
         <div className="space-y-4">
           {thoughts.length === 0 ? (
-            <Card className="p-8 text-center backdrop-blur-md bg-white/20 dark:bg-gray-800/20 border border-white/30 dark:border-gray-600/30 shadow-xl rounded-2xl">
+            <Card className="p-8 text-center backdrop-blur-md bg-white/20 dark:bg-gray-800/20 border border-white/30 dark:border-gray-600/30 shadow-xl rounded-2xl drop-shadow-[0_0_8px_rgba(255,255,255,0.15)]">
               <div className="text-gray-600 dark:text-gray-300">
                 <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <h3 className="text-lg font-medium mb-2">No thoughts yet</h3>
@@ -180,7 +180,7 @@ export default function ThoughtsPage() {
             </Card>
           ) : (
             thoughts.map((thought) => (
-              <Card key={thought.id} className="backdrop-blur-md bg-white/25 dark:bg-gray-800/25 border border-white/30 dark:border-gray-600/30 shadow-xl hover:shadow-2xl hover:bg-white/35 dark:hover:bg-gray-800/35 transition-all duration-300 rounded-2xl overflow-hidden">
+              <Card key={thought.id} className="backdrop-blur-md bg-white/25 dark:bg-gray-800/25 border border-white/30 dark:border-gray-600/30 shadow-xl hover:shadow-2xl hover:bg-white/35 dark:hover:bg-gray-800/35 transition-all duration-300 rounded-2xl overflow-hidden drop-shadow-[0_0_8px_rgba(255,255,255,0.15)] hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.25)]">
                 <CardContent className="p-6 relative">
                   {/* Glass shine effect */}
                   <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent dark:from-gray-300/10 rounded-2xl opacity-60 pointer-events-none"></div>
