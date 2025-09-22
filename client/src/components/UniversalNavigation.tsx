@@ -49,30 +49,31 @@ export function UniversalNavigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         
         {/* Mobile Navigation (screens < md) */}
-        <nav className="flex md:hidden items-center justify-between gap-2 w-full">
-          {/* Home Button - Mobile */}
-          <Button 
-            variant={location === "/" ? "default" : "outline"}
-            onClick={() => handleNavClick("/")}
-            data-testid="button-home-nav-mobile"
-            className={`
-              flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200
-              border-2 flex-shrink-0
-              ${location === "/" 
-                ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90" 
-                : "border-white dark:border-black bg-transparent hover:bg-muted"
-              }
-            `}
-          >
-            <HomeIcon className="h-4 w-4" />
-            <span className="font-medium text-sm">Home</span>
-          </Button>
-
-          {/* Current Page Indicator - Mobile */}
-          <div className="flex-1 text-center">
-            <span className="text-sm font-medium text-muted-foreground">
-              {mainNavItems.find(page => page.path === location)?.name || "Home"}
-            </span>
+        <nav className="flex md:hidden items-center gap-2 w-full">
+          {/* Main Navigation Buttons - Mobile (scrollable) */}
+          <div className="flex items-center gap-2 flex-1 min-w-0 overflow-x-auto">
+            {mainNavItems.map((page) => {
+              const Icon = page.icon;
+              return (
+                <Button
+                  key={page.key}
+                  variant={location === page.path ? "default" : "outline"}
+                  onClick={() => handleNavClick(page.path)}
+                  data-testid={`button-nav-mobile-${page.key}`}
+                  className={`
+                    flex items-center gap-1 px-3 py-2 rounded-lg transition-all duration-200
+                    border-2 flex-shrink-0 whitespace-nowrap
+                    ${location === page.path 
+                      ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90" 
+                      : "border-white dark:border-black bg-transparent hover:bg-muted"
+                    }
+                  `}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="font-medium text-sm">{page.name}</span>
+                </Button>
+              );
+            })}
           </div>
 
           {/* Menu Dropdown - Mobile */}
@@ -90,7 +91,7 @@ export function UniversalNavigation() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              {[...mainNavItems.filter(page => page.path !== "/"), ...dropdownPages].map((page) => (
+              {dropdownPages.map((page) => (
                 <DropdownMenuItem
                   key={page.key}
                   onClick={() => handleNavClick(page.path)}
