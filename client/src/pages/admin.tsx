@@ -1015,9 +1015,9 @@ export default function Admin() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Control which tabs are visible. Toggle tabs on or off, or click the edit button to modify tab names and paths.
+                Control which tabs are visible using the radio buttons below. Click the edit button to modify tab names and paths.
               </p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
+              <div className="space-y-4">
                 {tabSettings.map((tab) => {
                   const isHomeTab = tab.tabKey === 'home';
                   const isAdminTab = tab.tabKey === 'admin';
@@ -1026,34 +1026,30 @@ export default function Admin() {
                   const isEditing = editingTab === tab.tabKey;
                   
                   if (isEditing) {
-                    // Edit mode - show form instead of button
                     return (
-                      <div
-                        key={tab.tabKey}
-                        className="col-span-2 p-3 rounded-lg border bg-card text-card-foreground shadow-sm"
-                      >
-                        <div className="space-y-3">
+                      <div key={tab.tabKey} className="p-4 rounded-lg border bg-card shadow-sm">
+                        <div className="space-y-4">
                           <div>
-                            <Label htmlFor={`edit-tab-name-${tab.tabKey}`} className="text-xs">
+                            <Label htmlFor={`edit-tab-name-${tab.tabKey}`} className="text-sm font-medium">
                               Tab Name
                             </Label>
                             <Input
                               id={`edit-tab-name-${tab.tabKey}`}
                               value={editTabValues.tabName}
                               onChange={(e) => setEditTabValues(prev => ({ ...prev, tabName: e.target.value }))}
-                              className="h-8 text-xs"
+                              className="mt-1"
                               data-testid={`input-tab-name-${tab.tabKey}`}
                             />
                           </div>
                           <div>
-                            <Label htmlFor={`edit-tab-path-${tab.tabKey}`} className="text-xs">
+                            <Label htmlFor={`edit-tab-path-${tab.tabKey}`} className="text-sm font-medium">
                               Route Path
                             </Label>
                             <Input
                               id={`edit-tab-path-${tab.tabKey}`}
                               value={editTabValues.routePath}
                               onChange={(e) => setEditTabValues(prev => ({ ...prev, routePath: e.target.value }))}
-                              className="h-8 text-xs"
+                              className="mt-1"
                               placeholder="/example"
                               data-testid={`input-tab-route-path-${tab.tabKey}`}
                             />
@@ -1063,10 +1059,9 @@ export default function Admin() {
                               onClick={handleSaveTab}
                               disabled={editTabMutation.isPending || !editTabValues.tabName.trim() || !editTabValues.routePath.trim() || !editTabValues.routePath.startsWith('/')}
                               size="sm"
-                              className="h-7 text-xs"
                               data-testid={`button-save-tab-${tab.tabKey}`}
                             >
-                              <Save className="w-3 h-3 mr-1" />
+                              <Save className="w-4 h-4 mr-2" />
                               Save
                             </Button>
                             <Button
@@ -1074,10 +1069,9 @@ export default function Admin() {
                               disabled={editTabMutation.isPending}
                               variant="outline"
                               size="sm"
-                              className="h-7 text-xs"
                               data-testid={`button-cancel-tab-${tab.tabKey}`}
                             >
-                              <X className="w-3 h-3 mr-1" />
+                              <X className="w-4 h-4 mr-2" />
                               Cancel
                             </Button>
                           </div>
@@ -1086,86 +1080,60 @@ export default function Admin() {
                     );
                   }
                   
-                  // Normal mode - show tab button
+                  // Normal mode - show clean list item
                   return (
-                    <div key={tab.tabKey} className="relative">
-                      <button
-                        onClick={() => !isLockedTab && handleTabToggle(tab.tabKey, tab.isVisible !== 1)}
-                        disabled={isDisabled}
-                        className={`
-                          w-full relative p-1 sm:p-1.5 rounded-lg transition-all duration-300 group aspect-square
-                          backdrop-blur-lg border shadow-2xl
-                          ${tab.isVisible === 1
-                            ? 'bg-green-100/20 dark:bg-green-950/20 border-green-300/30 dark:border-green-700/40 text-green-700 dark:text-green-300 shadow-green-400/20' 
-                            : 'bg-red-100/20 dark:bg-red-950/20 border-red-300/30 dark:border-red-700/40 text-red-700 dark:text-red-300 shadow-red-400/20'
-                          }
-                          ${!isLockedTab ? 'cursor-pointer hover:-translate-y-1 hover:scale-105 hover:shadow-3xl' : 'cursor-not-allowed'}
-                          disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0
-                          ${isLockedTab ? 'opacity-75' : ''}
-                        `}
-                        data-testid={`button-tab-${tab.tabKey}`}
-                      >
-                        {/* Status indicator circle */}
-                        <div className={`
-                          absolute top-1 right-1 w-2 h-2 rounded-full border transition-colors
-                          ${tab.isVisible === 1
-                            ? 'bg-green-500 border-green-600 shadow-green-400/50' 
-                            : 'bg-red-500 border-red-600 shadow-red-400/50'
-                          }
-                          shadow-lg
-                        `} />
-                        
-                        {/* Main content */}
-                        <div className="text-left space-y-0.5">
-                          <h3 className="font-semibold text-xs">{tab.tabName}</h3>
-                          <p className="text-[10px] opacity-70">{tab.routePath}</p>
-                          <div className="flex items-center gap-1 text-[9px] font-medium">
-                            <div className={`
-                              w-1 h-1 rounded-full
-                              ${tab.isVisible === 1 ? 'bg-green-500' : 'bg-red-500'}
-                            `} />
-                            {tab.isVisible === 1 ? 'ON' : 'OFF'}
-                            {isLockedTab && (
-                              <span className="flex items-center gap-0.5 text-[8px] text-muted-foreground/70 ml-0.5">
-                                <Lock className="w-2 h-2" />
-                                🔒
-                              </span>
-                            )}
-                          </div>
+                    <div key={tab.tabKey} className={`flex items-center justify-between p-4 rounded-lg border ${isLockedTab ? 'bg-card/50 opacity-75' : 'bg-card hover:bg-accent/50'} transition-colors`}>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <div className="font-medium text-sm">{tab.tabName}</div>
+                          <div className="text-xs text-muted-foreground">{tab.routePath}</div>
+                          {isLockedTab && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Lock className="w-3 h-3" />
+                              Locked
+                            </div>
+                          )}
+                          {!isLockedTab && (
+                            <Button
+                              onClick={() => handleEditTab(tab)}
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              data-testid={`button-edit-tab-${tab.tabKey}`}
+                            >
+                              <Edit3 className="w-3 h-3" />
+                            </Button>
+                          )}
                         </div>
-                        
-                        {/* 3D Glass Effect */}
-                        <div className="absolute inset-0 bg-gradient-to-b from-white/15 to-black/5 dark:from-gray-300/15 dark:to-gray-700/5 rounded-lg"></div>
-                        
-                        {/* Inner Glass Highlight */}
-                        <div className="absolute inset-0.5 bg-gradient-to-b from-white/20 to-transparent dark:from-gray-300/20 rounded-lg opacity-50"></div>
-                        
-                        {/* Hover effect overlay */}
-                        <div className="absolute inset-0 bg-white/10 dark:bg-black/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </button>
-                      
-                      {/* Edit button - only show for non-locked tabs */}
-                      {!isLockedTab && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditTab(tab);
-                          }}
-                          className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center transition-colors z-10"
-                          data-testid={`button-edit-tab-${tab.tabKey}`}
+                      </div>
+                      {isLockedTab ? (
+                        <div className="text-sm text-green-600 font-medium">Always Enabled</div>
+                      ) : (
+                        <RadioGroup
+                          value={tab.isVisible === 1 ? "enabled" : "disabled"}
+                          onValueChange={(value) => handleTabToggle(tab.tabKey, value === "enabled")}
+                          className="flex gap-6"
+                          disabled={updateTabMutation.isPending}
                         >
-                          <Edit3 className="w-2.5 h-2.5" />
-                        </button>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="enabled" id={`tab-enabled-${tab.tabKey}`} data-testid={`radio-tab-enabled-${tab.tabKey}`} />
+                            <Label htmlFor={`tab-enabled-${tab.tabKey}`} className="text-sm font-normal cursor-pointer">Enabled</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="disabled" id={`tab-disabled-${tab.tabKey}`} data-testid={`radio-tab-disabled-${tab.tabKey}`} />
+                            <Label htmlFor={`tab-disabled-${tab.tabKey}`} className="text-sm font-normal cursor-pointer">Disabled</Label>
+                          </div>
+                        </RadioGroup>
                       )}
                     </div>
                   );
                 })}
+                {tabSettings.length === 0 && (
+                  <p className="text-sm text-muted-foreground italic">
+                    Loading tab settings...
+                  </p>
+                )}
               </div>
-              {tabSettings.length === 0 && (
-                <p className="text-sm text-muted-foreground italic">
-                  Loading tab settings...
-                </p>
-              )}
             </CardContent>
           </Card>
 
