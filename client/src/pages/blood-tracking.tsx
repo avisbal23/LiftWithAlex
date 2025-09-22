@@ -541,7 +541,7 @@ export default function BloodTracking() {
             {/* Hormone Balance */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Testosterone</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Free Testosterone</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600 dark:text-green-400">
