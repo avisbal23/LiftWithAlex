@@ -563,9 +563,6 @@ export default function BloodTracking() {
                   {info.description}
                 </p>
                 <div className="border-t pt-2">
-                  <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                    Optimal: {relevantRange.optimal}
-                  </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {relevantRange.note}
                   </p>
