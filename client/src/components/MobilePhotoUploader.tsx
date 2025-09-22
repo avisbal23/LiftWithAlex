@@ -191,17 +191,18 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
       setUploadProgress(70);
       setUploadStep("Setting permissions...");
       
-      // Step 3: Set ACL permissions
-      await apiRequest("PUT", "/api/objects/set-acl", { photoURL: uploadData.uploadURL });
+      // Step 3: Set ACL permissions and get proper object path
+      const aclResponse = await apiRequest("PUT", "/api/objects/set-acl", { photoURL: uploadData.uploadURL });
+      const aclData = await aclResponse.json() as { objectPath: string };
       
       setUploadProgress(90);
       setUploadStep("Saving photo details...");
 
-      // Step 4: Save photo progress entry
+      // Step 4: Save photo progress entry with proper display path
       const photoData: InsertPhotoProgress = {
         title: formData.title.trim(),
         description: formData.description.trim() || undefined,
-        photoUrl: uploadData.uploadURL,
+        photoUrl: aclData.objectPath, // Use the proper object path for display
         bodyPart: formData.bodyPart,
         weight: formData.weight ? parseFloat(formData.weight) : undefined,
         takenAt: new Date(formData.takenAt),
