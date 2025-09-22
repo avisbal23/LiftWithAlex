@@ -1504,6 +1504,38 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(bloodEntries).orderBy(desc(bloodEntries.asOf));
   }
 
+  // Blood optimal range operations
+  async getAllBloodOptimalRanges(): Promise<BloodOptimalRange[]> {
+    return await db.select().from(bloodOptimalRanges);
+  }
+
+  async getBloodOptimalRange(markerKey: string): Promise<BloodOptimalRange | undefined> {
+    const [range] = await db.select().from(bloodOptimalRanges).where(eq(bloodOptimalRanges.markerKey, markerKey));
+    return range || undefined;
+  }
+
+  async upsertBloodOptimalRange(entry: InsertBloodOptimalRange): Promise<BloodOptimalRange> {
+    const existing = await this.getBloodOptimalRange(entry.markerKey);
+    
+    if (existing) {
+      // Update existing
+      const [updated] = await db.update(bloodOptimalRanges)
+        .set(entry)
+        .where(eq(bloodOptimalRanges.markerKey, entry.markerKey))
+        .returning();
+      return updated;
+    } else {
+      // Create new
+      const [newRange] = await db.insert(bloodOptimalRanges).values(entry).returning();
+      return newRange;
+    }
+  }
+
+  async deleteBloodOptimalRange(markerKey: string): Promise<boolean> {
+    const result = await db.delete(bloodOptimalRanges).where(eq(bloodOptimalRanges.markerKey, markerKey));
+    return result.rowCount > 0;
+  }
+
   // Photo progress operations
   async createPhotoProgress(entry: InsertPhotoProgress): Promise<PhotoProgress> {
     const [newEntry] = await db.insert(photoProgress).values(entry).returning();

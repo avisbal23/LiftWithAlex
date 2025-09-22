@@ -12,7 +12,7 @@ import { Droplets, Plus, Calendar, Upload, Download, ChevronDown, ChevronUp, Tar
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { type BloodEntry, insertBloodEntrySchema } from "@shared/schema";
+import { type BloodEntry, type BloodOptimalRange, insertBloodEntrySchema } from "@shared/schema";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
 import { ObjectUploader } from "@/components/ObjectUploader";
 
@@ -99,6 +99,32 @@ export default function BloodTracking() {
   const { data: bloodEntries = [] } = useQuery<BloodEntry[]>({
     queryKey: ["/api/blood-entries"],
   });
+
+  const { data: bloodOptimalRanges = [] } = useQuery<BloodOptimalRange[]>({
+    queryKey: ["/api/blood-optimal-ranges"],
+  });
+
+  // Helper function to get optimal range for a biomarker (custom or default)
+  const getOptimalRange = (biomarkerKey: keyof typeof BIOMARKER_INFO, currentUnit: string) => {
+    // First check if there's a custom range for this biomarker
+    const customRange = bloodOptimalRanges.find(range => range.markerKey === biomarkerKey);
+    
+    if (customRange) {
+      // Return custom range with proper formatting
+      if (customRange.comparator === 'between' && customRange.low !== null && customRange.high !== null) {
+        return `${customRange.low}-${customRange.high} ${customRange.unit || currentUnit}`;
+      } else if (customRange.comparator === 'lte' && customRange.high !== null) {
+        return `<${customRange.high} ${customRange.unit || currentUnit}`;
+      } else if (customRange.comparator === 'gte' && customRange.low !== null) {
+        return `>${customRange.low} ${customRange.unit || currentUnit}`;
+      }
+    }
+    
+    // Fallback to default BIOMARKER_INFO
+    const info = BIOMARKER_INFO[biomarkerKey];
+    const relevantRange = info.ranges.find(range => range.unit === currentUnit) || info.ranges[0];
+    return relevantRange.optimal;
+  };
 
   // Mutations for immediate file attachment
   const addAttachment = useMutation({
@@ -242,6 +268,9 @@ export default function BloodTracking() {
             <CardContent data-testid={`panel-front-${biomarkerKey}`}>
               <div className={`text-2xl font-bold ${colorClass}`}>
                 {value}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1" data-testid={`text-optimal-${biomarkerKey}`}>
+                Optimal: {getOptimalRange(biomarkerKey, currentUnit)}
               </div>
             </CardContent>
           </Card>
