@@ -49,7 +49,7 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
     return new Promise((resolve) => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d')!;
-      const img = new Image();
+      const img = new window.Image();
 
       img.onload = () => {
         // Calculate new dimensions
