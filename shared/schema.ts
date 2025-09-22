@@ -134,6 +134,9 @@ export const bloodEntries = pgTable("blood_entries", {
   ferritin: real("ferritin"),
   ferritinUnit: text("ferritin_unit").default("ng/mL"),
   
+  // File Attachments
+  attachedFiles: text("attached_files").array(), // Array of JSON strings: {fileName, fileUrl, fileType, fileSize}
+  
   createdAt: timestamp("created_at").defaultNow(),
 });
 
