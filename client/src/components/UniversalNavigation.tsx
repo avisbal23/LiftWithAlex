@@ -49,10 +49,10 @@ export function UniversalNavigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         
         {/* Mobile Navigation (screens < md) */}
-        <nav className="flex md:hidden items-center gap-1.5 w-full">
+        <nav className="flex md:hidden items-center w-full">
           {/* Main Navigation Buttons - Mobile (scrollable) */}
-          <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto">
-            {mainNavItems.map((page) => {
+          <div className="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto pr-1">
+            {mainNavItems.map((page, index) => {
               return (
                 <Button
                   key={page.key}
@@ -60,15 +60,15 @@ export function UniversalNavigation() {
                   onClick={() => handleNavClick(page.path)}
                   data-testid={`button-nav-mobile-${page.key}`}
                   className={`
-                    flex items-center gap-1 px-2.5 py-2 rounded-md transition-all duration-200
-                    border flex-shrink-0 whitespace-nowrap font-medium text-xs
+                    flex items-center gap-1 px-2 py-2 rounded-md transition-all duration-200
+                    border flex-1 min-w-0 whitespace-nowrap font-medium text-xs
                     ${location === page.path 
                       ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90 shadow-sm" 
                       : "bg-background/80 hover:bg-accent hover:text-accent-foreground border-border shadow-sm"
                     }
                   `}
                 >
-                  <span>{page.name.toUpperCase()}</span>
+                  <span className="truncate">{page.name.toUpperCase()}</span>
                 </Button>
               );
             })}
@@ -110,10 +110,10 @@ export function UniversalNavigation() {
         </nav>
 
         {/* Desktop Navigation (screens >= md) */}
-        <nav className="hidden md:flex items-center gap-3 w-full">
+        <nav className="hidden md:flex items-center w-full">
           
           {/* Main Navigation Buttons Always Visible */}
-          <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-1 min-w-0 pr-2">
             {mainNavItems.map((page) => {
               return (
                 <Button
@@ -122,8 +122,8 @@ export function UniversalNavigation() {
                   onClick={() => handleNavClick(page.path)}
                   data-testid={`button-nav-desktop-${page.key}`}
                   className={`
-                    flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-200
-                    border flex-1 min-w-0 font-semibold text-sm
+                    flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all duration-200
+                    border flex-1 min-w-0 font-semibold text-sm justify-center
                     ${location === page.path 
                       ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90 shadow-md scale-105" 
                       : "bg-background/80 hover:bg-accent hover:text-accent-foreground border-border shadow-sm hover:shadow-md hover:scale-[1.02]"
