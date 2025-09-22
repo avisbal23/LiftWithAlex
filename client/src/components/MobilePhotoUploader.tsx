@@ -37,6 +37,7 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
     description: "",
     bodyPart: "",
     weight: "",
+    fileType: "image" as "image" | "video",
     takenAt: new Date().toISOString().slice(0, 16), // Current date in datetime-local format
   });
   
@@ -97,18 +98,22 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
         return;
       }
 
-      if (!file.type.startsWith('image/')) {
+      if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
         toast({
           title: "Invalid file type",
-          description: "Please select an image file",
+          description: "Please select an image or video file",
           variant: "destructive",
         });
         return;
       }
 
-      // Compress image if it's large
+      // Detect file type and set in form data
+      const fileType = file.type.startsWith('video/') ? 'video' : 'image';
+      setFormData(prev => ({ ...prev, fileType }));
+
+      // Compress image if it's large (skip compression for videos)
       let processedFile = file;
-      if (file.size > 2097152) { // 2MB - compress larger files
+      if (fileType === 'image' && file.size > 2097152) { // 2MB - compress larger images
         setUploadStep("Optimizing image...");
         setUploadProgress(10);
         try {
@@ -119,6 +124,13 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
           console.warn("Image compression failed, using original:", error);
           processedFile = file;
         }
+      } else if (fileType === 'video') {
+        setUploadStep("Preparing video...");
+        setUploadProgress(10);
+        // For videos, we'll use the original file without compression for now
+        processedFile = file;
+        setUploadProgress(20);
+        setUploadStep("");
       }
 
       setSelectedFile(processedFile);
@@ -132,6 +144,11 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
         toast({
           title: "Image optimized",
           description: `File size reduced by ${savings}% for faster upload`,
+        });
+      } else if (fileType === 'video') {
+        toast({
+          title: "Video ready",
+          description: "Video selected and ready to upload",
         });
       }
     }
@@ -204,6 +221,7 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
         title: formData.title.trim(),
         description: formData.description.trim() || undefined,
         photoUrl: aclData.objectPath, // Use the proper object path for display
+        fileType: formData.fileType,
         bodyPart: formData.bodyPart,
         weight: formData.weight ? parseFloat(formData.weight) : undefined,
         takenAt: new Date(formData.takenAt),
@@ -216,7 +234,7 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
 
       toast({
         title: "Success!",
-        description: "Your progress photo has been uploaded and saved",
+        description: `Your progress ${formData.fileType === 'video' ? 'video' : 'photo'} has been uploaded and saved`,
       });
 
       onSuccess();
@@ -287,7 +305,7 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
             <input
               ref={cameraInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,video/*"
               capture="environment"
               onChange={handleFileSelect}
               className="hidden"
@@ -297,7 +315,7 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,video/*"
               onChange={handleFileSelect}
               className="hidden"
               data-testid="input-gallery-file"
@@ -306,12 +324,23 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
         ) : (
           <div className="space-y-4">
             <div className="relative">
-              <img
-                src={previewUrl!}
-                alt="Preview"
-                className="w-full max-w-sm mx-auto rounded-lg border"
-                data-testid="img-photo-preview"
-              />
+              {formData.fileType === 'video' ? (
+                <video
+                  src={previewUrl!}
+                  controls
+                  className="w-full max-w-sm mx-auto rounded-lg border"
+                  data-testid="video-preview"
+                >
+                  Your browser does not support video playback.
+                </video>
+              ) : (
+                <img
+                  src={previewUrl!}
+                  alt="Preview"
+                  className="w-full max-w-sm mx-auto rounded-lg border"
+                  data-testid="img-photo-preview"
+                />
+              )}
               <Button
                 size="sm"
                 variant="destructive"
@@ -324,7 +353,7 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
             </div>
             <p className="text-sm text-green-600 dark:text-green-400 text-center">
               <Check className="w-4 h-4 inline mr-1" />
-              Photo selected: {selectedFile.name}
+              {formData.fileType === 'video' ? 'Video' : 'Photo'} selected: {selectedFile.name}
             </p>
           </div>
         )}
