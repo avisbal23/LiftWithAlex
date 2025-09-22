@@ -22,7 +22,6 @@ export default function BloodTracking() {
   const [collapsedRecords, setCollapsedRecords] = useState<Record<string, boolean>>({});
   const [editingEntry, setEditingEntry] = useState<string | null>(null);
   const [editingValues, setEditingValues] = useState<Record<string, { value: string; unit: string } | string>>({});
-  const [editingAttachedFiles, setEditingAttachedFiles] = useState<Record<string, Array<{fileName: string; fileUrl: string; fileType: string; fileSize: number}>>>({});
   
   // Import state
   const [importData, setImportData] = useState("");
@@ -38,41 +37,53 @@ export default function BloodTracking() {
     queryKey: ["/api/blood-entries"],
   });
 
-  // File attachment helper functions
-  const addAttachedFile = (entryId: string, file: {fileName: string; fileUrl: string; fileType: string; fileSize: number}) => {
-    setEditingAttachedFiles(prev => ({
-      ...prev,
-      [entryId]: [...(prev[entryId] || []), file]
-    }));
-  };
+  // Mutations for immediate file attachment
+  const addAttachment = useMutation({
+    mutationFn: ({ entryId, file }: { entryId: string; file: {fileName: string; fileUrl: string; fileType: string; fileSize: number} }) =>
+      apiRequest("POST", `/api/blood-entries/${entryId}/attachments`, file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/blood-entries"] });
+      toast({
+        title: "Success",
+        description: "File attached successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to attach file",
+        variant: "destructive",
+      });
+    },
+  });
 
-  const removeAttachedFile = (entryId: string, fileIndex: number) => {
-    setEditingAttachedFiles(prev => ({
-      ...prev,
-      [entryId]: (prev[entryId] || []).filter((_, index) => index !== fileIndex)
-    }));
-  };
+  const removeAttachment = useMutation({
+    mutationFn: ({ entryId, fileUrl }: { entryId: string; fileUrl: string }) =>
+      apiRequest("DELETE", `/api/blood-entries/${entryId}/attachments`, { fileUrl }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/blood-entries"] });
+      toast({
+        title: "Success", 
+        description: "File removed successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to remove file",
+        variant: "destructive",
+      });
+    },
+  });
 
-  const initializeEditingFiles = (entryId: string, entry: BloodEntry) => {
-    if (entry.attachedFiles && entry.attachedFiles.length > 0) {
-      try {
-        const parsedFiles = entry.attachedFiles.map(fileStr => JSON.parse(fileStr));
-        setEditingAttachedFiles(prev => ({
-          ...prev,
-          [entryId]: parsedFiles
-        }));
-      } catch (error) {
-        console.error('Error parsing attached files:', error);
-        setEditingAttachedFiles(prev => ({
-          ...prev,
-          [entryId]: []
-        }));
-      }
-    } else {
-      setEditingAttachedFiles(prev => ({
-        ...prev,
-        [entryId]: []
-      }));
+  // Helper to parse attached files from entry
+  const getAttachedFiles = (entry: BloodEntry): Array<{fileName: string; fileUrl: string; fileType: string; fileSize: number}> => {
+    if (!entry.attachedFiles || entry.attachedFiles.length === 0) return [];
+    try {
+      return entry.attachedFiles.map(fileStr => JSON.parse(fileStr));
+    } catch (error) {
+      console.error('Error parsing attached files:', error);
+      return [];
     }
   };
 
@@ -217,11 +228,7 @@ export default function BloodTracking() {
       }
     });
 
-    // Add attached files as JSON strings
-    const attachedFiles = editingAttachedFiles[entryId] || [];
-    if (attachedFiles.length > 0) {
-      processedData.attachedFiles = attachedFiles.map(file => JSON.stringify(file));
-    }
+    // Attached files are now managed separately via immediate API calls
 
     updateBloodEntry.mutate({ id: entryId, data: processedData });
   };
@@ -1039,7 +1046,7 @@ export default function BloodTracking() {
                                   
                                   {/* Current attached files */}
                                   <div className="space-y-2">
-                                    {(editingAttachedFiles[entry.id] || []).map((file, index) => (
+                                    {getAttachedFiles(entry).map((file, index) => (
                                       <div key={index} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded border">
                                         <div className="flex items-center gap-2">
                                           <Paperclip className="w-4 h-4 text-gray-500" />
@@ -1060,7 +1067,8 @@ export default function BloodTracking() {
                                           <Button
                                             variant="ghost"
                                             size="sm"
-                                            onClick={() => removeAttachedFile(entry.id, index)}
+                                            onClick={() => removeAttachment.mutate({ entryId: entry.id, fileUrl: file.fileUrl })}
+                                            disabled={removeAttachment.isPending}
                                             data-testid={`button-remove-file-${index}`}
                                           >
                                             <Trash2 className="w-4 h-4" />
@@ -1070,7 +1078,7 @@ export default function BloodTracking() {
                                     ))}
                                   </div>
 
-                                  {/* Upload new files */}
+                                  {/* Auto-upload files on selection */}
                                   <ObjectUploader
                                     maxNumberOfFiles={5}
                                     maxFileSize={50485760} // 50MB
@@ -1085,11 +1093,14 @@ export default function BloodTracking() {
                                     onComplete={(result) => {
                                       result.successful.forEach((file) => {
                                         if (file.response?.uploadURL && file.data) {
-                                          addAttachedFile(entry.id, {
-                                            fileName: file.data.name,
-                                            fileUrl: file.response.uploadURL.split('?')[0], // Remove query params
-                                            fileType: file.data.type,
-                                            fileSize: file.data.size
+                                          addAttachment.mutate({
+                                            entryId: entry.id,
+                                            file: {
+                                              fileName: file.data.name,
+                                              fileUrl: file.response.uploadURL.split('?')[0], // Remove query params
+                                              fileType: file.data.type,
+                                              fileSize: file.data.size
+                                            }
                                           });
                                         }
                                       });
@@ -1097,7 +1108,7 @@ export default function BloodTracking() {
                                     buttonClassName="w-full"
                                   >
                                     <Upload className="w-4 h-4 mr-2" />
-                                    Upload Lab Results (PDF, CSV, Excel, Images)
+                                    Add Lab Results (auto-saved)
                                   </ObjectUploader>
                                 </div>
 
@@ -1115,7 +1126,6 @@ export default function BloodTracking() {
                                     onClick={() => {
                                       setEditingEntry(null);
                                       setEditingValues({});
-                                      setEditingAttachedFiles({});
                                     }}
                                     data-testid={`button-cancel-${entry.id}`}
                                   >
