@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Camera, Upload, X, Check, Loader2, Zap } from "lucide-react";
+import { Camera, Upload, X, Check, Loader2, Zap, Image } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { InsertPhotoProgress } from "@shared/schema";
@@ -41,6 +41,7 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
   });
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   // Image compression function
@@ -243,6 +244,9 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = '';
+    }
   };
 
   return (
@@ -253,26 +257,50 @@ export function MobilePhotoUploader({ onSuccess, onCancel }: MobilePhotoUploader
         
         {!selectedFile ? (
           <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
-            <Camera className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Take or select a progress photo
+            <div className="flex flex-col sm:flex-row items-center justify-center mb-6">
+              <Camera className="w-12 h-12 text-gray-400 mb-2 sm:mb-0 sm:mr-4" />
+              <Image className="w-12 h-12 text-gray-400" />
+            </div>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Take a new photo or select an existing one
             </p>
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full sm:w-auto"
-              data-testid="button-select-photo"
-            >
-              <Camera className="w-4 h-4 mr-2" />
-              Select Photo
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button
+                onClick={() => cameraInputRef.current?.click()}
+                className="w-full sm:w-auto"
+                data-testid="button-take-photo"
+              >
+                <Camera className="w-4 h-4 mr-2" />
+                Take Photo
+              </Button>
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                variant="outline"
+                className="w-full sm:w-auto"
+                data-testid="button-select-photo"
+              >
+                <Image className="w-4 h-4 mr-2" />
+                Select from Gallery
+              </Button>
+            </div>
+            {/* Camera input - opens camera directly */}
             <input
-              ref={fileInputRef}
+              ref={cameraInputRef}
               type="file"
               accept="image/*"
               capture="environment"
               onChange={handleFileSelect}
               className="hidden"
-              data-testid="input-photo-file"
+              data-testid="input-camera-file"
+            />
+            {/* Gallery input - opens file picker */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+              data-testid="input-gallery-file"
             />
           </div>
         ) : (
