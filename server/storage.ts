@@ -1,5 +1,5 @@
-import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress, type DailyWorkoutStatus, type InsertDailyWorkoutStatus, type UpdateDailyWorkoutStatus, type WorkoutNotes, type InsertWorkoutNotes, type UpdateWorkoutNotes, type ExerciseTemplate, type InsertExerciseTemplate, type UpdateExerciseTemplate, type ChangesAudit, type InsertChangesAudit, type UpdateChangesAudit, type PRChangesAudit, type InsertPRChangesAudit, type WeightAudit, type InsertWeightAudit, type UpdateWeightAudit, type WorkoutTimer, type InsertWorkoutTimer, type UpdateWorkoutTimer, type TimerLapTime, type InsertTimerLapTime, type UpdateTimerLapTime } from "@shared/schema";
-import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress, dailyWorkoutStatus, workoutNotes, exerciseTemplates, changesAudit, prChangesAudit, weightAudit, workoutTimers, timerLapTimes } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type BloodOptimalRange, type InsertBloodOptimalRange, type UpdateBloodOptimalRange, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress, type DailyWorkoutStatus, type InsertDailyWorkoutStatus, type UpdateDailyWorkoutStatus, type WorkoutNotes, type InsertWorkoutNotes, type UpdateWorkoutNotes, type ExerciseTemplate, type InsertExerciseTemplate, type UpdateExerciseTemplate, type ChangesAudit, type InsertChangesAudit, type UpdateChangesAudit, type PRChangesAudit, type InsertPRChangesAudit, type WeightAudit, type InsertWeightAudit, type UpdateWeightAudit, type WorkoutTimer, type InsertWorkoutTimer, type UpdateWorkoutTimer, type TimerLapTime, type InsertTimerLapTime, type UpdateTimerLapTime } from "@shared/schema";
+import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, bloodOptimalRanges, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress, dailyWorkoutStatus, workoutNotes, exerciseTemplates, changesAudit, prChangesAudit, weightAudit, workoutTimers, timerLapTimes } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc, sql } from "drizzle-orm";
@@ -29,6 +29,11 @@ export interface IStorage {
   updateBloodEntry(id: string, entry: UpdateBloodEntry): Promise<BloodEntry | undefined>;
   deleteBloodEntry(id: string): Promise<boolean>;
   getAllBloodEntries(): Promise<BloodEntry[]>;
+  
+  getAllBloodOptimalRanges(): Promise<BloodOptimalRange[]>;
+  getBloodOptimalRange(markerKey: string): Promise<BloodOptimalRange | undefined>;
+  upsertBloodOptimalRange(entry: InsertBloodOptimalRange): Promise<BloodOptimalRange>;
+  deleteBloodOptimalRange(markerKey: string): Promise<boolean>;
   
   createPhotoProgress(entry: InsertPhotoProgress): Promise<PhotoProgress>;
   updatePhotoProgress(id: string, entry: UpdatePhotoProgress): Promise<PhotoProgress | undefined>;
@@ -125,6 +130,7 @@ export class MemStorage implements IStorage {
   private workoutLogs: Map<string, WorkoutLog>;
   private weightEntries: Map<string, WeightEntry>;
   private bloodEntries: Map<string, BloodEntry>;
+  private bloodOptimalRanges: Map<string, BloodOptimalRange>; // keyed by markerKey
   private photoProgress: Map<string, PhotoProgress>;
   private thoughts: Map<string, Thought>;
   private quotes: Map<string, Quote>;
@@ -145,6 +151,7 @@ export class MemStorage implements IStorage {
     this.workoutLogs = new Map();
     this.weightEntries = new Map();
     this.bloodEntries = new Map();
+    this.bloodOptimalRanges = new Map();
     this.photoProgress = new Map();
     this.thoughts = new Map();
     this.quotes = new Map();
@@ -622,6 +629,32 @@ export class MemStorage implements IStorage {
         const dateB = b.asOf instanceof Date ? b.asOf : new Date(b.asOf);
         return dateA.getTime() - dateB.getTime();
       });
+  }
+
+  // Blood Optimal Range Methods
+  async getAllBloodOptimalRanges(): Promise<BloodOptimalRange[]> {
+    return Array.from(this.bloodOptimalRanges.values());
+  }
+
+  async getBloodOptimalRange(markerKey: string): Promise<BloodOptimalRange | undefined> {
+    return this.bloodOptimalRanges.get(markerKey);
+  }
+
+  async upsertBloodOptimalRange(entry: InsertBloodOptimalRange): Promise<BloodOptimalRange> {
+    const existing = this.bloodOptimalRanges.get(entry.markerKey);
+    const id = existing?.id || randomUUID();
+    
+    const optimalRange: BloodOptimalRange = {
+      id,
+      ...entry,
+    };
+    
+    this.bloodOptimalRanges.set(entry.markerKey, optimalRange);
+    return optimalRange;
+  }
+
+  async deleteBloodOptimalRange(markerKey: string): Promise<boolean> {
+    return this.bloodOptimalRanges.delete(markerKey);
   }
 
   // Photo Progress Methods
