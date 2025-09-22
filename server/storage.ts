@@ -655,12 +655,53 @@ export class MemStorage implements IStorage {
     return this.photoProgress.delete(id);
   }
 
+  // Helper function to normalize dates and handle edge cases
+  private normalizePhotoDate(takenAt: any): number {
+    // If already a Date object
+    if (takenAt instanceof Date) {
+      return takenAt.getTime();
+    }
+    
+    // If it's a number, treat as timestamp
+    if (typeof takenAt === 'number') {
+      return takenAt;
+    }
+    
+    // If it's a string
+    if (typeof takenAt === 'string') {
+      // Check if it's a numeric timestamp string
+      if (/^[0-9]+$/.test(takenAt)) {
+        const timestamp = parseInt(takenAt, 10);
+        // Handle both seconds and milliseconds timestamps
+        return timestamp > 9999999999 ? timestamp : timestamp * 1000;
+      }
+      
+      // Try parsing as date string
+      const parsed = Date.parse(takenAt);
+      if (!isNaN(parsed)) {
+        return parsed;
+      }
+    }
+    
+    // Fallback to current time if parsing fails
+    console.warn(`Failed to parse date: ${takenAt}, using current time as fallback`);
+    return Date.now();
+  }
+
   async getAllPhotoProgress(): Promise<PhotoProgress[]> {
     return Array.from(this.photoProgress.values())
       .sort((a, b) => {
-        const dateA = a.takenAt instanceof Date ? a.takenAt : new Date(a.takenAt);
-        const dateB = b.takenAt instanceof Date ? b.takenAt : new Date(b.takenAt);
-        return dateA.getTime() - dateB.getTime(); // Most recent first (newer dates have larger timestamps)
+        const timeA = this.normalizePhotoDate(a.takenAt);
+        const timeB = this.normalizePhotoDate(b.takenAt);
+        // Sort newest first (descending order)
+        const result = timeB - timeA;
+        // Add tie-breaker using creation time if dates are identical
+        if (result === 0) {
+          const createdA = a.createdAt instanceof Date ? a.createdAt.getTime() : Date.parse(a.createdAt);
+          const createdB = b.createdAt instanceof Date ? b.createdAt.getTime() : Date.parse(b.createdAt);
+          return createdB - createdA;
+        }
+        return result;
       });
   }
 
@@ -668,9 +709,17 @@ export class MemStorage implements IStorage {
     return Array.from(this.photoProgress.values())
       .filter(photo => photo.bodyPart === bodyPart)
       .sort((a, b) => {
-        const dateA = a.takenAt instanceof Date ? a.takenAt : new Date(a.takenAt);
-        const dateB = b.takenAt instanceof Date ? b.takenAt : new Date(b.takenAt);
-        return dateA.getTime() - dateB.getTime(); // Most recent first (newer dates have larger timestamps)
+        const timeA = this.normalizePhotoDate(a.takenAt);
+        const timeB = this.normalizePhotoDate(b.takenAt);
+        // Sort newest first (descending order)
+        const result = timeB - timeA;
+        // Add tie-breaker using creation time if dates are identical
+        if (result === 0) {
+          const createdA = a.createdAt instanceof Date ? a.createdAt.getTime() : Date.parse(a.createdAt);
+          const createdB = b.createdAt instanceof Date ? b.createdAt.getTime() : Date.parse(b.createdAt);
+          return createdB - createdA;
+        }
+        return result;
       });
   }
 
