@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -59,13 +59,18 @@ export default function WeightTracking() {
   const [measurementForm, setMeasurementForm] = useState<Partial<InsertBodyMeasurement>>({
     date: new Date(),
     neck: null,
+    shoulder: null,
+    lBiceps: null,
+    rBiceps: null,
     chest: null,
     waist: null,
-    hips: null,
-    biceps: null,
-    thighs: null,
-    calves: null,
-    unit: 'in'
+    abdomen: null,
+    hip: null,
+    lThigh: null,
+    rThigh: null,
+    lCalf: null,
+    rCalf: null,
+    waistHipRatio: null
   });
 
   // Fetch weight entries
@@ -138,13 +143,18 @@ export default function WeightTracking() {
       setMeasurementForm({
         date: new Date(),
         neck: null,
+        shoulder: null,
+        lBiceps: null,
+        rBiceps: null,
         chest: null,
         waist: null,
-        hips: null,
-        biceps: null,
-        thighs: null,
-        calves: null,
-        unit: 'in'
+        abdomen: null,
+        hip: null,
+        lThigh: null,
+        rThigh: null,
+        lCalf: null,
+        rCalf: null,
+        waistHipRatio: null
       });
     },
   });
@@ -905,7 +915,7 @@ export default function WeightTracking() {
                 <div className="space-y-6">
                   <div className="text-center">
                     <p className="text-muted-foreground mb-4">Track your body measurements over time to monitor progress and changes</p>
-                    <Button>
+                    <Button onClick={() => setShowMeasurementDialog(true)} data-testid="button-add-measurement">
                       <Plus className="w-4 h-4 mr-2" />
                       Add Measurement
                     </Button>
@@ -923,16 +933,53 @@ export default function WeightTracking() {
                   <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                     <div>
                       <h4 className="font-medium">Import/Export Data</h4>
-                      <p className="text-sm text-muted-foreground">Import from measurement apps or export your data</p>
+                      <p className="text-sm text-muted-foreground">Import measurements from CSV or export your data</p>
                     </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
-                        <Download className="w-4 h-4 mr-2" />
-                        Export CSV
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Upload className="w-4 h-4 mr-2" />
-                        Import CSV
+                    <div>
+                      <input
+                        type="file"
+                        accept=".csv"
+                        className="hidden"
+                        id="measurements-csv-input"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            // TODO: Implement CSV import functionality
+                            toast({
+                              title: "Feature coming soon",
+                              description: "CSV import for body measurements will be available soon.",
+                            });
+                          }
+                        }}
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          // If measurements exist, export, otherwise trigger import
+                          if (bodyMeasurements.length > 0) {
+                            // TODO: Implement CSV export
+                            toast({
+                              title: "Feature coming soon", 
+                              description: "CSV export for body measurements will be available soon.",
+                            });
+                          } else {
+                            document.getElementById('measurements-csv-input')?.click();
+                          }
+                        }}
+                        data-testid="button-measurements-import-export"
+                      >
+                        {bodyMeasurements.length > 0 ? (
+                          <>
+                            <Download className="w-4 h-4 mr-2" />
+                            Export CSV
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4 mr-2" />
+                            Import CSV
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -941,6 +988,311 @@ export default function WeightTracking() {
             </AccordionItem>
           </Accordion>
         </Card>
+
+        {/* Body Measurement Dialog */}
+        <Dialog open={showMeasurementDialog} onOpenChange={setShowMeasurementDialog}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Add Body Measurement</DialogTitle>
+              <DialogDescription>
+                Record your body measurements to track progress over time.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="measurement-date">Date</Label>
+                  <Input
+                    id="measurement-date"
+                    type="date"
+                    value={format(measurementForm.date || new Date(), "yyyy-MM-dd")}
+                    onChange={(e) =>
+                      setMeasurementForm({
+                        ...measurementForm,
+                        date: new Date(e.target.value),
+                      })
+                    }
+                    data-testid="input-measurement-date"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="shoulder">Shoulder</Label>
+                  <Input
+                    id="shoulder"
+                    type="number"
+                    step="0.1"
+                    placeholder="0.0"
+                    value={measurementForm.shoulder || ''}
+                    onChange={(e) =>
+                      setMeasurementForm({
+                        ...measurementForm,
+                        shoulder: e.target.value ? parseFloat(e.target.value) : null,
+                      })
+                    }
+                    data-testid="input-shoulder"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="neck">Neck</Label>
+                  <Input
+                    id="neck"
+                    type="number"
+                    step="0.1"
+                    placeholder="0.0"
+                    value={measurementForm.neck || ''}
+                    onChange={(e) =>
+                      setMeasurementForm({
+                        ...measurementForm,
+                        neck: e.target.value ? parseFloat(e.target.value) : null,
+                      })
+                    }
+                    data-testid="input-neck"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="chest">Chest</Label>
+                  <Input
+                    id="chest"
+                    type="number"
+                    step="0.1"
+                    placeholder="0.0"
+                    value={measurementForm.chest || ''}
+                    onChange={(e) =>
+                      setMeasurementForm({
+                        ...measurementForm,
+                        chest: e.target.value ? parseFloat(e.target.value) : null,
+                      })
+                    }
+                    data-testid="input-chest"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="waist">Waist</Label>
+                  <Input
+                    id="waist"
+                    type="number"
+                    step="0.1"
+                    placeholder="0.0"
+                    value={measurementForm.waist || ''}
+                    onChange={(e) =>
+                      setMeasurementForm({
+                        ...measurementForm,
+                        waist: e.target.value ? parseFloat(e.target.value) : null,
+                      })
+                    }
+                    data-testid="input-waist"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="abdomen">Abdomen</Label>
+                  <Input
+                    id="abdomen"
+                    type="number"
+                    step="0.1"
+                    placeholder="0.0"
+                    value={measurementForm.abdomen || ''}
+                    onChange={(e) =>
+                      setMeasurementForm({
+                        ...measurementForm,
+                        abdomen: e.target.value ? parseFloat(e.target.value) : null,
+                      })
+                    }
+                    data-testid="input-abdomen"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="hip">Hip</Label>
+                  <Input
+                    id="hip"
+                    type="number"
+                    step="0.1"
+                    placeholder="0.0"
+                    value={measurementForm.hip || ''}
+                    onChange={(e) =>
+                      setMeasurementForm({
+                        ...measurementForm,
+                        hip: e.target.value ? parseFloat(e.target.value) : null,
+                      })
+                    }
+                    data-testid="input-hip"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lThigh">Left Thigh</Label>
+                  <Input
+                    id="lThigh"
+                    type="number"
+                    step="0.1"
+                    placeholder="0.0"
+                    value={measurementForm.lThigh || ''}
+                    onChange={(e) =>
+                      setMeasurementForm({
+                        ...measurementForm,
+                        lThigh: e.target.value ? parseFloat(e.target.value) : null,
+                      })
+                    }
+                    data-testid="input-lThigh"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="rThigh">Right Thigh</Label>
+                  <Input
+                    id="rThigh"
+                    type="number"
+                    step="0.1"
+                    placeholder="0.0"
+                    value={measurementForm.rThigh || ''}
+                    onChange={(e) =>
+                      setMeasurementForm({
+                        ...measurementForm,
+                        rThigh: e.target.value ? parseFloat(e.target.value) : null,
+                      })
+                    }
+                    data-testid="input-rThigh"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lCalf">Left Calf</Label>
+                  <Input
+                    id="lCalf"
+                    type="number"
+                    step="0.1"
+                    placeholder="0.0"
+                    value={measurementForm.lCalf || ''}
+                    onChange={(e) =>
+                      setMeasurementForm({
+                        ...measurementForm,
+                        lCalf: e.target.value ? parseFloat(e.target.value) : null,
+                      })
+                    }
+                    data-testid="input-lCalf"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="lBiceps">Left Biceps</Label>
+                  <Input
+                    id="lBiceps"
+                    type="number"
+                    step="0.1"
+                    placeholder="0.0"
+                    value={measurementForm.lBiceps || ''}
+                    onChange={(e) =>
+                      setMeasurementForm({
+                        ...measurementForm,
+                        lBiceps: e.target.value ? parseFloat(e.target.value) : null,
+                      })
+                    }
+                    data-testid="input-lBiceps"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rBiceps">Right Biceps</Label>
+                  <Input
+                    id="rBiceps"
+                    type="number"
+                    step="0.1"
+                    placeholder="0.0"
+                    value={measurementForm.rBiceps || ''}
+                    onChange={(e) =>
+                      setMeasurementForm({
+                        ...measurementForm,
+                        rBiceps: e.target.value ? parseFloat(e.target.value) : null,
+                      })
+                    }
+                    data-testid="input-rBiceps"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="rCalf">Right Calf</Label>
+                  <Input
+                    id="rCalf"
+                    type="number"
+                    step="0.1"
+                    placeholder="0.0"
+                    value={measurementForm.rCalf || ''}
+                    onChange={(e) =>
+                      setMeasurementForm({
+                        ...measurementForm,
+                        rCalf: e.target.value ? parseFloat(e.target.value) : null,
+                      })
+                    }
+                    data-testid="input-rCalf"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="waistHipRatio">Waist-Hip Ratio</Label>
+                  <Input
+                    id="waistHipRatio"
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={measurementForm.waistHipRatio || ''}
+                    onChange={(e) =>
+                      setMeasurementForm({
+                        ...measurementForm,
+                        waistHipRatio: e.target.value ? parseFloat(e.target.value) : null,
+                      })
+                    }
+                    data-testid="input-waistHipRatio"
+                  />
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowMeasurementDialog(false)}
+                data-testid="button-cancel-measurement"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  const hasAnyMeasurement = Object.entries(measurementForm).some(
+                    ([key, value]) => key !== 'date' && value !== null && value !== undefined && value !== ''
+                  );
+                  
+                  if (!hasAnyMeasurement) {
+                    toast({
+                      title: "No measurements entered",
+                      description: "Please enter at least one measurement.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+
+                  createMeasurementMutation.mutate({
+                    ...measurementForm,
+                    date: measurementForm.date || new Date()
+                  } as InsertBodyMeasurement);
+                }}
+                disabled={createMeasurementMutation.isPending}
+                data-testid="button-save-measurement"
+              >
+                {createMeasurementMutation.isPending ? "Saving..." : "Save Measurement"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </>
   );
