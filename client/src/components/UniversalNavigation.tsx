@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { HomeIcon, Menu, ChevronDown, Dumbbell, Activity } from "lucide-react";
+import { Menu } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -16,11 +16,11 @@ export function UniversalNavigation() {
 
   // Fixed main navigation items that are always visible
   const mainNavItems = [
-    { name: "Home", path: "/", key: "home", icon: HomeIcon },
-    { name: "Push", path: "/push", key: "push", icon: Dumbbell },
-    { name: "Pull", path: "/pull", key: "pull", icon: Dumbbell },
-    { name: "Legs", path: "/legs", key: "legs", icon: Dumbbell },
-    { name: "Cardio", path: "/cardio", key: "cardio", icon: Activity }
+    { name: "Home", path: "/", key: "home" },
+    { name: "Push", path: "/push", key: "push" },
+    { name: "Pull", path: "/pull", key: "pull" },
+    { name: "Legs", path: "/legs", key: "legs" },
+    { name: "Cardio", path: "/cardio", key: "cardio" }
   ];
 
   // Additional pages for dropdown menu
@@ -53,7 +53,6 @@ export function UniversalNavigation() {
           {/* Main Navigation Buttons - Mobile (scrollable) */}
           <div className="flex items-center gap-2 flex-1 min-w-0 overflow-x-auto">
             {mainNavItems.map((page) => {
-              const Icon = page.icon;
               return (
                 <Button
                   key={page.key}
@@ -69,8 +68,7 @@ export function UniversalNavigation() {
                     }
                   `}
                 >
-                  <Icon className="h-4 w-4" />
-                  <span className="font-medium text-sm">{page.name}</span>
+                  <span className="font-medium text-sm">{page.name.toUpperCase()}</span>
                 </Button>
               );
             })}
@@ -117,7 +115,6 @@ export function UniversalNavigation() {
           {/* Main Navigation Buttons Always Visible */}
           <div className="flex items-center gap-2 flex-1 min-w-0">
             {mainNavItems.map((page) => {
-              const Icon = page.icon;
               return (
                 <Button
                   key={page.key}
@@ -133,8 +130,7 @@ export function UniversalNavigation() {
                     }
                   `}
                 >
-                  <Icon className="h-4 w-4" />
-                  <span className="font-medium truncate">{page.name}</span>
+                  <span className="font-medium truncate">{page.name.toUpperCase()}</span>
                 </Button>
               );
             })}
