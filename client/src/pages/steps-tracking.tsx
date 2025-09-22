@@ -568,31 +568,35 @@ export default function StepsTracking() {
                 ) : (
                   <div className="h-96 w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={filteredData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                      <ComposedChart data={filteredData} margin={{ top: 15, right: 15, left: 15, bottom: 25 }}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
                         <XAxis 
                           dataKey="date" 
-                          tick={{ fontSize: 12 }}
-                          interval="preserveStartEnd"
+                          tick={{ fontSize: 11 }}
+                          interval={filteredData.length > 30 ? Math.floor(filteredData.length / 15) : 'preserveStartEnd'}
+                          angle={filteredData.length > 20 ? -45 : 0}
+                          textAnchor={filteredData.length > 20 ? 'end' : 'middle'}
+                          height={filteredData.length > 20 ? 60 : 30}
                         />
                         <YAxis 
                           yAxisId="steps"
                           domain={chartDomains.steps}
-                          tick={{ fontSize: 12 }}
-                          label={{ value: 'Steps / Floors', angle: -90, position: 'insideLeft' }}
+                          tick={{ fontSize: 11 }}
+                          width={50}
                         />
                         <YAxis 
                           yAxisId="distance"
                           orientation="right"
                           domain={chartDomains.distance}
-                          tick={{ fontSize: 12 }}
-                          label={{ value: 'Distance (miles)', angle: 90, position: 'insideRight' }}
+                          tick={{ fontSize: 11 }}
+                          width={45}
                         />
                         <Tooltip 
                           contentStyle={{ 
                             backgroundColor: 'hsl(var(--background))', 
                             border: '1px solid hsl(var(--border))',
-                            borderRadius: '6px'
+                            borderRadius: '6px',
+                            fontSize: '12px'
                           }}
                           formatter={(value: any, name: string) => [
                             name === 'steps' ? value?.toLocaleString() : value,
@@ -600,7 +604,7 @@ export default function StepsTracking() {
                             name === 'distance' ? 'Distance (mi)' : 'Floors'
                           ]}
                         />
-                        <Legend />
+                        <Legend wrapperStyle={{ fontSize: '12px' }} />
                         
                         {showSteps && (
                           <Line 
