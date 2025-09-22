@@ -138,6 +138,7 @@ export default function Home() {
       admin: <Settings className="w-3 h-3" />,
       thoughts: <MessageCircle className="w-3 h-3" />,
       weight: <Scale className="w-3 h-3" />,
+      steps: <Activity className="w-3 h-3" />,
     };
 
     const colorMap: Record<string, string> = {
@@ -149,6 +150,7 @@ export default function Home() {
       legs2: "bg-green-400/10 text-green-500 border-green-100 hover:bg-green-400/20",
       cardio: "bg-red-500/10 text-red-600 border-red-200 hover:bg-red-500/20",
       weight: "bg-purple-500/10 text-purple-600 border-purple-200 hover:bg-purple-500/20",
+      steps: "bg-orange-500/10 text-orange-600 border-orange-200 hover:bg-orange-500/20",
       blood: "bg-pink-500/10 text-pink-600 border-pink-200 hover:bg-pink-500/20",
       photos: "bg-indigo-500/10 text-indigo-600 border-indigo-200 hover:bg-indigo-500/20",
       thoughts: "bg-cyan-500/10 text-cyan-600 border-cyan-200 hover:bg-cyan-500/20",

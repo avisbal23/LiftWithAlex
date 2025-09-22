@@ -1782,10 +1782,11 @@ export class DatabaseStorage implements IStorage {
       { shortcutKey: 'legs2', shortcutName: 'Legs 2', routePath: '/legs2', isVisible: 0, order: 6 },
       { shortcutKey: 'cardio', shortcutName: 'Cardio', routePath: '/cardio', isVisible: 1, order: 7 },
       { shortcutKey: 'weight', shortcutName: 'Weight', routePath: '/weight', isVisible: 0, order: 8 },
-      { shortcutKey: 'blood', shortcutName: 'Blood', routePath: '/blood', isVisible: 0, order: 9 },
-      { shortcutKey: 'photos', shortcutName: 'Photos', routePath: '/photo-progress', isVisible: 0, order: 10 },
-      { shortcutKey: 'thoughts', shortcutName: 'Thoughts', routePath: '/thoughts', isVisible: 0, order: 11 },
-      { shortcutKey: 'admin', shortcutName: 'Admin', routePath: '/admin', isVisible: 0, order: 12 }
+      { shortcutKey: 'steps', shortcutName: 'Steps', routePath: '/steps', isVisible: 1, order: 9 },
+      { shortcutKey: 'blood', shortcutName: 'Blood', routePath: '/blood', isVisible: 0, order: 10 },
+      { shortcutKey: 'photos', shortcutName: 'Photos', routePath: '/photo-progress', isVisible: 0, order: 11 },
+      { shortcutKey: 'thoughts', shortcutName: 'Thoughts', routePath: '/thoughts', isVisible: 0, order: 12 },
+      { shortcutKey: 'admin', shortcutName: 'Admin', routePath: '/admin', isVisible: 0, order: 13 }
     ];
 
     // Insert all default shortcuts
