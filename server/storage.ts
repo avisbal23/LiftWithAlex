@@ -660,7 +660,7 @@ export class MemStorage implements IStorage {
       .sort((a, b) => {
         const dateA = a.takenAt instanceof Date ? a.takenAt : new Date(a.takenAt);
         const dateB = b.takenAt instanceof Date ? b.takenAt : new Date(b.takenAt);
-        return dateB.getTime() - dateA.getTime(); // Most recent first
+        return dateA.getTime() - dateB.getTime(); // Most recent first (newer dates have larger timestamps)
       });
   }
 
@@ -670,7 +670,7 @@ export class MemStorage implements IStorage {
       .sort((a, b) => {
         const dateA = a.takenAt instanceof Date ? a.takenAt : new Date(a.takenAt);
         const dateB = b.takenAt instanceof Date ? b.takenAt : new Date(b.takenAt);
-        return dateB.getTime() - dateA.getTime(); // Most recent first
+        return dateA.getTime() - dateB.getTime(); // Most recent first (newer dates have larger timestamps)
       });
   }
 
