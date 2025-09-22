@@ -747,7 +747,7 @@ export default function Admin() {
     <>
       <UniversalNavigation />
       <main className="w-full py-6 sm:py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">
         <div className="mb-6 sm:mb-8">
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2" data-testid="heading-admin">
             Admin Panel
@@ -757,7 +757,7 @@ export default function Admin() {
           </p>
         </div>
 
-        <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           {/* Workout Data Management */}
           <Card>
             <CardHeader>
