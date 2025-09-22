@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { HomeIcon, Menu, ChevronDown } from "lucide-react";
+import { HomeIcon, Menu, ChevronDown, Dumbbell, Activity } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -14,65 +14,34 @@ import { type TabSettings } from "@shared/schema";
 export function UniversalNavigation() {
   const [location, navigate] = useLocation();
 
-  // Fetch visible tab settings from the API
-  const { data: visibleTabSettings = [] } = useQuery<TabSettings[]>({
-    queryKey: ["/api/tab-settings/visible"],
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: true,
-  });
-
-  // Always include Home page as it's always visible
-  const homePage = { name: "Home", path: "/", key: "home", tabKey: "home" };
-  
-  // Map tab settings to page format and filter by visibility
-  const visiblePages = [
-    homePage,
-    ...visibleTabSettings
-      .filter(tab => tab.tabKey !== "home") // Exclude home since we already added it
-      .sort((a, b) => (a.order || 0) - (b.order || 0)) // Sort by order
-      .map(tab => ({
-        name: tab.tabName,
-        path: tab.routePath,
-        key: tab.tabKey,
-        tabKey: tab.tabKey,
-      }))
+  // Fixed main navigation items that are always visible
+  const mainNavItems = [
+    { name: "Home", path: "/", key: "home", icon: HomeIcon },
+    { name: "Push", path: "/push", key: "push", icon: Dumbbell },
+    { name: "Pull", path: "/pull", key: "pull", icon: Dumbbell },
+    { name: "Legs", path: "/legs", key: "legs", icon: Dumbbell },
+    { name: "Cardio", path: "/cardio", key: "cardio", icon: Activity }
   ];
 
-  // Admin page is always accessible but not controlled by tab settings
-  const adminPage = { name: "Admin", path: "/admin", key: "admin", tabKey: "admin" };
-  
-  // Split visible pages: first 6 as buttons, rest in dropdown
-  const navbarPages = visiblePages.slice(0, 6); // Home + next 5 visible
-  const dropdownPages = visiblePages.slice(6); // Remaining visible pages
+  // Additional pages for dropdown menu
+  const dropdownPages = [
+    { name: "Weight Tracking", path: "/weight", key: "weight" },
+    { name: "Blood Tracking", path: "/blood", key: "blood" },
+    { name: "Photo Progress", path: "/photos", key: "photos" },
+    { name: "Thoughts & Reflections", path: "/thoughts", key: "thoughts" },
+    { name: "Admin", path: "/admin", key: "admin" }
+  ];
 
-  // Admin is ALWAYS available in dropdown menu (regardless of database state)
-  // Admin should never be in navbar buttons, always in dropdown
-  if (!dropdownPages.some(p => p.key === "admin")) {
-    dropdownPages.push(adminPage);
-  }
-
-  // For mobile navigation and current page display, include all pages including admin
-  const allPagesForCurrentDisplay = [...visiblePages];
-  if (!allPagesForCurrentDisplay.some(p => p.path === "/admin")) {
-    allPagesForCurrentDisplay.push(adminPage);
-  }
-
-  const handleHomeClick = () => {
-    if (location === "/") {
+  const handleNavClick = (path: string) => {
+    if (path === "/" && location === "/") {
       // Already on home page, scroll to top
       window.scrollTo({ top: 0, behavior: 'smooth' });
       console.log("Home button clicked - scrolling to top");
     } else {
-      // Navigate to home page
-      navigate("/");
-      console.log("Home button clicked - navigating to home");
+      // Navigate to selected page
+      navigate(path);
+      console.log(`Navigating to: ${path}`);
     }
-  };
-
-  const handlePageClick = (path: string) => {
-    navigate(path);
-    console.log(`Navigating to: ${path}`);
   };
 
   return (
@@ -84,7 +53,7 @@ export function UniversalNavigation() {
           {/* Home Button - Mobile */}
           <Button 
             variant={location === "/" ? "default" : "outline"}
-            onClick={handleHomeClick}
+            onClick={() => handleNavClick("/")}
             data-testid="button-home-nav-mobile"
             className={`
               flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200
@@ -102,7 +71,7 @@ export function UniversalNavigation() {
           {/* Current Page Indicator - Mobile */}
           <div className="flex-1 text-center">
             <span className="text-sm font-medium text-muted-foreground">
-              {allPagesForCurrentDisplay.find(page => page.path === location)?.name || "Home"}
+              {mainNavItems.find(page => page.path === location)?.name || "Home"}
             </span>
           </div>
 
@@ -121,10 +90,10 @@ export function UniversalNavigation() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              {allPagesForCurrentDisplay.filter(page => page.path !== "/").map((page) => (
+              {[...mainNavItems.filter(page => page.path !== "/"), ...dropdownPages].map((page) => (
                 <DropdownMenuItem
                   key={page.key}
-                  onClick={() => handlePageClick(page.path)}
+                  onClick={() => handleNavClick(page.path)}
                   data-testid={`menu-item-mobile-${page.key}`}
                   className={`
                     cursor-pointer
@@ -144,44 +113,30 @@ export function UniversalNavigation() {
         {/* Desktop Navigation (screens >= md) */}
         <nav className="hidden md:flex items-center gap-2 w-full">
           
-          {/* Home Button - Desktop */}
-          <Button 
-            variant={location === "/" ? "default" : "outline"}
-            onClick={handleHomeClick}
-            data-testid="button-home-nav-desktop"
-            className={`
-              flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200
-              border-2 flex-shrink-0
-              ${location === "/" 
-                ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90" 
-                : "border-white dark:border-black bg-transparent hover:bg-muted"
-              }
-            `}
-          >
-            <HomeIcon className="h-4 w-4" />
-            <span className="font-medium">Home</span>
-          </Button>
-
-          {/* Main Navigation Pages (next 5 pages) - Desktop */}
+          {/* Main Navigation Buttons Always Visible */}
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            {navbarPages.slice(1).map((page) => (
-              <Button
-                key={page.key}
-                variant={location === page.path ? "default" : "outline"}
-                onClick={() => handlePageClick(page.path)}
-                data-testid={`button-nav-desktop-${page.key}`}
-                className={`
-                  px-4 py-2 rounded-lg transition-all duration-200
-                  border-2 flex-1 min-w-0
-                  ${location === page.path 
-                    ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90" 
-                    : "border-white dark:border-black bg-transparent hover:bg-muted"
-                  }
-                `}
-              >
-                <span className="font-medium truncate">{page.name}</span>
-              </Button>
-            ))}
+            {mainNavItems.map((page) => {
+              const Icon = page.icon;
+              return (
+                <Button
+                  key={page.key}
+                  variant={location === page.path ? "default" : "outline"}
+                  onClick={() => handleNavClick(page.path)}
+                  data-testid={`button-nav-desktop-${page.key}`}
+                  className={`
+                    flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200
+                    border-2 flex-1 min-w-0
+                    ${location === page.path 
+                      ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90" 
+                      : "border-white dark:border-black bg-transparent hover:bg-muted"
+                    }
+                  `}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="font-medium truncate">{page.name}</span>
+                </Button>
+              );
+            })}
           </div>
 
           {/* Dropdown Menu for Additional Pages - Desktop */}
@@ -202,7 +157,7 @@ export function UniversalNavigation() {
               {dropdownPages.map((page) => (
                 <DropdownMenuItem
                   key={page.key}
-                  onClick={() => handlePageClick(page.path)}
+                  onClick={() => handleNavClick(page.path)}
                   data-testid={`menu-item-desktop-${page.key}`}
                   className={`
                     cursor-pointer
