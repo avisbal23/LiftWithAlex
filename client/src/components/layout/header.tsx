@@ -9,12 +9,12 @@ export default function Header() {
   const [isDark, setIsDark] = useState(false);
 
   // Fetch user settings for dynamic app title
-  const { data: userSettings } = useQuery<UserSettings[]>({
+  const { data: userSettings } = useQuery<UserSettings>({
     queryKey: ["/api/user-settings"],
   });
 
   // Get app title from settings or use default
-  const appTitle = userSettings?.[0]?.appTitle || "Visbal Gym Tracker";
+  const appTitle = userSettings?.appTitle || "Visbal Gym Tracker";
 
   useEffect(() => {
     const saved = localStorage.getItem("theme");
