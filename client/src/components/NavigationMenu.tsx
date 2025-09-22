@@ -78,7 +78,7 @@ export function NavigationMenu({ isOpen, onClose }: NavigationMenuProps) {
     onClose();
   };
 
-  // Map tab settings to navigation items with icons
+  // Map tab settings to navigation items with icons (excluding main nav items)
   const getNavigationItems = () => {
     const iconMap: Record<string, React.ComponentType<any>> = {
       home: Home,
@@ -96,10 +96,15 @@ export function NavigationMenu({ isOpen, onClose }: NavigationMenuProps) {
       admin: Settings
     };
 
-    return tabSettings.map(tab => ({
-      ...tab,
-      icon: iconMap[tab.tabKey] || Dumbbell
-    }));
+    // Filter out main navigation items that are now in the header
+    const mainNavItems = ['home', 'push', 'pull', 'legs', 'cardio'];
+    
+    return tabSettings
+      .filter(tab => !mainNavItems.includes(tab.tabKey))
+      .map(tab => ({
+        ...tab,
+        icon: iconMap[tab.tabKey] || Dumbbell
+      }));
   };
 
   const navigationItems = getNavigationItems();
@@ -121,7 +126,7 @@ export function NavigationMenu({ isOpen, onClose }: NavigationMenuProps) {
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-border/50">
             <h2 id="navigation-menu-title" className="text-xl font-semibold">
-              Navigation
+              More Options
             </h2>
             <button
               ref={closeButtonRef}
@@ -196,7 +201,7 @@ export function NavigationMenu({ isOpen, onClose }: NavigationMenuProps) {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @media (prefers-reduced-motion: reduce) {
           .animate-in {
             animation: none !important;
