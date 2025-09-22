@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Droplets, Plus, Calendar, Upload, Download, ChevronDown, ChevronUp, Target, Activity, BarChart, CheckCircle, FileText, Save, X, Paperclip, Trash2, ExternalLink, FlipHorizontal } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -124,6 +128,213 @@ export default function BloodTracking() {
     const info = BIOMARKER_INFO[biomarkerKey];
     const relevantRange = info.ranges.find(range => range.unit === currentUnit) || info.ranges[0];
     return relevantRange.optimal;
+  };
+
+  // Optimal Range Editor Component
+  const OptimalRangeEditor = ({ 
+    biomarkerKey, 
+    info, 
+    currentRange, 
+    onSave 
+  }: {
+    biomarkerKey: keyof typeof BIOMARKER_INFO;
+    info: any;
+    currentRange?: BloodOptimalRange;
+    onSave: () => void;
+  }) => {
+    const form = useForm<{
+      comparator: 'between' | 'lte' | 'gte';
+      low: string;
+      high: string;
+      unit: string;
+    }>({
+      resolver: zodResolver(z.object({
+        comparator: z.enum(['between', 'lte', 'gte']),
+        low: z.string(),
+        high: z.string(),
+        unit: z.string()
+      })),
+      defaultValues: {
+        comparator: currentRange?.comparator || 'between',
+        low: currentRange?.low?.toString() || '',
+        high: currentRange?.high?.toString() || '',
+        unit: currentRange?.unit || info.ranges[0]?.unit || ''
+      }
+    });
+
+    const saveRange = useMutation({
+      mutationFn: (data: { comparator: string; low: number | null; high: number | null; unit: string }) =>
+        apiRequest("PUT", `/api/blood-optimal-ranges/${biomarkerKey}`, data),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/blood-optimal-ranges"] });
+        toast({
+          title: "Success",
+          description: "Optimal range updated",
+        });
+        onSave();
+      },
+      onError: () => {
+        toast({
+          title: "Error",
+          description: "Failed to update optimal range",
+          variant: "destructive",
+        });
+      }
+    });
+
+    const deleteRange = useMutation({
+      mutationFn: () =>
+        apiRequest("DELETE", `/api/blood-optimal-ranges/${biomarkerKey}`, {}),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/blood-optimal-ranges"] });
+        toast({
+          title: "Success",
+          description: "Custom range removed, using default",
+        });
+        onSave();
+      },
+      onError: () => {
+        toast({
+          title: "Error",
+          description: "Failed to remove custom range",
+          variant: "destructive",
+        });
+      }
+    });
+
+    const onSubmit = (values: any) => {
+      const data = {
+        comparator: values.comparator,
+        low: values.comparator !== 'lte' && values.low ? parseFloat(values.low) : null,
+        high: values.comparator !== 'gte' && values.high ? parseFloat(values.high) : null,
+        unit: values.unit
+      };
+      saveRange.mutate(data);
+    };
+
+    return (
+      <div className="space-y-3">
+        <p className="text-xs text-gray-600 dark:text-gray-400 leading-tight">
+          {info.description}
+        </p>
+        
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+            <FormField
+              control={form.control}
+              name="comparator"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">Range Type</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} data-testid={`select-comparator-${biomarkerKey}`}>
+                    <FormControl>
+                      <SelectTrigger className="h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="between">Between (range)</SelectItem>
+                      <SelectItem value="lte">Less than or equal</SelectItem>
+                      <SelectItem value="gte">Greater than or equal</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
+
+            {form.watch('comparator') !== 'lte' && (
+              <FormField
+                control={form.control}
+                name="low"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">Minimum Value</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        step="0.01"
+                        className="h-8"
+                        data-testid={`input-low-${biomarkerKey}`}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {form.watch('comparator') !== 'gte' && (
+              <FormField
+                control={form.control}
+                name="high"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">Maximum Value</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        step="0.01"
+                        className="h-8"
+                        data-testid={`input-high-${biomarkerKey}`}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            )}
+
+            <FormField
+              control={form.control}
+              name="unit"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">Unit</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} data-testid={`select-unit-${biomarkerKey}`}>
+                    <FormControl>
+                      <SelectTrigger className="h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {info.ranges.map((range: any, index: number) => (
+                        <SelectItem key={index} value={range.unit}>
+                          {range.unit}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
+
+            <div className="flex gap-2">
+              <Button 
+                type="submit" 
+                size="sm" 
+                className="flex-1"
+                disabled={saveRange.isPending}
+                data-testid={`button-save-range-${biomarkerKey}`}
+              >
+                {saveRange.isPending ? "Saving..." : "Save"}
+              </Button>
+              {currentRange && (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => deleteRange.mutate()}
+                  disabled={deleteRange.isPending}
+                  data-testid={`button-delete-range-${biomarkerKey}`}
+                >
+                  {deleteRange.isPending ? "..." : "Reset"}
+                </Button>
+              )}
+            </div>
+          </form>
+        </Form>
+      </div>
+    );
   };
 
   // Mutations for immediate file attachment
@@ -279,7 +490,7 @@ export default function BloodTracking() {
           <Card className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)]">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                {title}
+                Edit {title} Range
               </CardTitle>
               <Button
                 variant="ghost"
@@ -293,19 +504,15 @@ export default function BloodTracking() {
               </Button>
             </CardHeader>
             <CardContent className="pt-0" data-testid={`panel-back-${biomarkerKey}`}>
-              <div className="space-y-2">
-                <p className="text-xs text-gray-600 dark:text-gray-400 leading-tight">
-                  {info.description}
-                </p>
-                <div className="border-t pt-2">
-                  <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                    Optimal: {relevantRange.optimal}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {relevantRange.note}
-                  </p>
-                </div>
-              </div>
+              <OptimalRangeEditor
+                biomarkerKey={biomarkerKey}
+                info={info}
+                currentRange={bloodOptimalRanges.find(range => range.markerKey === biomarkerKey)}
+                onSave={() => {
+                  // Flip back to front after saving
+                  toggleCardFlip(biomarkerKey);
+                }}
+              />
             </CardContent>
           </Card>
         </div>
