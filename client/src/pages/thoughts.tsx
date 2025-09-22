@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Thought, InsertThought, UpdateThought } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
+import { renderTextWithURLs } from "@/components/URLPreview";
 
 export default function ThoughtsPage() {
   const [newThought, setNewThought] = useState("");
@@ -217,9 +218,9 @@ export default function ThoughtsPage() {
                       /* View Mode */
                     <div className="space-y-4">
                       {/* Content */}
-                      <p className="text-gray-900 dark:text-white whitespace-pre-wrap">
-                        {thought.content}
-                      </p>
+                      <div className="text-gray-900 dark:text-white">
+                        {renderTextWithURLs(thought.content)}
+                      </div>
 
 
                       {/* Timestamp & Actions */}
