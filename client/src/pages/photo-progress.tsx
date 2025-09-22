@@ -169,14 +169,14 @@ export default function PhotoProgressPage() {
             <DialogTrigger asChild>
               <Button data-testid="button-add-photo">
                 <Plus className="w-4 h-4 mr-2" />
-                Add Photo
+                Add Photo/Video
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Add Progress Photo</DialogTitle>
+                <DialogTitle>Add Progress Media</DialogTitle>
                 <DialogDescription>
-                  Upload a new progress photo and add details
+                  Upload a new progress photo or video and add details
                 </DialogDescription>
               </DialogHeader>
 
@@ -196,12 +196,23 @@ export default function PhotoProgressPage() {
           {filteredPhotos.map((photo: PhotoProgress) => (
             <Card key={photo.id} className="overflow-hidden hover:shadow-lg transition-shadow">
               <div className="aspect-square relative overflow-hidden bg-gray-100 dark:bg-gray-800">
-                <img
-                  src={photo.photoUrl}
-                  alt={photo.title}
-                  className="w-full h-full object-cover"
-                  data-testid={`img-photo-${photo.id}`}
-                />
+                {photo.fileType === 'video' ? (
+                  <video
+                    src={photo.photoUrl}
+                    className="w-full h-full object-cover"
+                    controls
+                    data-testid={`video-${photo.id}`}
+                  >
+                    Your browser does not support video playback.
+                  </video>
+                ) : (
+                  <img
+                    src={photo.photoUrl}
+                    alt={photo.title}
+                    className="w-full h-full object-cover"
+                    data-testid={`img-photo-${photo.id}`}
+                  />
+                )}
                 <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center opacity-0 hover:opacity-100">
                   <div className="flex gap-2">
                     <Button
@@ -215,7 +226,11 @@ export default function PhotoProgressPage() {
                     <Button
                       size="sm"
                       variant="destructive"
-                      onClick={() => deleteMutation.mutate(photo.id)}
+                      onClick={() => {
+                        if (confirm(`Are you sure you want to delete this ${photo.fileType === 'video' ? 'video' : 'photo'}?`)) {
+                          deleteMutation.mutate(photo.id);
+                        }
+                      }}
                       data-testid={`button-delete-${photo.id}`}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -282,9 +297,9 @@ export default function PhotoProgressPage() {
           <Dialog open={!!editingPhoto} onOpenChange={() => setEditingPhoto(null)}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Edit Progress Photo</DialogTitle>
+                <DialogTitle>Edit Progress Media</DialogTitle>
                 <DialogDescription>
-                  Update photo details
+                  Update media details
                 </DialogDescription>
               </DialogHeader>
 
