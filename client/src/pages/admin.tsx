@@ -68,10 +68,6 @@ export default function Admin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/shortcut-settings"] });
       queryClient.invalidateQueries({ queryKey: ["/api/shortcut-settings/visible"] });
-      toast({
-        title: "Settings Updated",
-        description: "Shortcut visibility settings saved successfully",
-      });
     },
     onError: () => {
       toast({
@@ -91,10 +87,6 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ["/api/shortcut-settings/visible"] });
       setEditingShortcut(null);
       setEditValues({ shortcutName: "", routePath: "" });
-      toast({
-        title: "Shortcut Updated",
-        description: "Shortcut details saved successfully",
-      });
     },
     onError: () => {
       toast({
@@ -114,10 +106,6 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ["/api/tab-settings/visible"] });
       setEditingTab(null);
       setEditTabValues({ tabName: "", routePath: "" });
-      toast({
-        title: "Tab Updated",
-        description: "Tab details saved successfully",
-      });
     },
     onError: () => {
       toast({
@@ -250,10 +238,6 @@ export default function Admin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tab-settings"] });
       queryClient.invalidateQueries({ queryKey: ["/api/tab-settings/visible"] });
-      toast({
-        title: "Settings Updated",
-        description: "Tab visibility settings saved successfully",
-      });
     },
     onError: () => {
       toast({
