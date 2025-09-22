@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Bar } from "recharts";
-import { Calendar, Upload, Plus, Trash2, Download, X, BarChart, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Target, HelpCircle, FileText } from "lucide-react";
+import { Calendar, Upload, Plus, Trash2, Download, X, BarChart, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Target, HelpCircle, FileText, Ruler } from "lucide-react";
 import { format, subDays, subMonths, parseISO } from "date-fns";
-import { type WeightEntry, type InsertWeightEntry } from "@shared/schema";
+import { type WeightEntry, type InsertWeightEntry, type BodyMeasurement, type InsertBodyMeasurement } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
@@ -54,9 +54,32 @@ export default function WeightTracking() {
   // State for add entry dialog advanced fields
   const [showAdvancedFields, setShowAdvancedFields] = useState(false);
 
+  // State for body measurements
+  const [showMeasurementDialog, setShowMeasurementDialog] = useState(false);
+  const [measurementForm, setMeasurementForm] = useState<Partial<InsertBodyMeasurement>>({
+    date: new Date(),
+    neck: null,
+    chest: null,
+    waist: null,
+    hips: null,
+    biceps: null,
+    thighs: null,
+    calves: null,
+    unit: 'in'
+  });
+
   // Fetch weight entries
   const { data: weightEntries = [], isLoading } = useQuery<WeightEntry[]>({
     queryKey: ["/api/weight-entries"],
+  });
+
+  // Body measurements query
+  const { data: bodyMeasurements = [], isLoading: isMeasurementsLoading } = useQuery<BodyMeasurement[]>({
+    queryKey: ["/api/body-measurements"],
+  });
+
+  const { data: latestMeasurement } = useQuery<BodyMeasurement>({
+    queryKey: ["/api/body-measurements/latest"],
   });
 
   // Create mutation
@@ -94,6 +117,48 @@ export default function WeightTracking() {
       toast({
         title: "Entry deleted",
         description: "Health data entry has been removed.",
+      });
+    },
+  });
+
+  // Body measurement mutations
+  const createMeasurementMutation = useMutation({
+    mutationFn: async (measurement: InsertBodyMeasurement) => {
+      const response = await apiRequest("POST", "/api/body-measurements", measurement);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/body-measurements"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/body-measurements/latest"] });
+      toast({
+        title: "Measurement added",
+        description: "Body measurement has been added successfully.",
+      });
+      setShowMeasurementDialog(false);
+      setMeasurementForm({
+        date: new Date(),
+        neck: null,
+        chest: null,
+        waist: null,
+        hips: null,
+        biceps: null,
+        thighs: null,
+        calves: null,
+        unit: 'in'
+      });
+    },
+  });
+
+  const deleteMeasurementMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/body-measurements/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/body-measurements"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/body-measurements/latest"] });
+      toast({
+        title: "Measurement deleted",
+        description: "Body measurement has been deleted successfully.",
       });
     },
   });
@@ -814,6 +879,62 @@ export default function WeightTracking() {
                     <p className="text-sm text-orange-700 dark:text-orange-300">
                       The system automatically parses all health metrics including weight, body fat, muscle mass, BMI, and more advanced metrics like visceral fat and metabolic age.
                     </p>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </Card>
+
+        {/* Body Measurements Section */}
+        <Card className="mb-8">
+          <Accordion type="single" collapsible>
+            <AccordionItem value="body-measurements">
+              <AccordionTrigger className="flex items-center gap-3 px-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900">
+                    <Ruler className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold">Body Measurements</h3>
+                    <p className="text-sm text-muted-foreground">Track body measurements with tape measure</p>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6">
+                <div className="space-y-6">
+                  <div className="text-center">
+                    <p className="text-muted-foreground mb-4">Track your body measurements over time to monitor progress and changes</p>
+                    <Button>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Measurement
+                    </Button>
+                  </div>
+
+                  {/* Body visualization placeholder - will be implemented next */}
+                  <div className="bg-muted/30 border-2 border-dashed border-muted-foreground/30 rounded-lg p-8">
+                    <div className="text-center">
+                      <p className="text-muted-foreground">Body measurement visualization will appear here</p>
+                      <p className="text-sm text-muted-foreground mt-2">Shows latest measurements around body silhouette</p>
+                    </div>
+                  </div>
+
+                  {/* Import/Export Controls */}
+                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium">Import/Export Data</h4>
+                      <p className="text-sm text-muted-foreground">Import from measurement apps or export your data</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm">
+                        <Download className="w-4 h-4 mr-2" />
+                        Export CSV
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Upload className="w-4 h-4 mr-2" />
+                        Import CSV
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </AccordionContent>

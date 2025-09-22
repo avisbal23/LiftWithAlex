@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import path from "path";
 import fs from "fs";
-import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertBloodOptimalRangeSchema, updateBloodOptimalRangeSchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema, insertExerciseTemplateSchema, updateExerciseTemplateSchema, insertChangesAuditSchema, updateChangesAuditSchema, insertPRChangesAuditSchema, insertWeightAuditSchema, updateWeightAuditSchema, insertWorkoutTimerSchema, updateWorkoutTimerSchema, insertTimerLapTimeSchema, updateTimerLapTimeSchema } from "@shared/schema";
+import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertBloodOptimalRangeSchema, updateBloodOptimalRangeSchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema, insertExerciseTemplateSchema, updateExerciseTemplateSchema, insertChangesAuditSchema, updateChangesAuditSchema, insertPRChangesAuditSchema, insertWeightAuditSchema, updateWeightAuditSchema, insertWorkoutTimerSchema, updateWorkoutTimerSchema, insertTimerLapTimeSchema, updateTimerLapTimeSchema, insertBodyMeasurementSchema, updateBodyMeasurementSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -214,6 +214,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(entries);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch weight entries in range" });
+    }
+  });
+
+  // Body measurement routes
+  
+  // Get all body measurements
+  app.get("/api/body-measurements", async (req, res) => {
+    try {
+      const measurements = await storage.getAllBodyMeasurements();
+      res.json(measurements);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch body measurements" });
+    }
+  });
+
+  // Get latest body measurement
+  app.get("/api/body-measurements/latest", async (req, res) => {
+    try {
+      const measurement = await storage.getLatestBodyMeasurement();
+      if (!measurement) {
+        return res.status(404).json({ message: "No body measurements found" });
+      }
+      res.json(measurement);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch latest body measurement" });
+    }
+  });
+
+  // Create new body measurement
+  app.post("/api/body-measurements", async (req, res) => {
+    try {
+      const validatedData = insertBodyMeasurementSchema.parse(req.body);
+      const measurement = await storage.createBodyMeasurement(validatedData);
+      res.status(201).json(measurement);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create body measurement" });
+      }
+    }
+  });
+
+  // Update body measurement
+  app.patch("/api/body-measurements/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const validatedData = updateBodyMeasurementSchema.parse(req.body);
+      const measurement = await storage.updateBodyMeasurement(id, validatedData);
+      
+      if (!measurement) {
+        return res.status(404).json({ message: "Body measurement not found" });
+      }
+      
+      res.json(measurement);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update body measurement" });
+      }
+    }
+  });
+
+  // Delete body measurement
+  app.delete("/api/body-measurements/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const deleted = await storage.deleteBodyMeasurement(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Body measurement not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete body measurement" });
     }
   });
 

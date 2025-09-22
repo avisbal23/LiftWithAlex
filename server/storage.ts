@@ -1,5 +1,5 @@
-import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type BloodOptimalRange, type InsertBloodOptimalRange, type UpdateBloodOptimalRange, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress, type DailyWorkoutStatus, type InsertDailyWorkoutStatus, type UpdateDailyWorkoutStatus, type WorkoutNotes, type InsertWorkoutNotes, type UpdateWorkoutNotes, type ExerciseTemplate, type InsertExerciseTemplate, type UpdateExerciseTemplate, type ChangesAudit, type InsertChangesAudit, type UpdateChangesAudit, type PRChangesAudit, type InsertPRChangesAudit, type WeightAudit, type InsertWeightAudit, type UpdateWeightAudit, type WorkoutTimer, type InsertWorkoutTimer, type UpdateWorkoutTimer, type TimerLapTime, type InsertTimerLapTime, type UpdateTimerLapTime } from "@shared/schema";
-import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, bloodOptimalRanges, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress, dailyWorkoutStatus, workoutNotes, exerciseTemplates, changesAudit, prChangesAudit, weightAudit, workoutTimers, timerLapTimes } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type BloodOptimalRange, type InsertBloodOptimalRange, type UpdateBloodOptimalRange, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress, type DailyWorkoutStatus, type InsertDailyWorkoutStatus, type UpdateDailyWorkoutStatus, type WorkoutNotes, type InsertWorkoutNotes, type UpdateWorkoutNotes, type ExerciseTemplate, type InsertExerciseTemplate, type UpdateExerciseTemplate, type ChangesAudit, type InsertChangesAudit, type UpdateChangesAudit, type PRChangesAudit, type InsertPRChangesAudit, type WeightAudit, type InsertWeightAudit, type UpdateWeightAudit, type WorkoutTimer, type InsertWorkoutTimer, type UpdateWorkoutTimer, type TimerLapTime, type InsertTimerLapTime, type UpdateTimerLapTime, type BodyMeasurement, type InsertBodyMeasurement, type UpdateBodyMeasurement } from "@shared/schema";
+import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, bloodOptimalRanges, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress, dailyWorkoutStatus, workoutNotes, exerciseTemplates, changesAudit, prChangesAudit, weightAudit, workoutTimers, timerLapTimes, bodyMeasurements } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc, sql } from "drizzle-orm";
@@ -122,6 +122,13 @@ export interface IStorage {
   getTimerLapTimes(timerId: string): Promise<TimerLapTime[]>;
   createTimerLapTime(entry: InsertTimerLapTime): Promise<TimerLapTime>;
   clearTimerLapTimes(timerId: string): Promise<void>;
+  
+  // Body Measurements - tape measure tracking
+  createBodyMeasurement(entry: InsertBodyMeasurement): Promise<BodyMeasurement>;
+  updateBodyMeasurement(id: string, entry: UpdateBodyMeasurement): Promise<BodyMeasurement | undefined>;
+  deleteBodyMeasurement(id: string): Promise<boolean>;
+  getAllBodyMeasurements(): Promise<BodyMeasurement[]>;
+  getLatestBodyMeasurement(): Promise<BodyMeasurement | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -144,6 +151,7 @@ export class MemStorage implements IStorage {
   private weightAudit: Map<string, WeightAudit>;
   private workoutTimers: Map<string, WorkoutTimer>; // keyed by storageKey
   private timerLapTimes: Map<string, TimerLapTime>; // keyed by id
+  private bodyMeasurements: Map<string, BodyMeasurement>;
 
   constructor() {
     this.users = new Map();
@@ -165,6 +173,7 @@ export class MemStorage implements IStorage {
     this.weightAudit = new Map();
     this.workoutTimers = new Map();
     this.timerLapTimes = new Map();
+    this.bodyMeasurements = new Map();
     
     // Add some initial sample data
     this.seedData();
@@ -2291,6 +2300,45 @@ export class DatabaseStorage implements IStorage {
   async clearTimerLapTimes(timerId: string): Promise<void> {
     await db.delete(timerLapTimes)
       .where(eq(timerLapTimes.timerId, timerId));
+  }
+  
+  // Body Measurements - tape measure tracking
+  async createBodyMeasurement(entry: InsertBodyMeasurement): Promise<BodyMeasurement> {
+    const [created] = await db.insert(bodyMeasurements)
+      .values({
+        ...entry,
+        createdAt: new Date(),
+      })
+      .returning();
+    return created;
+  }
+  
+  async updateBodyMeasurement(id: string, entry: UpdateBodyMeasurement): Promise<BodyMeasurement | undefined> {
+    const [updated] = await db.update(bodyMeasurements)
+      .set(entry)
+      .where(eq(bodyMeasurements.id, id))
+      .returning();
+    return updated;
+  }
+  
+  async deleteBodyMeasurement(id: string): Promise<boolean> {
+    const result = await db.delete(bodyMeasurements)
+      .where(eq(bodyMeasurements.id, id));
+    return result.rowCount > 0;
+  }
+  
+  async getAllBodyMeasurements(): Promise<BodyMeasurement[]> {
+    return await db.select()
+      .from(bodyMeasurements)
+      .orderBy(desc(bodyMeasurements.date));
+  }
+  
+  async getLatestBodyMeasurement(): Promise<BodyMeasurement | undefined> {
+    const [latest] = await db.select()
+      .from(bodyMeasurements)
+      .orderBy(desc(bodyMeasurements.date))
+      .limit(1);
+    return latest;
   }
 }
 

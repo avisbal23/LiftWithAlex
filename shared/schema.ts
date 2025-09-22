@@ -333,6 +333,26 @@ export const timerLapTimes = pgTable("timer_lap_times", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Body Measurements - tape measure body tracking
+export const bodyMeasurements = pgTable("body_measurements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  date: timestamp("date").notNull(),
+  neck: real("neck"), // Neck measurement in inches
+  shoulder: real("shoulder"), // Shoulder measurement in inches
+  lBiceps: real("l_biceps"), // Left biceps measurement in inches
+  rBiceps: real("r_biceps"), // Right biceps measurement in inches
+  chest: real("chest"), // Chest measurement in inches
+  waist: real("waist"), // Waist measurement in inches
+  abdomen: real("abdomen"), // Abdomen measurement in inches
+  hip: real("hip"), // Hip measurement in inches
+  lThigh: real("l_thigh"), // Left thigh measurement in inches
+  rThigh: real("r_thigh"), // Right thigh measurement in inches
+  lCalf: real("l_calf"), // Left calf measurement in inches
+  rCalf: real("r_calf"), // Right calf measurement in inches
+  waistHipRatio: real("waist_hip_ratio"), // Calculated waist-hip ratio
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -564,6 +584,16 @@ export const insertTimerLapTimeSchema = createInsertSchema(timerLapTimes).omit({
 
 export const updateTimerLapTimeSchema = insertTimerLapTimeSchema.partial();
 
+export const insertBodyMeasurementSchema = createInsertSchema(bodyMeasurements).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  // Allow string dates to be coerced to Date objects
+  date: z.string().transform((str) => new Date(str)),
+});
+
+export const updateBodyMeasurementSchema = insertBodyMeasurementSchema.partial();
+
 export type ExerciseTemplate = typeof exerciseTemplates.$inferSelect;
 export type InsertExerciseTemplate = z.infer<typeof insertExerciseTemplateSchema>;
 export type UpdateExerciseTemplate = z.infer<typeof updateExerciseTemplateSchema>;
@@ -582,3 +612,6 @@ export type UpdateWorkoutTimer = z.infer<typeof updateWorkoutTimerSchema>;
 export type TimerLapTime = typeof timerLapTimes.$inferSelect;
 export type InsertTimerLapTime = z.infer<typeof insertTimerLapTimeSchema>;
 export type UpdateTimerLapTime = z.infer<typeof updateTimerLapTimeSchema>;
+export type BodyMeasurement = typeof bodyMeasurements.$inferSelect;
+export type InsertBodyMeasurement = z.infer<typeof insertBodyMeasurementSchema>;
+export type UpdateBodyMeasurement = z.infer<typeof updateBodyMeasurementSchema>;
