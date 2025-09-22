@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Download, Upload, Database, FileText, Activity, Droplets, FileDown, MessageSquare, Settings, Lock, Edit3, Save, X, Circle } from "lucide-react";
 import { type Exercise, type WeightEntry, type Quote, type ShortcutSettings, type TabSettings, type UserSettings } from "@shared/schema";
 import { Switch } from "@/components/ui/switch";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
 
 export default function Admin() {
@@ -884,7 +883,7 @@ export default function Admin() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Control which shortcuts are visible using the radio buttons below. Click the edit button to modify shortcut names and paths.
+                Control which shortcuts are visible using the toggle switches below. Click the edit button to modify shortcut names and paths.
               </p>
               <div className="space-y-4">
                 {/* Home shortcut - always enabled and locked */}
@@ -971,32 +970,32 @@ export default function Admin() {
                           <div className="flex items-center gap-3">
                             <div className="font-medium text-sm">{shortcut.shortcutName}</div>
                             <div className="text-xs text-muted-foreground">{shortcut.routePath}</div>
-                            <Button
-                              onClick={() => handleEditShortcut(shortcut)}
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0"
-                              data-testid={`button-edit-shortcut-${shortcut.shortcutKey}`}
-                            >
-                              <Edit3 className="w-3 h-3" />
-                            </Button>
                           </div>
                         </div>
-                        <RadioGroup
-                          value={shortcut.isVisible === 1 ? "enabled" : "disabled"}
-                          onValueChange={(value) => handleShortcutToggle(shortcut.shortcutKey, value === "enabled")}
-                          className="flex gap-6"
-                          disabled={updateShortcutMutation.isPending}
-                        >
+                        <div className="flex items-center gap-3">
                           <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="enabled" id={`enabled-${shortcut.shortcutKey}`} data-testid={`radio-enabled-${shortcut.shortcutKey}`} />
-                            <Label htmlFor={`enabled-${shortcut.shortcutKey}`} className="text-sm font-normal cursor-pointer">Enabled</Label>
+                            <Switch
+                              id={`switch-shortcut-${shortcut.shortcutKey}`}
+                              checked={shortcut.isVisible === 1}
+                              onCheckedChange={(checked) => handleShortcutToggle(shortcut.shortcutKey, checked)}
+                              disabled={updateShortcutMutation.isPending}
+                              data-testid={`switch-shortcut-${shortcut.shortcutKey}`}
+                            />
+                            <Label htmlFor={`switch-shortcut-${shortcut.shortcutKey}`} className="text-sm font-normal cursor-pointer">
+                              Visible
+                            </Label>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="disabled" id={`disabled-${shortcut.shortcutKey}`} data-testid={`radio-disabled-${shortcut.shortcutKey}`} />
-                            <Label htmlFor={`disabled-${shortcut.shortcutKey}`} className="text-sm font-normal cursor-pointer">Disabled</Label>
-                          </div>
-                        </RadioGroup>
+                          <Button
+                            onClick={() => handleEditShortcut(shortcut)}
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            aria-label={`Edit ${shortcut.shortcutName}`}
+                            data-testid={`button-edit-shortcut-${shortcut.shortcutKey}`}
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     );
                   })
@@ -1015,7 +1014,7 @@ export default function Admin() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Control which tabs are visible using the radio buttons below. Click the edit button to modify tab names and paths.
+                Control which tabs are visible using the toggle switches below. Click the edit button to modify tab names and paths.
               </p>
               <div className="space-y-4">
                 {tabSettings.map((tab) => {
@@ -1093,37 +1092,35 @@ export default function Admin() {
                               Locked
                             </div>
                           )}
-                          {!isLockedTab && (
-                            <Button
-                              onClick={() => handleEditTab(tab)}
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0"
-                              data-testid={`button-edit-tab-${tab.tabKey}`}
-                            >
-                              <Edit3 className="w-3 h-3" />
-                            </Button>
-                          )}
                         </div>
                       </div>
                       {isLockedTab ? (
                         <div className="text-sm text-green-600 font-medium">Always Enabled</div>
                       ) : (
-                        <RadioGroup
-                          value={tab.isVisible === 1 ? "enabled" : "disabled"}
-                          onValueChange={(value) => handleTabToggle(tab.tabKey, value === "enabled")}
-                          className="flex gap-6"
-                          disabled={updateTabMutation.isPending}
-                        >
+                        <div className="flex items-center gap-3">
                           <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="enabled" id={`tab-enabled-${tab.tabKey}`} data-testid={`radio-tab-enabled-${tab.tabKey}`} />
-                            <Label htmlFor={`tab-enabled-${tab.tabKey}`} className="text-sm font-normal cursor-pointer">Enabled</Label>
+                            <Switch
+                              id={`switch-tab-${tab.tabKey}`}
+                              checked={tab.isVisible === 1}
+                              onCheckedChange={(checked) => handleTabToggle(tab.tabKey, checked)}
+                              disabled={updateTabMutation.isPending}
+                              data-testid={`switch-tab-${tab.tabKey}`}
+                            />
+                            <Label htmlFor={`switch-tab-${tab.tabKey}`} className="text-sm font-normal cursor-pointer">
+                              Visible
+                            </Label>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="disabled" id={`tab-disabled-${tab.tabKey}`} data-testid={`radio-tab-disabled-${tab.tabKey}`} />
-                            <Label htmlFor={`tab-disabled-${tab.tabKey}`} className="text-sm font-normal cursor-pointer">Disabled</Label>
-                          </div>
-                        </RadioGroup>
+                          <Button
+                            onClick={() => handleEditTab(tab)}
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            aria-label={`Edit ${tab.tabName}`}
+                            data-testid={`button-edit-tab-${tab.tabKey}`}
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       )}
                     </div>
                   );
