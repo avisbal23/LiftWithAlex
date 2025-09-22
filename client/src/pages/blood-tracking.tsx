@@ -59,6 +59,20 @@ const BIOMARKER_INFO = {
       { unit: "%", optimal: "<5.7%", note: "Normal range" },
       { unit: "mmol/mol", optimal: "<39 mmol/mol", note: "Normal range" }
     ]
+  },
+  apob: {
+    description: "Apolipoprotein B is a protein found in LDL and other atherogenic lipoproteins. Lower levels indicate reduced cardiovascular risk.",
+    ranges: [
+      { unit: "mg/dL", optimal: "<90 mg/dL", note: "Optimal for heart health" },
+      { unit: "g/L", optimal: "<0.9 g/L", note: "Optimal for heart health" }
+    ]
+  },
+  vitaminD25oh: {
+    description: "Vitamin D (25-hydroxyvitamin D) is essential for bone health, immune function, and overall wellbeing. Adequate levels support calcium absorption.",
+    ranges: [
+      { unit: "ng/mL", optimal: "40-60 ng/mL", note: "Optimal range" },
+      { unit: "nmol/L", optimal: "100-150 nmol/L", note: "Optimal range" }
+    ]
   }
 } as const;
 
@@ -697,93 +711,61 @@ export default function BloodTracking() {
           {/* Latest Values Overview */}
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Hormone Balance */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Free Testosterone</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {getLatestMarkerValue('freeTestosterone', 'freeTestosteroneUnit')}
-                </div>
-              </CardContent>
-            </Card>
+            <FlipKpiCard
+              biomarkerKey="freeTestosterone"
+              title="Free Testosterone"
+              value={getLatestMarkerValue('freeTestosterone', 'freeTestosteroneUnit')}
+              colorClass="text-green-600 dark:text-green-400"
+            />
             
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Testosterone</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {getLatestMarkerValue('totalTestosterone', 'totalTestosteroneUnit')}
-                </div>
-              </CardContent>
-            </Card>
+            <FlipKpiCard
+              biomarkerKey="totalTestosterone"
+              title="Total Testosterone"
+              value={getLatestMarkerValue('totalTestosterone', 'totalTestosteroneUnit')}
+              colorClass="text-blue-600 dark:text-blue-400"
+            />
             
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">TSH</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-teal-600 dark:text-teal-400">
-                  {getLatestMarkerValue('tsh', 'tshUnit')}
-                </div>
-              </CardContent>
-            </Card>
+            <FlipKpiCard
+              biomarkerKey="tsh"
+              title="TSH"
+              value={getLatestMarkerValue('tsh', 'tshUnit')}
+              colorClass="text-teal-600 dark:text-teal-400"
+            />
             
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">LDL</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                  {getLatestMarkerValue('ldlCalc', 'ldlCalcUnit')}
-                </div>
-              </CardContent>
-            </Card>
+            <FlipKpiCard
+              biomarkerKey="ldlCalc"
+              title="LDL"
+              value={getLatestMarkerValue('ldlCalc', 'ldlCalcUnit')}
+              colorClass="text-purple-600 dark:text-purple-400"
+            />
             
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">SHBG</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                  {getLatestMarkerValue('shbg', 'shbgUnit')}
-                </div>
-              </CardContent>
-            </Card>
+            <FlipKpiCard
+              biomarkerKey="shbg"
+              title="SHBG"
+              value={getLatestMarkerValue('shbg', 'shbgUnit')}
+              colorClass="text-indigo-600 dark:text-indigo-400"
+            />
             
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">HbA1c</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-slate-600 dark:text-slate-400">
-                  {getLatestMarkerValue('hba1c', 'hba1cUnit')}
-                </div>
-              </CardContent>
-            </Card>
+            <FlipKpiCard
+              biomarkerKey="hba1c"
+              title="HbA1c"
+              value={getLatestMarkerValue('hba1c', 'hba1cUnit')}
+              colorClass="text-slate-600 dark:text-slate-400"
+            />
             
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">APOB</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                  {getLatestMarkerValue('apob', 'apobUnit')}
-                </div>
-              </CardContent>
-            </Card>
+            <FlipKpiCard
+              biomarkerKey="apob"
+              title="APOB"
+              value={getLatestMarkerValue('apob', 'apobUnit')}
+              colorClass="text-red-600 dark:text-red-400"
+            />
             
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">Vitamin D</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                  {getLatestMarkerValue('vitaminD25oh', 'vitaminD25ohUnit')}
-                </div>
-              </CardContent>
-            </Card>
+            <FlipKpiCard
+              biomarkerKey="vitaminD25oh"
+              title="Vitamin D"
+              value={getLatestMarkerValue('vitaminD25oh', 'vitaminD25ohUnit')}
+              colorClass="text-orange-600 dark:text-orange-400"
+            />
           </div>
 
           {/* Blood Entries List */}
