@@ -27,9 +27,15 @@ const extractURLMetadata = (url: string): URLMetadata => {
     
     if (isYouTube) {
       if (domain.includes('youtu.be')) {
-        youtubeId = urlObj.pathname.slice(1);
-      } else {
+        // Extract ID from youtu.be/VIDEO_ID format
+        youtubeId = urlObj.pathname.slice(1).split('?')[0];
+      } else if (domain.includes('youtube.com')) {
+        // Extract ID from youtube.com/watch?v=VIDEO_ID format
         youtubeId = urlObj.searchParams.get('v') || '';
+        // Also handle youtube.com/embed/VIDEO_ID format
+        if (!youtubeId && urlObj.pathname.includes('/embed/')) {
+          youtubeId = urlObj.pathname.split('/embed/')[1].split('?')[0];
+        }
       }
     }
     
@@ -153,7 +159,29 @@ export const detectURLs = (text: string): string[] => {
   return text.match(urlRegex) || [];
 };
 
-// Helper function to render text with URL previews
+// YouTube iframe component
+interface YouTubeEmbedProps {
+  videoId: string;
+  title?: string;
+}
+
+function YouTubeEmbed({ videoId, title = "YouTube video" }: YouTubeEmbedProps) {
+  return (
+    <div className="relative w-full" style={{ paddingBottom: '56.25%' /* 16:9 aspect ratio */ }}>
+      <iframe
+        className="absolute top-0 left-0 w-full h-full rounded-lg"
+        src={`https://www.youtube.com/embed/${videoId}`}
+        title={title}
+        frameBorder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowFullScreen
+        data-testid={`iframe-youtube-${videoId}`}
+      />
+    </div>
+  );
+}
+
+// Helper function to render text with URL previews and embedded videos
 export const renderTextWithURLs = (text: string) => {
   const urls = detectURLs(text);
   
@@ -183,8 +211,20 @@ export const renderTextWithURLs = (text: string) => {
     parts = newParts;
   });
 
+  // Separate YouTube URLs from other URLs
+  const youtubeUrls = urls.filter(url => {
+    const metadata = extractURLMetadata(url);
+    return metadata.isYouTube && metadata.youtubeId;
+  });
+  
+  const otherUrls = urls.filter(url => {
+    const metadata = extractURLMetadata(url);
+    return !metadata.isYouTube;
+  });
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* Text with clickable URLs */}
       <div>
         {parts.map((part, index) => {
           if (typeof part === 'object' && part.type === 'url') {
@@ -205,12 +245,31 @@ export const renderTextWithURLs = (text: string) => {
         })}
       </div>
       
-      {/* URL Preview Tiles */}
-      <div className="space-y-2 mt-3">
-        {urls.map((url, index) => (
-          <URLPreview key={`${url}-${index}`} url={url} />
-        ))}
-      </div>
+      {/* Embedded YouTube Videos */}
+      {youtubeUrls.length > 0 && (
+        <div className="space-y-4">
+          {youtubeUrls.map((url, index) => {
+            const metadata = extractURLMetadata(url);
+            if (metadata.youtubeId) {
+              return (
+                <div key={`youtube-${index}`} className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                  <YouTubeEmbed videoId={metadata.youtubeId} />
+                </div>
+              );
+            }
+            return null;
+          })}
+        </div>
+      )}
+      
+      {/* URL Preview Tiles for non-YouTube URLs */}
+      {otherUrls.length > 0 && (
+        <div className="space-y-2">
+          {otherUrls.map((url, index) => (
+            <URLPreview key={`${url}-${index}`} url={url} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
