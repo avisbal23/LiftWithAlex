@@ -8,12 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Droplets, Plus, Calendar, Upload, Download, ChevronDown, ChevronUp, Target, Activity, BarChart, CheckCircle, FileText, Save, X } from "lucide-react";
+import { Droplets, Plus, Calendar, Upload, Download, ChevronDown, ChevronUp, Target, Activity, BarChart, CheckCircle, FileText, Save, X, Paperclip, Trash2, ExternalLink } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { type BloodEntry, insertBloodEntrySchema } from "@shared/schema";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
+import { ObjectUploader } from "@/components/ObjectUploader";
 
 export default function BloodTracking() {
   const { toast } = useToast();
@@ -21,6 +22,7 @@ export default function BloodTracking() {
   const [collapsedRecords, setCollapsedRecords] = useState<Record<string, boolean>>({});
   const [editingEntry, setEditingEntry] = useState<string | null>(null);
   const [editingValues, setEditingValues] = useState<Record<string, { value: string; unit: string } | string>>({});
+  const [editingAttachedFiles, setEditingAttachedFiles] = useState<Record<string, Array<{fileName: string; fileUrl: string; fileType: string; fileSize: number}>>>({});
   
   // Import state
   const [importData, setImportData] = useState("");
@@ -35,6 +37,44 @@ export default function BloodTracking() {
   const { data: bloodEntries = [] } = useQuery<BloodEntry[]>({
     queryKey: ["/api/blood-entries"],
   });
+
+  // File attachment helper functions
+  const addAttachedFile = (entryId: string, file: {fileName: string; fileUrl: string; fileType: string; fileSize: number}) => {
+    setEditingAttachedFiles(prev => ({
+      ...prev,
+      [entryId]: [...(prev[entryId] || []), file]
+    }));
+  };
+
+  const removeAttachedFile = (entryId: string, fileIndex: number) => {
+    setEditingAttachedFiles(prev => ({
+      ...prev,
+      [entryId]: (prev[entryId] || []).filter((_, index) => index !== fileIndex)
+    }));
+  };
+
+  const initializeEditingFiles = (entryId: string, entry: BloodEntry) => {
+    if (entry.attachedFiles && entry.attachedFiles.length > 0) {
+      try {
+        const parsedFiles = entry.attachedFiles.map(fileStr => JSON.parse(fileStr));
+        setEditingAttachedFiles(prev => ({
+          ...prev,
+          [entryId]: parsedFiles
+        }));
+      } catch (error) {
+        console.error('Error parsing attached files:', error);
+        setEditingAttachedFiles(prev => ({
+          ...prev,
+          [entryId]: []
+        }));
+      }
+    } else {
+      setEditingAttachedFiles(prev => ({
+        ...prev,
+        [entryId]: []
+      }));
+    }
+  };
 
   // Helper function to get latest marker value
   const getLatestMarkerValue = (fieldName: keyof BloodEntry, unitFieldName: keyof BloodEntry) => {
@@ -176,6 +216,12 @@ export default function BloodTracking() {
         }
       }
     });
+
+    // Add attached files as JSON strings
+    const attachedFiles = editingAttachedFiles[entryId] || [];
+    if (attachedFiles.length > 0) {
+      processedData.attachedFiles = attachedFiles.map(file => JSON.stringify(file));
+    }
 
     updateBloodEntry.mutate({ id: entryId, data: processedData });
   };
@@ -987,6 +1033,74 @@ export default function BloodTracking() {
                                   </div>
                                 </div>
 
+                                {/* File Attachments Section */}
+                                <div className="space-y-4 border-t pt-4">
+                                  <h3 className="text-lg font-medium">Attached Files</h3>
+                                  
+                                  {/* Current attached files */}
+                                  <div className="space-y-2">
+                                    {(editingAttachedFiles[entry.id] || []).map((file, index) => (
+                                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded border">
+                                        <div className="flex items-center gap-2">
+                                          <Paperclip className="w-4 h-4 text-gray-500" />
+                                          <span className="text-sm font-medium">{file.fileName}</span>
+                                          <span className="text-xs text-gray-500">
+                                            ({(file.fileSize / 1024 / 1024).toFixed(1)} MB)
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => window.open(file.fileUrl, '_blank')}
+                                            data-testid={`button-view-file-${index}`}
+                                          >
+                                            <ExternalLink className="w-4 h-4" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => removeAttachedFile(entry.id, index)}
+                                            data-testid={`button-remove-file-${index}`}
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  {/* Upload new files */}
+                                  <ObjectUploader
+                                    maxNumberOfFiles={5}
+                                    maxFileSize={50485760} // 50MB
+                                    onGetUploadParameters={async () => {
+                                      const response = await fetch("/api/objects/upload", { method: "POST" });
+                                      const data = await response.json();
+                                      return {
+                                        method: "PUT" as const,
+                                        url: data.uploadURL,
+                                      };
+                                    }}
+                                    onComplete={(result) => {
+                                      result.successful.forEach((file) => {
+                                        if (file.response?.uploadURL && file.data) {
+                                          addAttachedFile(entry.id, {
+                                            fileName: file.data.name,
+                                            fileUrl: file.response.uploadURL.split('?')[0], // Remove query params
+                                            fileType: file.data.type,
+                                            fileSize: file.data.size
+                                          });
+                                        }
+                                      });
+                                    }}
+                                    buttonClassName="w-full"
+                                  >
+                                    <Upload className="w-4 h-4 mr-2" />
+                                    Upload Lab Results (PDF, CSV, Excel, Images)
+                                  </ObjectUploader>
+                                </div>
+
                                 <div className="flex gap-2 pt-4">
                                   <Button
                                     onClick={() => handleSaveEntry(entry.id)}
@@ -1001,6 +1115,7 @@ export default function BloodTracking() {
                                     onClick={() => {
                                       setEditingEntry(null);
                                       setEditingValues({});
+                                      setEditingAttachedFiles({});
                                     }}
                                     data-testid={`button-cancel-${entry.id}`}
                                   >
@@ -1100,10 +1215,50 @@ export default function BloodTracking() {
                                     </div>
                                   )}
                                 </div>
+
+                                {/* Display attached files in view mode */}
+                                {entry.attachedFiles && entry.attachedFiles.length > 0 && (
+                                  <div className="mt-4 space-y-2">
+                                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Attached Files:</h4>
+                                    <div className="space-y-1">
+                                      {entry.attachedFiles.map((fileStr, index) => {
+                                        try {
+                                          const file = JSON.parse(fileStr);
+                                          return (
+                                            <div key={index} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded border text-sm">
+                                              <div className="flex items-center gap-2">
+                                                <Paperclip className="w-3 h-3 text-gray-500" />
+                                                <span className="font-medium">{file.fileName}</span>
+                                                <span className="text-xs text-gray-500">
+                                                  ({(file.fileSize / 1024 / 1024).toFixed(1)} MB)
+                                                </span>
+                                              </div>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => window.open(file.fileUrl, '_blank')}
+                                                data-testid={`button-view-file-${entry.id}-${index}`}
+                                              >
+                                                <ExternalLink className="w-3 h-3" />
+                                              </Button>
+                                            </div>
+                                          );
+                                        } catch (error) {
+                                          console.error('Error parsing attached file:', error);
+                                          return null;
+                                        }
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => setEditingEntry(entry.id)}
+                                  onClick={() => {
+                                    setEditingEntry(entry.id);
+                                    initializeEditingFiles(entry.id, entry);
+                                  }}
                                   data-testid={`button-edit-${entry.id}`}
                                 >
                                   Edit Values
