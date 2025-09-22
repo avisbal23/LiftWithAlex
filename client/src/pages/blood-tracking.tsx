@@ -1267,7 +1267,6 @@ export default function BloodTracking() {
                                   size="sm"
                                   onClick={() => {
                                     setEditingEntry(entry.id);
-                                    initializeEditingFiles(entry.id, entry);
                                   }}
                                   data-testid={`button-edit-${entry.id}`}
                                 >
