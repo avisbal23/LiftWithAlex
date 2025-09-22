@@ -7,15 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Upload, Database, FileDown, MessageSquare, Settings, Lock, Edit3, Save, X, Circle } from "lucide-react";
-import { type Exercise, type Quote, type ShortcutSettings, type TabSettings, type UserSettings } from "@shared/schema";
+import { Download, Upload, FileDown, MessageSquare, Settings, Lock, Edit3, Save, X, Circle } from "lucide-react";
+import { type Quote, type ShortcutSettings, type TabSettings, type UserSettings } from "@shared/schema";
 import { Switch } from "@/components/ui/switch";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
 
 export default function Admin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [workoutImportData, setWorkoutImportData] = useState("");
   const [quotesImportData, setQuotesImportData] = useState("");
   const [isImporting, setIsImporting] = useState(false);
   
@@ -31,9 +30,6 @@ export default function Admin() {
   const [appTitle, setAppTitle] = useState<string>("");
   const [appTitleInitialized, setAppTitleInitialized] = useState<boolean>(false);
 
-  const { data: exercises = [] } = useQuery<Exercise[]>({
-    queryKey: ["/api/exercises"],
-  });
 
 
   const { data: quotes = [] } = useQuery<Quote[]>({
@@ -272,140 +268,6 @@ export default function Admin() {
     updateTabMutation.mutate({ tabKey, isVisible });
   };
 
-  const downloadWorkoutTemplate = () => {
-    const csvHeaders = 'name,category,weight,reps,notes,duration,distance,pace,calories,rpe,createdAt';
-    const sampleRows = [
-      '"Flat Dumbbell Press","push",80,6,"Good form","","","",0,0,"2025-01-24T12:00:00.000Z"',
-      '"Cardio Run","cardio",0,0,"Morning run","30:00","3.5 miles","8:34/mi",350,7,"2025-01-24T07:00:00.000Z"',
-      '"Lat Pulldown","pull",150,8,"Focus on squeeze","","","",0,0,"2025-01-24T12:15:00.000Z"'
-    ];
-    
-    const csvContent = [csvHeaders, ...sampleRows].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'workout-import-template.csv';
-    link.click();
-    window.URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Template Downloaded",
-      description: "Workout import template CSV file downloaded",
-    });
-  };
-
-
-  const exportWorkouts = () => {
-    if (exercises.length === 0) {
-      toast({
-        title: "No Data",
-        description: "No exercises to export",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const csvHeaders = 'name,category,weight,reps,notes,duration,distance,pace,calories,rpe,createdAt';
-    const csvRows = exercises.map(exercise => {
-      const createdAt = exercise.createdAt ? new Date(exercise.createdAt).toISOString() : new Date().toISOString();
-      return `"${exercise.name}","${exercise.category}",${exercise.weight || 0},${exercise.reps || 0},"${(exercise.notes || '').replace(/"/g, '""')}","${exercise.duration || ''}","${exercise.distance || ''}","${exercise.pace || ''}",${exercise.calories || 0},${exercise.rpe || 0},"${createdAt}"`;
-    });
-    
-    const csvContent = [csvHeaders, ...csvRows].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `visbal-gym-workouts-${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    window.URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Workouts Exported",
-      description: `${exercises.length} exercises exported to CSV`,
-    });
-  };
-
-
-  const importWorkouts = async () => {
-    if (!workoutImportData.trim()) {
-      toast({
-        title: "Error",
-        description: "Please paste workout CSV data to import",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsImporting(true);
-    try {
-      const lines = workoutImportData.trim().split('\n');
-      if (lines.length < 2) {
-        throw new Error("CSV must have at least header and one data row");
-      }
-      
-      const headers = lines[0].split(',').map(h => h.trim());
-      const expectedHeaders = ['name', 'category', 'weight', 'reps', 'notes', 'duration', 'distance', 'pace', 'calories', 'rpe'];
-      
-      if (!expectedHeaders.every(header => headers.includes(header))) {
-        throw new Error(`CSV must include headers: ${expectedHeaders.join(', ')}`);
-      }
-      
-      const rows = lines.slice(1).map(line => {
-        const values = line.match(/([^,"]+|"[^"]*")/g) || [];
-        const row: any = {};
-        headers.forEach((header, index) => {
-          let value = values[index]?.trim() || '';
-          if (value.startsWith('"') && value.endsWith('"')) {
-            value = value.slice(1, -1).replace(/""/g, '"');
-          }
-          row[header] = value;
-        });
-        return row;
-      });
-
-      // Clear existing exercises first
-      const deletePromises = exercises.map(exercise => 
-        apiRequest("DELETE", `/api/exercises/${exercise.id}`)
-      );
-      await Promise.all(deletePromises);
-
-      // Import new exercises
-      const importPromises = rows.map((row: any) => 
-        apiRequest("POST", "/api/exercises", {
-          name: row.name || '',
-          weight: parseFloat(row.weight) || 0,
-          reps: parseInt(row.reps) || 0,
-          notes: row.notes || "",
-          category: row.category || 'push',
-          duration: row.duration || "",
-          distance: row.distance || "",
-          pace: row.pace || "",
-          calories: parseInt(row.calories) || 0,
-          rpe: parseInt(row.rpe) || 0
-        })
-      );
-      await Promise.all(importPromises);
-
-      // Refresh data
-      queryClient.invalidateQueries({ queryKey: ["/api/exercises"] });
-      
-      toast({
-        title: "Import Successful",
-        description: `${rows.length} exercises imported from CSV`,
-      });
-      setWorkoutImportData("");
-    } catch (error) {
-      toast({
-        title: "Import Failed",
-        description: error instanceof Error ? error.message : "Invalid CSV format",
-        variant: "destructive",
-      });
-    } finally {
-      setIsImporting(false);
-    }
-  };
 
 
   const downloadQuotesTemplate = () => {
@@ -542,68 +404,11 @@ export default function Admin() {
             Admin Panel
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground">
-            Export and import your gym data in bulk
+            Manage quotes, customize app settings, and control interface visibility
           </p>
         </div>
 
         <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-          {/* Workout Data Management */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Database className="w-5 h-5" />
-                Workout Data Management
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-2">
-                <Button 
-                  onClick={exportWorkouts}
-                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
-                  data-testid="button-export-workouts"
-                >
-                  <Download className="w-4 h-4" />
-                  Export All Workouts
-                </Button>
-                <Button 
-                  onClick={downloadWorkoutTemplate}
-                  variant="outline"
-                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
-                  data-testid="button-download-workout-template"
-                >
-                  <FileDown className="w-4 h-4" />
-                  Download Template
-                </Button>
-                <span className="text-xs sm:text-sm text-muted-foreground flex items-center justify-center sm:justify-start px-3 py-2 sm:px-0 sm:py-0">
-                  ({exercises.length} exercises)
-                </span>
-              </div>
-              
-              <div className="space-y-3">
-                <Label htmlFor="workout-import" className="text-sm font-medium">Import Workout Data</Label>
-                <Textarea
-                  id="workout-import"
-                  placeholder="Paste your workout export CSV here...\nFormat: name,category,weight,reps,notes,duration,distance,pace,calories,rpe"
-                  value={workoutImportData}
-                  onChange={(e) => setWorkoutImportData(e.target.value)}
-                  className="min-h-[100px] sm:min-h-[120px] font-mono text-xs sm:text-sm resize-none"
-                />
-                <Button 
-                  onClick={importWorkouts}
-                  disabled={isImporting || !workoutImportData.trim()}
-                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
-                  variant="outline"
-                  data-testid="button-import-workouts"
-                >
-                  <Upload className="w-4 h-4" />
-                  {isImporting ? "Importing..." : "Import Workouts"}
-                </Button>
-                <p className="text-xs text-muted-foreground">
-                  ⚠️ This will replace ALL existing workout data
-                </p>
-              </div>
-            </CardContent>
-          </Card>
 
 
           {/* Home Screen Shortcut Management */}
