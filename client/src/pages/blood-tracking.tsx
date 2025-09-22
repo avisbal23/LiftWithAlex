@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Droplets, Plus, Calendar, Upload, Download, ChevronDown, ChevronUp, Target, Activity, BarChart, CheckCircle, FileText, Save, X, Paperclip, Trash2, ExternalLink } from "lucide-react";
+import { Droplets, Plus, Calendar, Upload, Download, ChevronDown, ChevronUp, Target, Activity, BarChart, CheckCircle, FileText, Save, X, Paperclip, Trash2, ExternalLink, FlipHorizontal } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,12 +16,61 @@ import { type BloodEntry, insertBloodEntrySchema } from "@shared/schema";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
 import { ObjectUploader } from "@/components/ObjectUploader";
 
+// Biomarker information for flip cards
+const BIOMARKER_INFO = {
+  freeTestosterone: {
+    description: "Free testosterone is the biologically active portion of testosterone not bound to proteins. It directly affects muscle growth, energy, and overall vitality.",
+    ranges: [
+      { unit: "pg/mL", optimal: "15-35 pg/mL", note: "Adult males" },
+      { unit: "pmol/L", optimal: "52-121 pmol/L", note: "Adult males" }
+    ]
+  },
+  totalTestosterone: {
+    description: "Total testosterone includes both free and protein-bound testosterone. Essential for muscle mass, bone density, and sexual function.",
+    ranges: [
+      { unit: "ng/dL", optimal: "400-900 ng/dL", note: "Adult males" },
+      { unit: "nmol/L", optimal: "14-31 nmol/L", note: "Adult males" }
+    ]
+  },
+  tsh: {
+    description: "Thyroid Stimulating Hormone regulates thyroid function, which controls metabolism, energy production, and temperature regulation.",
+    ranges: [
+      { unit: "uIU/mL", optimal: "0.5-2.5 uIU/mL", note: "Optimal range" },
+      { unit: "mIU/L", optimal: "0.5-2.5 mIU/L", note: "Optimal range" }
+    ]
+  },
+  ldlCalc: {
+    description: "Low-density lipoprotein (bad cholesterol) carries cholesterol to arteries. Lower levels reduce cardiovascular disease risk.",
+    ranges: [
+      { unit: "mg/dL", optimal: "<100 mg/dL", note: "Optimal for heart health" },
+      { unit: "mmol/L", optimal: "<2.6 mmol/L", note: "Optimal for heart health" }
+    ]
+  },
+  shbg: {
+    description: "Sex Hormone Binding Globulin binds to sex hormones, affecting the amount of free testosterone available for use by the body.",
+    ranges: [
+      { unit: "nmol/L", optimal: "15-50 nmol/L", note: "Adult males" },
+      { unit: "μg/dL", optimal: "13-71 μg/dL", note: "Adult males" }
+    ]
+  },
+  hba1c: {
+    description: "Hemoglobin A1c measures average blood sugar levels over 2-3 months. Lower levels indicate better glucose control and metabolic health.",
+    ranges: [
+      { unit: "%", optimal: "<5.7%", note: "Normal range" },
+      { unit: "mmol/mol", optimal: "<39 mmol/mol", note: "Normal range" }
+    ]
+  }
+} as const;
+
 export default function BloodTracking() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [collapsedRecords, setCollapsedRecords] = useState<Record<string, boolean>>({});
   const [editingEntry, setEditingEntry] = useState<string | null>(null);
   const [editingValues, setEditingValues] = useState<Record<string, { value: string; unit: string } | string>>({});
+  
+  // Flip card state
+  const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
   
   // Import state
   const [importData, setImportData] = useState("");
@@ -110,6 +159,115 @@ export default function BloodTracking() {
       return ratio.toFixed(2);
     }
     return "N/A";
+  };
+
+  // Helper function to toggle card flip
+  const toggleCardFlip = (biomarkerKey: string) => {
+    setFlippedCards(prev => ({
+      ...prev,
+      [biomarkerKey]: !prev[biomarkerKey]
+    }));
+  };
+
+  // Helper function to get current unit for biomarker ranges
+  const getCurrentUnit = (fieldName: keyof BloodEntry, unitFieldName: keyof BloodEntry) => {
+    const sortedEntries = bloodEntries
+      .filter(entry => entry[fieldName] != null)
+      .sort((a, b) => new Date(b.asOf).getTime() - new Date(a.asOf).getTime());
+    const entry = sortedEntries[0];
+    return entry?.[unitFieldName] as string || "";
+  };
+
+  // FlipKpiCard Component
+  const FlipKpiCard = ({ 
+    biomarkerKey, 
+    title, 
+    value, 
+    colorClass 
+  }: { 
+    biomarkerKey: keyof typeof BIOMARKER_INFO; 
+    title: string; 
+    value: string; 
+    colorClass: string;
+  }) => {
+    const isFlipped = flippedCards[biomarkerKey] || false;
+    const info = BIOMARKER_INFO[biomarkerKey];
+    const currentUnit = getCurrentUnit(
+      biomarkerKey as keyof BloodEntry, 
+      `${biomarkerKey}Unit` as keyof BloodEntry
+    );
+    
+    // Find matching range for current unit or use first available
+    const relevantRange = info.ranges.find(range => range.unit === currentUnit) || info.ranges[0];
+
+    return (
+      <div className="relative h-32 perspective-1000" data-testid={`kpi-card-${biomarkerKey}`}>
+        <div 
+          className={`
+            relative w-full h-full transition-transform duration-500 transform-style-preserve-3d
+            ${isFlipped ? 'rotate-y-180' : ''}
+          `}
+        >
+          {/* Front of card */}
+          <Card className={`absolute inset-0 backface-hidden ${isFlipped ? 'invisible' : 'visible'}`}>
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                {title}
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => toggleCardFlip(biomarkerKey)}
+                className="h-6 w-6 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                aria-label={`Flip to see ${title} information`}
+                data-testid={`flip-button-${biomarkerKey}`}
+              >
+                <FlipHorizontal className="h-3 w-3" />
+              </Button>
+            </CardHeader>
+            <CardContent data-testid={`panel-front-${biomarkerKey}`}>
+              <div className={`text-2xl font-bold ${colorClass}`}>
+                {value}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Back of card */}
+          <Card className={`absolute inset-0 backface-hidden rotate-y-180 ${!isFlipped ? 'invisible' : 'visible'}`}>
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                {title}
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => toggleCardFlip(biomarkerKey)}
+                className="h-6 w-6 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                aria-label={`Flip back to see ${title} value`}
+                data-testid={`flip-back-button-${biomarkerKey}`}
+              >
+                <FlipHorizontal className="h-3 w-3" />
+              </Button>
+            </CardHeader>
+            <CardContent className="pt-0" data-testid={`panel-back-${biomarkerKey}`}>
+              <div className="space-y-2">
+                <p className="text-xs text-gray-600 dark:text-gray-400 leading-tight">
+                  {info.description}
+                </p>
+                <div className="border-t pt-2">
+                  <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                    Optimal: {relevantRange.optimal}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {relevantRange.note}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
   };
 
   // Add new blood entry function - similar to workout pattern
