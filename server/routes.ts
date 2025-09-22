@@ -687,6 +687,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user settings by ID
+  app.patch("/api/user-settings/:id", async (req, res) => {
+    try {
+      const validatedData = updateUserSettingsSchema.parse(req.body);
+      const settings = await storage.createOrUpdateUserSettings(validatedData);
+      res.json(settings);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update user settings" });
+      }
+    }
+  });
+
   // Shortcut Settings API routes
   // Get all shortcut settings
   app.get("/api/shortcut-settings", async (req, res) => {

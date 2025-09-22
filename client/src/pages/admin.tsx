@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Download, Upload, Database, FileText, Activity, Droplets, FileDown, MessageSquare, Settings, Lock, Edit3, Save, X } from "lucide-react";
-import { type Exercise, type WeightEntry, type Quote, type ShortcutSettings, type TabSettings } from "@shared/schema";
+import { type Exercise, type WeightEntry, type Quote, type ShortcutSettings, type TabSettings, type UserSettings } from "@shared/schema";
 import { Switch } from "@/components/ui/switch";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
 
@@ -27,6 +27,9 @@ export default function Admin() {
   // Edit tab state
   const [editingTab, setEditingTab] = useState<string | null>(null);
   const [editTabValues, setEditTabValues] = useState<{ tabName: string; routePath: string }>({ tabName: "", routePath: "" });
+  
+  // App title state
+  const [appTitle, setAppTitle] = useState<string>("");
 
   const { data: exercises = [] } = useQuery<Exercise[]>({
     queryKey: ["/api/exercises"],
@@ -46,6 +49,18 @@ export default function Admin() {
 
   const { data: tabSettings = [] } = useQuery<TabSettings[]>({
     queryKey: ["/api/tab-settings"],
+  });
+
+  const { data: userSettings } = useQuery<UserSettings[]>({
+    queryKey: ["/api/user-settings"],
+    onSuccess: (data) => {
+      // Initialize app title state when user settings are loaded
+      if (data && data.length > 0 && data[0].appTitle) {
+        setAppTitle(data[0].appTitle);
+      } else {
+        setAppTitle("Visbal Gym Tracker"); // Default value
+      }
+    },
   });
 
   const updateShortcutMutation = useMutation({
@@ -110,6 +125,31 @@ export default function Admin() {
       toast({
         title: "Error",
         description: "Failed to update tab details",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateAppTitleMutation = useMutation({
+    mutationFn: async ({ appTitle }: { appTitle: string }) => {
+      const settingsId = userSettings?.[0]?.id;
+      if (settingsId) {
+        return apiRequest("PATCH", `/api/user-settings/${settingsId}`, { appTitle });
+      } else {
+        return apiRequest("POST", "/api/user-settings", { appTitle });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user-settings"] });
+      toast({
+        title: "App Title Updated",
+        description: "App title has been updated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update app title",
         variant: "destructive",
       });
     },
@@ -188,6 +228,19 @@ export default function Admin() {
   const handleCancelTabEdit = () => {
     setEditingTab(null);
     setEditTabValues({ tabName: "", routePath: "" });
+  };
+
+  const handleSaveAppTitle = () => {
+    const trimmedTitle = appTitle.trim();
+    if (!trimmedTitle) {
+      toast({
+        title: "Validation Error",
+        description: "App title cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+    updateAppTitleMutation.mutate({ appTitle: trimmedTitle });
   };
 
   const updateTabMutation = useMutation({
@@ -1277,6 +1330,41 @@ Example:
                 </Button>
                 <p className="text-xs text-muted-foreground">
                   ⚠️ This will replace ALL existing quotes data
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* App Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5" />
+                App Settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <Label htmlFor="app-title" className="text-sm font-medium">App Title</Label>
+                <Input
+                  id="app-title"
+                  placeholder="Enter app title..."
+                  value={appTitle}
+                  onChange={(e) => setAppTitle(e.target.value)}
+                  className="text-sm"
+                  data-testid="input-app-title"
+                />
+                <Button 
+                  onClick={handleSaveAppTitle}
+                  disabled={updateAppTitleMutation.isPending || !appTitle.trim()}
+                  className="flex items-center justify-center gap-2 h-10 text-sm px-4"
+                  data-testid="button-save-app-title"
+                >
+                  <Save className="w-4 h-4" />
+                  {updateAppTitleMutation.isPending ? "Saving..." : "Save App Title"}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  This will update the app title shown in the header across all pages
                 </p>
               </div>
             </CardContent>
