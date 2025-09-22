@@ -30,6 +30,7 @@ export default function Admin() {
   
   // App title state
   const [appTitle, setAppTitle] = useState<string>("");
+  const [appTitleInitialized, setAppTitleInitialized] = useState<boolean>(false);
 
   const { data: exercises = [] } = useQuery<Exercise[]>({
     queryKey: ["/api/exercises"],
@@ -56,13 +57,17 @@ export default function Admin() {
   });
 
   // Initialize app title when userSettings loads (React Query v5 pattern)
+  // Only initialize once to avoid resetting user input after successful saves
   useEffect(() => {
-    if (userSettings && userSettings.length > 0 && userSettings[0].appTitle) {
-      setAppTitle(userSettings[0].appTitle);
-    } else {
-      setAppTitle("Visbal Gym Tracker"); // Default value
+    if (userSettings && !appTitleInitialized) {
+      if (userSettings.length > 0 && userSettings[0].appTitle) {
+        setAppTitle(userSettings[0].appTitle);
+      } else {
+        setAppTitle("Visbal Gym Tracker"); // Default value
+      }
+      setAppTitleInitialized(true);
     }
-  }, [userSettings]);
+  }, [userSettings, appTitleInitialized]);
 
   const updateShortcutMutation = useMutation({
     mutationFn: async ({ shortcutKey, isVisible }: { shortcutKey: string; isVisible: boolean }) => {
@@ -140,8 +145,10 @@ export default function Admin() {
         return apiRequest("POST", "/api/user-settings", { appTitle });
       }
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/user-settings"] });
+      // Keep the local state in sync with the saved value
+      setAppTitle(variables.appTitle);
       toast({
         title: "App Title Updated",
         description: "App title has been updated successfully",
