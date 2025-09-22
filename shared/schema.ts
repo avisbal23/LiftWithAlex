@@ -142,9 +142,10 @@ export const photoProgress = pgTable("photo_progress", {
   title: text("title").notNull(),
   description: text("description").default(""),
   photoUrl: text("photo_url").notNull(), // Object storage path like /objects/uploads/uuid
+  fileType: text("file_type").notNull().default("image"), // "image" or "video"
   bodyPart: text("body_part"), // 'front', 'back', 'side', 'arms', 'legs', 'abs', etc.
-  weight: real("weight"), // Weight at time of photo (optional)
-  takenAt: timestamp("taken_at").notNull(), // When photo was taken
+  weight: real("weight"), // Weight at time of photo/video (optional)
+  takenAt: timestamp("taken_at").notNull(), // When photo/video was taken
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -370,6 +371,7 @@ export const insertPhotoProgressSchema = createInsertSchema(photoProgress).omit(
   id: true,
   createdAt: true,
 }).extend({
+  fileType: z.enum(["image", "video"]).default("image"),
   // Allow string dates and Date objects to be coerced properly
   takenAt: z.union([
     z.string().transform((str) => new Date(str)),
