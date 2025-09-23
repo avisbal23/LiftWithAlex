@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Bar } from "recharts";
-import { Calendar, Upload, Plus, Trash2, Download, X, BarChart, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Target, HelpCircle, FileText, Footprints, MapPin } from "lucide-react";
+import { Calendar, Upload, Plus, Trash2, Download, X, BarChart, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Target, HelpCircle, FileText, Footprints, MapPin, Trophy } from "lucide-react";
 import { format, subDays, subMonths, parseISO } from "date-fns";
 import { type StepEntry, type InsertStepEntry } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -151,6 +151,22 @@ export default function StepsTracking() {
       monthly: calculateAverage(monthlyEntries)
     };
   }, [stepEntries]);
+
+  // Calculate peak day within current filter range
+  const peakDay = useMemo(() => {
+    if (filteredData.length === 0) return { date: null, steps: 0 };
+
+    // Find the day with maximum steps in filtered data
+    const maxStepsEntry = filteredData.reduce((max, entry) => 
+      entry.steps > max.steps ? entry : max, 
+      filteredData[0]
+    );
+
+    return {
+      date: maxStepsEntry.fullDate,
+      steps: maxStepsEntry.steps
+    };
+  }, [filteredData]);
 
   const handleAddEntry = () => {
     if (!newEntry.steps || !newEntry.date) {
@@ -420,7 +436,7 @@ export default function StepsTracking() {
         </div>
 
         {/* KPI Statistics Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <Card className="bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200/30 dark:border-blue-800/30">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
@@ -453,6 +469,21 @@ export default function StepsTracking() {
               </div>
               <div className="text-2xl font-bold text-purple-700 dark:text-purple-300" data-testid="kpi-monthly-average">
                 {averages.monthly.toLocaleString()}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-yellow-50/50 to-amber-50/50 dark:from-yellow-950/20 dark:to-amber-950/20 border-yellow-200/30 dark:border-yellow-800/30">
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Trophy className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                <span className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Peak Day</span>
+              </div>
+              <div className="text-lg font-bold text-yellow-700 dark:text-yellow-300" data-testid="kpi-peak-steps">
+                {peakDay.date ? peakDay.steps.toLocaleString() : "No data"}
+              </div>
+              <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1" data-testid="kpi-peak-date">
+                {peakDay.date ? format(new Date(peakDay.date), "MMM dd") : ""}
               </div>
             </CardContent>
           </Card>
