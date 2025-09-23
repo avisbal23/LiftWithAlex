@@ -1521,20 +1521,39 @@ export default function BloodTracking() {
                                         url: data.uploadURL,
                                       };
                                     }}
-                                    onComplete={(result) => {
-                                      result.successful.forEach((file) => {
+                                    onComplete={async (result) => {
+                                      for (const file of result.successful) {
                                         if (file.response?.uploadURL && file.data) {
-                                          addAttachment.mutate({
-                                            entryId: entry.id,
-                                            file: {
-                                              fileName: file.data.name,
-                                              fileUrl: file.response.uploadURL.split('?')[0], // Remove query params
-                                              fileType: file.data.type,
-                                              fileSize: file.data.size
-                                            }
-                                          });
+                                          const fileUrl = file.response.uploadURL.split('?')[0]; // Remove query params
+                                          
+                                          try {
+                                            // First set ACL policy to make file accessible
+                                            await fetch("/api/objects/set-acl", {
+                                              method: "PUT",
+                                              headers: { "Content-Type": "application/json" },
+                                              body: JSON.stringify({ photoURL: fileUrl })
+                                            });
+                                            
+                                            // Then add attachment to blood entry
+                                            addAttachment.mutate({
+                                              entryId: entry.id,
+                                              file: {
+                                                fileName: file.data.name,
+                                                fileUrl: fileUrl,
+                                                fileType: file.data.type,
+                                                fileSize: file.data.size
+                                              }
+                                            });
+                                          } catch (error) {
+                                            console.error("Error setting file permissions:", error);
+                                            toast({
+                                              title: "Upload Warning",
+                                              description: "File uploaded but may not be accessible. Please try re-uploading.",
+                                              variant: "destructive",
+                                            });
+                                          }
                                         }
-                                      });
+                                      }
                                     }}
                                     buttonClassName="w-full"
                                   >

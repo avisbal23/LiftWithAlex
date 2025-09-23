@@ -677,6 +677,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const objectStorageService = new ObjectStorageService();
     try {
       const objectFile = await objectStorageService.getObjectEntityFile(req.path);
+      
+      // Check if user has permission to access the file
+      const { canAccessObject, ObjectPermission } = await import("./objectAcl");
+      const canAccess = await canAccessObject({
+        userId: "single-user", // For single user app, use consistent user ID
+        objectFile,
+        requestedPermission: ObjectPermission.READ,
+      });
+      
+      if (!canAccess) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
       objectStorageService.downloadObject(objectFile, res);
     } catch (error) {
       console.error("Error serving object:", error);
