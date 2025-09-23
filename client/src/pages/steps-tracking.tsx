@@ -27,7 +27,7 @@ export default function StepsTracking() {
   const queryClient = useQueryClient();
   
   // State for chart controls
-  const [dateRange, setDateRange] = useState("90");
+  const [dateRange, setDateRange] = useState("7");
   const [showSteps, setShowSteps] = useState(true);
   const [showDistance, setShowDistance] = useState(true);
   const [showFloors, setShowFloors] = useState(false);
@@ -168,17 +168,20 @@ export default function StepsTracking() {
     };
   }, [filteredData]);
 
-  // Calculate 10K steps streak within current filter range
+  // Calculate 10K steps streak excluding current day
   const tenKStreak = useMemo(() => {
     if (stepEntries.length === 0) return 0;
 
-    // Sort all entries by date (most recent first)
+    const today = format(new Date(), "yyyy-MM-dd");
+    
+    // Sort all entries by date (most recent first), excluding today
     const sortedEntries = [...stepEntries]
+      .filter(entry => format(new Date(entry.date), "yyyy-MM-dd") !== today) // Exclude current day
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     let streak = 0;
     
-    // Count consecutive days with 10K+ steps starting from most recent
+    // Count consecutive days with 10K+ steps starting from most recent (excluding today)
     for (const entry of sortedEntries) {
       if (entry.steps >= 10000) {
         streak++;
@@ -665,6 +668,14 @@ export default function StepsTracking() {
                             border: '1px solid hsl(var(--border))',
                             borderRadius: '6px',
                             fontSize: '12px'
+                          }}
+                          labelFormatter={(label) => {
+                            // Find the full date for this label
+                            const entry = filteredData.find(d => d.date === label);
+                            if (entry && entry.fullDate) {
+                              return format(new Date(entry.fullDate), "EEEE, MMMM d, yyyy");
+                            }
+                            return label;
                           }}
                           formatter={(value: any, name: string) => [
                             name === 'steps' ? value?.toLocaleString() : value,
