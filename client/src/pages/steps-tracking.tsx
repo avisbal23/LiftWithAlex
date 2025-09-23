@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Bar } from "recharts";
-import { Calendar, Upload, Plus, Trash2, Download, X, BarChart, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Target, HelpCircle, FileText, Footprints, MapPin, Trophy } from "lucide-react";
+import { Calendar, Upload, Plus, Trash2, Download, X, BarChart, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Target, HelpCircle, FileText, Footprints, MapPin, Trophy, Flame } from "lucide-react";
 import { format, subDays, subMonths, parseISO } from "date-fns";
 import { type StepEntry, type InsertStepEntry } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -167,6 +167,28 @@ export default function StepsTracking() {
       steps: maxStepsEntry.steps
     };
   }, [filteredData]);
+
+  // Calculate 10K steps streak within current filter range
+  const tenKStreak = useMemo(() => {
+    if (stepEntries.length === 0) return 0;
+
+    // Sort all entries by date (most recent first)
+    const sortedEntries = [...stepEntries]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    let streak = 0;
+    
+    // Count consecutive days with 10K+ steps starting from most recent
+    for (const entry of sortedEntries) {
+      if (entry.steps >= 10000) {
+        streak++;
+      } else {
+        break; // Streak is broken
+      }
+    }
+    
+    return streak;
+  }, [stepEntries]);
 
   const handleAddEntry = () => {
     if (!newEntry.steps || !newEntry.date) {
@@ -436,7 +458,7 @@ export default function StepsTracking() {
         </div>
 
         {/* KPI Statistics Row */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
           <Card className="bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200/30 dark:border-blue-800/30">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
@@ -484,6 +506,21 @@ export default function StepsTracking() {
               </div>
               <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1" data-testid="kpi-peak-date">
                 {peakDay.date ? format(new Date(peakDay.date), "MMM dd") : ""}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-red-50/50 to-pink-50/50 dark:from-red-950/20 dark:to-pink-950/20 border-red-200/30 dark:border-red-800/30">
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Flame className="w-5 h-5 text-red-600 dark:text-red-400" />
+                <span className="text-sm font-medium text-red-600 dark:text-red-400">10K Streak</span>
+              </div>
+              <div className="text-2xl font-bold text-red-700 dark:text-red-300" data-testid="kpi-10k-streak">
+                {tenKStreak}
+              </div>
+              <div className="text-xs text-red-600 dark:text-red-400 mt-1">
+                {tenKStreak === 1 ? "Day" : "Days"}
               </div>
             </CardContent>
           </Card>
