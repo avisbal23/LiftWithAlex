@@ -390,6 +390,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete all step entries
+  app.delete("/api/step-entries", async (req, res) => {
+    try {
+      const deleted = await storage.deleteAllStepEntries();
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "No step entries found to delete" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete all step entries" });
+    }
+  });
+
   // Blood entry routes
   
   // Create new blood entry

@@ -117,6 +117,20 @@ export default function StepsTracking() {
     },
   });
 
+  // Delete all mutation
+  const deleteAllMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", "/api/step-entries");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/step-entries"] });
+      toast({
+        title: "All entries deleted",
+        description: "All step entries have been removed successfully.",
+      });
+    },
+  });
+
   // Filter data based on date range
   const filteredData = useMemo(() => {
     const daysBack = parseInt(dateRange);
@@ -404,6 +418,41 @@ export default function StepsTracking() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* Delete All Dialog */}
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="destructive" 
+                  disabled={stepEntries.length === 0}
+                  data-testid="button-delete-all-step-entries"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete All
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Delete All Step Entries</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to delete all step entries? This action cannot be undone and will permanently remove all your step tracking data.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="gap-2">
+                  <DialogTrigger asChild>
+                    <Button variant="outline">Cancel</Button>
+                  </DialogTrigger>
+                  <Button 
+                    variant="destructive"
+                    onClick={() => deleteAllMutation.mutate()}
+                    disabled={deleteAllMutation.isPending}
+                    data-testid="button-confirm-delete-all"
+                  >
+                    {deleteAllMutation.isPending ? "Deleting..." : "Delete All"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             {/* Add Entry Dialog */}
             <Dialog>

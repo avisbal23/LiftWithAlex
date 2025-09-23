@@ -134,6 +134,7 @@ export interface IStorage {
   createStepEntry(entry: InsertStepEntry): Promise<StepEntry>;
   updateStepEntry(id: string, entry: UpdateStepEntry): Promise<StepEntry | undefined>;
   deleteStepEntry(id: string): Promise<boolean>;
+  deleteAllStepEntries(): Promise<boolean>;
   getAllStepEntries(): Promise<StepEntry[]>;
   getStepEntriesInDateRange(startDate: Date, endDate: Date): Promise<StepEntry[]>;
   getLatestStepEntry(): Promise<StepEntry | undefined>;
@@ -2374,6 +2375,11 @@ export class DatabaseStorage implements IStorage {
   async deleteStepEntry(id: string): Promise<boolean> {
     const result = await db.delete(stepEntries)
       .where(eq(stepEntries.id, id));
+    return result.rowCount > 0;
+  }
+
+  async deleteAllStepEntries(): Promise<boolean> {
+    const result = await db.delete(stepEntries);
     return result.rowCount > 0;
   }
 
