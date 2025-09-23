@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Bar } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Bar, ReferenceLine } from "recharts";
 import { Calendar, Upload, Plus, Trash2, Download, X, BarChart, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Target, HelpCircle, FileText, Footprints, MapPin, Trophy, Flame, CalendarDays } from "lucide-react";
 import { format, subDays, subMonths, parseISO } from "date-fns";
 import { type StepEntry, type InsertStepEntry } from "@shared/schema";
@@ -790,6 +790,18 @@ export default function StepsTracking() {
                           ]}
                         />
                         <Legend wrapperStyle={{ fontSize: '12px' }} />
+                        
+                        {/* 10K Steps Reference Line */}
+                        {showSteps && (
+                          <ReferenceLine 
+                            yAxisId="steps"
+                            y={10000} 
+                            stroke="#ef4444" 
+                            strokeWidth={2}
+                            strokeDasharray="5 5"
+                            label={{ value: "10K Goal", position: "topLeft", fill: "#ef4444", fontSize: 12 }}
+                          />
+                        )}
                         
                         {showSteps && (
                           <Line 
