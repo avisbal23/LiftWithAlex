@@ -670,6 +670,7 @@ export default function StepsTracking() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="7">Last 7 days</SelectItem>
                         <SelectItem value="30">Last 30 days</SelectItem>
                         <SelectItem value="90">Last 3 months</SelectItem>
                         <SelectItem value="180">Last 6 months</SelectItem>
