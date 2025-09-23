@@ -629,7 +629,7 @@ export default function StepsTracking() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-cyan-50/50 to-blue-50/50 dark:from-cyan-950/20 dark:to-blue-950/20 border-cyan-200/30 dark:border-cyan-800/30">
+          <Card className="col-span-2 bg-gradient-to-br from-cyan-50/50 to-blue-50/50 dark:from-cyan-950/20 dark:to-blue-950/20 border-cyan-200/30 dark:border-cyan-800/30">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <CalendarDays className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
