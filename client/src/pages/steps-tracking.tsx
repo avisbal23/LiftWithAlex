@@ -47,9 +47,40 @@ export default function StepsTracking() {
   const [showAdvancedFields, setShowAdvancedFields] = useState(false);
 
   // Fetch step entries
-  const { data: stepEntries = [], isLoading } = useQuery<StepEntry[]>({
+  const { data: rawStepEntries = [], isLoading } = useQuery<StepEntry[]>({
     queryKey: ["/api/step-entries"],
   });
+
+  // Deduplicate step entries - keep only the largest entry when there are more than 2 for the same day
+  const stepEntries = useMemo(() => {
+    // Group entries by date
+    const entriesByDate = rawStepEntries.reduce((acc, entry) => {
+      const dateKey = format(new Date(entry.date), "yyyy-MM-dd");
+      if (!acc[dateKey]) {
+        acc[dateKey] = [];
+      }
+      acc[dateKey].push(entry);
+      return acc;
+    }, {} as Record<string, StepEntry[]>);
+
+    // For each date, if there are more than 2 entries, keep only the one with highest steps
+    const deduplicatedEntries: StepEntry[] = [];
+    
+    Object.values(entriesByDate).forEach(dayEntries => {
+      if (dayEntries.length > 2) {
+        // Keep only the entry with the highest step count
+        const maxStepsEntry = dayEntries.reduce((max, entry) => 
+          entry.steps > max.steps ? entry : max
+        );
+        deduplicatedEntries.push(maxStepsEntry);
+      } else {
+        // Keep all entries if 2 or fewer
+        deduplicatedEntries.push(...dayEntries);
+      }
+    });
+
+    return deduplicatedEntries;
+  }, [rawStepEntries]);
 
   // Create mutation
   const createMutation = useMutation({
