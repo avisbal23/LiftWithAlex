@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Bar } from "recharts";
-import { Calendar, Upload, Plus, Trash2, Download, X, BarChart, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Target, HelpCircle, FileText, Footprints, MapPin, Trophy, Flame } from "lucide-react";
+import { Calendar, Upload, Plus, Trash2, Download, X, BarChart, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Target, HelpCircle, FileText, Footprints, MapPin, Trophy, Flame, CalendarDays } from "lucide-react";
 import { format, subDays, subMonths, parseISO } from "date-fns";
 import { type StepEntry, type InsertStepEntry } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -191,6 +191,15 @@ export default function StepsTracking() {
     }
     
     return streak;
+  }, [stepEntries]);
+
+  // Calculate total steps for current year
+  const yearlyTotal = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    
+    return stepEntries
+      .filter(entry => new Date(entry.date).getFullYear() === currentYear)
+      .reduce((total, entry) => total + (entry.steps || 0), 0);
   }, [stepEntries]);
 
   const handleAddEntry = () => {
@@ -461,7 +470,7 @@ export default function StepsTracking() {
         </div>
 
         {/* KPI Statistics Row */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-4 mb-6">
           <Card className="bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200/30 dark:border-blue-800/30">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
@@ -536,6 +545,21 @@ export default function StepsTracking() {
               </div>
               <div className="text-2xl font-bold text-orange-700 dark:text-orange-300" data-testid="kpi-total-entries">
                 {stepEntries.length}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-cyan-50/50 to-blue-50/50 dark:from-cyan-950/20 dark:to-blue-950/20 border-cyan-200/30 dark:border-cyan-800/30">
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <CalendarDays className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                <span className="text-sm font-medium text-cyan-600 dark:text-cyan-400">Year Total</span>
+              </div>
+              <div className="text-2xl font-bold text-cyan-700 dark:text-cyan-300" data-testid="kpi-yearly-total">
+                {yearlyTotal.toLocaleString()}
+              </div>
+              <div className="text-xs text-cyan-600 dark:text-cyan-400 mt-1">
+                {new Date().getFullYear()}
               </div>
             </CardContent>
           </Card>
