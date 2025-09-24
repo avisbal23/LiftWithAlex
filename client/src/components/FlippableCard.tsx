@@ -12,6 +12,9 @@ interface URLPreview {
   type: string;
   url: string;
   error?: string;
+  isYouTube?: boolean;
+  embedUrl?: string;
+  videoId?: string;
 }
 
 interface FlippableCardProps {
@@ -137,45 +140,82 @@ export function FlippableCard({
                     </h4>
                     <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
                       {urlPreview && urlPreview.title && !urlPreview.error ? (
-                        <div className="space-y-2" data-testid={`url-preview-${id}`}>
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1 min-w-0">
-                              <h5 className="font-medium text-sm truncate">
-                                {urlPreview.title}
-                              </h5>
-                              {urlPreview.siteName && (
-                                <Badge variant="outline" className="text-xs mt-1">
-                                  {urlPreview.siteName}
+                        <div className="space-y-3" data-testid={`url-preview-${id}`}>
+                          {/* YouTube Video Embed */}
+                          {urlPreview.isYouTube && urlPreview.embedUrl ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <h5 className="font-medium text-sm truncate">
+                                  {urlPreview.title}
+                                </h5>
+                                <Badge variant="outline" className="text-xs">
+                                  YouTube
                                 </Badge>
-                              )}
+                              </div>
+                              <div className="relative aspect-video rounded-lg overflow-hidden">
+                                <iframe
+                                  src={urlPreview.embedUrl}
+                                  title={urlPreview.title}
+                                  className="w-full h-full"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                  data-testid={`youtube-embed-${id}`}
+                                />
+                              </div>
+                              <a
+                                href={referenceUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-xs"
+                                data-testid={`link-reference-${id}`}
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                Watch on YouTube
+                              </a>
                             </div>
-                            {urlPreview.previewImage && (
-                              <img
-                                src={urlPreview.previewImage}
-                                alt="Preview"
-                                className="w-12 h-12 object-cover rounded ml-2"
-                              />
-                            )}
-                          </div>
-                          {urlPreview.description && (
-                            <p className="text-xs text-gray-600 dark:text-gray-400 overflow-hidden" style={{
-                              display: '-webkit-box',
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: 'vertical' as const,
-                            }}>
-                              {urlPreview.description}
-                            </p>
+                          ) : (
+                            /* Regular URL Preview */
+                            <div className="space-y-2">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <h5 className="font-medium text-sm truncate">
+                                    {urlPreview.title}
+                                  </h5>
+                                  {urlPreview.siteName && (
+                                    <Badge variant="outline" className="text-xs mt-1">
+                                      {urlPreview.siteName}
+                                    </Badge>
+                                  )}
+                                </div>
+                                {urlPreview.previewImage && (
+                                  <img
+                                    src={urlPreview.previewImage}
+                                    alt="Preview"
+                                    className="w-12 h-12 object-cover rounded ml-2"
+                                  />
+                                )}
+                              </div>
+                              {urlPreview.description && (
+                                <p className="text-xs text-gray-600 dark:text-gray-400 overflow-hidden" style={{
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: 'vertical' as const,
+                                }}>
+                                  {urlPreview.description}
+                                </p>
+                              )}
+                              <a
+                                href={referenceUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-xs"
+                                data-testid={`link-reference-${id}`}
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                Visit Link
+                              </a>
+                            </div>
                           )}
-                          <a
-                            href={referenceUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-xs"
-                            data-testid={`link-reference-${id}`}
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                            Visit Link
-                          </a>
                         </div>
                       ) : (
                         <a

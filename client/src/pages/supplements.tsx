@@ -31,6 +31,9 @@ interface URLPreview {
   type: string;
   url: string;
   error?: string;
+  isYouTube?: boolean;
+  embedUrl?: string;
+  videoId?: string;
 }
 
 export default function SupplementsPage() {

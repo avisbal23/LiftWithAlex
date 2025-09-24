@@ -1703,7 +1703,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Valid URL is required" });
       }
 
-      // Import url-metadata module
+      // Helper function to extract YouTube video ID from various URL formats
+      const extractYouTubeVideoId = (url: string): string | null => {
+        const patterns = [
+          /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([^&\n?#]+)/,
+          /youtube\.com\/watch\?.*v=([^&\n?#]+)/
+        ];
+        
+        for (const pattern of patterns) {
+          const match = url.match(pattern);
+          if (match) {
+            return match[1];
+          }
+        }
+        return null;
+      };
+
+      // Check if this is a YouTube URL
+      const youtubeVideoId = extractYouTubeVideoId(url);
+      
+      if (youtubeVideoId) {
+        // Return YouTube-specific metadata with embed URL
+        const preview = {
+          title: `YouTube Video - ${youtubeVideoId}`,
+          description: 'YouTube video content',
+          siteName: 'YouTube',
+          previewImage: `https://img.youtube.com/vi/${youtubeVideoId}/mqdefault.jpg`,
+          type: 'video',
+          url: url,
+          embedUrl: `https://www.youtube.com/embed/${youtubeVideoId}`,
+          videoId: youtubeVideoId,
+          isYouTube: true
+        };
+        
+        return res.json(preview);
+      }
+
+      // Import url-metadata module for non-YouTube URLs
       const urlMetadata = (await import("url-metadata")).default;
       
       // Fetch metadata with security options
@@ -1723,7 +1759,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         siteName: metadata['og:site_name'] || '',
         previewImage: metadata['og:image'] || metadata.image || '',
         type: metadata['og:type'] || 'website',
-        url: metadata.url || url
+        url: metadata.url || url,
+        isYouTube: false
       };
       
       res.json(preview);
@@ -1737,7 +1774,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         previewImage: '',
         type: 'website',
         url: req.body.url || '',
-        error: 'Failed to fetch metadata'
+        error: 'Failed to fetch metadata',
+        isYouTube: false
       };
       res.json(fallbackPreview);
     }
