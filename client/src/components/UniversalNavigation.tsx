@@ -30,6 +30,7 @@ export function UniversalNavigation() {
     { name: "Blood Tracking", path: "/blood", key: "blood" },
     { name: "Photo Progress", path: "/photos", key: "photos" },
     { name: "Thoughts & Reflections", path: "/thoughts", key: "thoughts" },
+    { name: "Supplements", path: "/supplements", key: "supplements" },
     { name: "Admin", path: "/admin", key: "admin" }
   ];
 

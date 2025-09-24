@@ -17,6 +17,7 @@ import StepsTracking from "@/pages/steps-tracking";
 import BloodTracking from "@/pages/blood-tracking";
 import PhotoProgress from "@/pages/photo-progress";
 import Thoughts from "@/pages/thoughts";
+import Supplements from "@/pages/supplements";
 import Admin from "@/pages/admin";
 import Header from "@/components/layout/header";
 import { PasswordGate } from "@/components/password-gate";
@@ -48,6 +49,7 @@ function Router() {
         <Route path="/blood-tracking" component={BloodTracking} />
         <Route path="/photos" component={PhotoProgress} />
         <Route path="/thoughts" component={Thoughts} />
+        <Route path="/supplements" component={Supplements} />
         <Route path="/admin" component={Admin} />
         <Route component={NotFound} />
       </Switch>
