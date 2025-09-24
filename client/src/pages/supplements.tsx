@@ -575,6 +575,7 @@ export default function SupplementsPage() {
             </Form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Search */}

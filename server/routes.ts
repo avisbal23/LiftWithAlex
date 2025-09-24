@@ -1694,6 +1694,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk import supplements
+  app.post("/api/supplements/bulk", async (req, res) => {
+    try {
+      const supplementsData = req.body;
+      
+      if (!Array.isArray(supplementsData)) {
+        return res.status(400).json({ message: "Invalid data format. Expected array of supplements." });
+      }
+
+      let imported = 0;
+      const errors: string[] = [];
+
+      for (const [index, supplementData] of supplementsData.entries()) {
+        try {
+          const validatedData = insertSupplementSchema.parse(supplementData);
+          await storage.createSupplement(validatedData);
+          imported++;
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            errors.push(`Item ${index + 1}: ${error.errors.map(e => e.message).join(", ")}`);
+          } else {
+            errors.push(`Item ${index + 1}: Failed to import`);
+          }
+        }
+      }
+
+      res.json({
+        imported,
+        total: supplementsData.length,
+        errors: errors.length > 0 ? errors : undefined
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to process bulk import" });
+    }
+  });
+
   // URL metadata fetching with security and error handling
   app.post("/api/url-metadata", async (req, res) => {
     try {
