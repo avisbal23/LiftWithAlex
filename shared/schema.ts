@@ -367,7 +367,7 @@ export const stepEntries = pgTable("step_entries", {
 export const supplements = pgTable("supplements", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(), // Supplement name
-  imageUrl: text("image_url").notNull(), // Object storage path for supplement image
+  imageUrl: text("image_url"), // Object storage path for supplement image
   personalNotes: text("personal_notes").default(""), // Personal reasoning/notes for taking supplement
   referenceUrl: text("reference_url"), // External URL to studies/articles
   urlPreview: text("url_preview"), // JSON string with URL metadata {title, description, siteName, previewImage}
