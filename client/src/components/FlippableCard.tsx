@@ -152,26 +152,39 @@ export function FlippableCard({
                                   YouTube
                                 </Badge>
                               </div>
-                              <div className="relative aspect-video rounded-lg overflow-hidden">
+                              <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                                 <iframe
                                   src={urlPreview.embedUrl}
                                   title={urlPreview.title}
-                                  className="w-full h-full"
-                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  className="absolute top-0 left-0 w-full h-full rounded-lg"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                   allowFullScreen
+                                  referrerPolicy="strict-origin-when-cross-origin"
+                                  frameBorder="0"
                                   data-testid={`youtube-embed-${id}`}
+                                  style={{ border: 'none' }}
                                 />
                               </div>
-                              <a
-                                href={referenceUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-xs"
-                                data-testid={`link-reference-${id}`}
-                              >
-                                <ExternalLink className="h-3 w-3" />
-                                Watch on YouTube
-                              </a>
+                              <div className="flex items-center justify-between">
+                                <a
+                                  href={referenceUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-xs"
+                                  data-testid={`link-reference-${id}`}
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                  Watch on YouTube
+                                </a>
+                                <a
+                                  href={urlPreview.embedUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                >
+                                  Direct embed link
+                                </a>
+                              </div>
                             </div>
                           ) : (
                             /* Regular URL Preview */

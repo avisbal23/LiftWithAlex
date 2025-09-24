@@ -404,7 +404,16 @@ export default function SupplementsPage() {
             let parsedUrlPreview: URLPreview | undefined;
             try {
               parsedUrlPreview = supplement.urlPreview ? JSON.parse(supplement.urlPreview) : undefined;
-            } catch {
+              // Debug logging to help identify issues
+              if (parsedUrlPreview?.isYouTube) {
+                console.log('YouTube supplement found:', {
+                  name: supplement.name,
+                  urlPreview: parsedUrlPreview,
+                  embedUrl: parsedUrlPreview.embedUrl
+                });
+              }
+            } catch (error) {
+              console.error('Failed to parse URL preview for supplement:', supplement.name, error);
               parsedUrlPreview = undefined;
             }
             
