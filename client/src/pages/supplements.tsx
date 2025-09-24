@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Search, Upload } from "lucide-react";
+import { Plus, Search, Upload, FileSpreadsheet, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,10 @@ export default function SupplementsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSupplement, setEditingSupplement] = useState<Supplement | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResults, setImportResults] = useState<{ success: number; errors: string[] } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form setup
   const form = useForm<SupplementFormData>({
@@ -204,6 +208,133 @@ export default function SupplementsPage() {
     }
   };
 
+  // CSV Import functionality
+  const parseCSV = (text: string): any[] => {
+    const lines = text.split('\n').filter(line => line.trim());
+    if (lines.length < 2) return [];
+    
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    const rows = lines.slice(1).map(line => {
+      const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+      const row: any = {};
+      headers.forEach((header, index) => {
+        row[header.toLowerCase()] = values[index] || '';
+      });
+      return row;
+    });
+    
+    return rows;
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload a CSV file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsImporting(true);
+      setImportResults(null);
+      
+      const text = await file.text();
+      const csvData = parseCSV(text);
+      
+      if (csvData.length === 0) {
+        toast({
+          title: "Empty file",
+          description: "The CSV file appears to be empty or invalid",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate and transform CSV data to supplement format
+      const supplements: InsertSupplement[] = [];
+      const errors: string[] = [];
+
+      csvData.forEach((row, index) => {
+        try {
+          if (!row.name || row.name.trim() === '') {
+            errors.push(`Row ${index + 2}: Name is required`);
+            return;
+          }
+
+          const supplement: InsertSupplement = {
+            name: row.name.trim(),
+            imageUrl: row.imageurl || row.image_url || row.imageUrl || null,
+            personalNotes: row.personalnotes || row.personal_notes || row.personalNotes || row.notes || null,
+            referenceUrl: row.referenceurl || row.reference_url || row.referenceUrl || row.url || null,
+            urlPreview: null, // Will be fetched if referenceUrl exists
+          };
+
+          supplements.push(supplement);
+        } catch (error) {
+          errors.push(`Row ${index + 2}: Invalid data format`);
+        }
+      });
+
+      if (supplements.length === 0) {
+        toast({
+          title: "No valid data",
+          description: "No valid supplement data found in the CSV file",
+          variant: "destructive",
+        });
+        setImportResults({ success: 0, errors });
+        return;
+      }
+
+      // Bulk import supplements
+      const response = await apiRequest("POST", "/api/supplements/bulk", supplements);
+      const result = await response.json();
+
+      setImportResults({ success: result.imported || supplements.length, errors });
+      queryClient.invalidateQueries({ queryKey: ["/api/supplements"] });
+      
+      toast({
+        title: "Import completed",
+        description: `Successfully imported ${result.imported || supplements.length} supplements`,
+      });
+
+    } catch (error) {
+      console.error('Import failed:', error);
+      toast({
+        title: "Import failed",
+        description: "Failed to import CSV file. Please check the file format.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const downloadSampleCSV = () => {
+    const sampleData = [
+      ['name', 'imageUrl', 'personalNotes', 'referenceUrl'],
+      ['Vitamin D3', 'https://example.com/vitamin-d3.jpg', '4000 IU daily with breakfast', 'https://www.youtube.com/watch?v=example'],
+      ['Creatine Monohydrate', '', '5g post-workout', 'https://examine.com/supplements/creatine/'],
+      ['Omega-3 Fish Oil', '', '2 capsules with dinner', '']
+    ];
+    
+    const csvContent = sampleData.map(row => row.map(field => `"${field}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'supplements_sample.csv';
+    link.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   // Filter supplements based on search term
   const filteredSupplements = supplements.filter(supplement =>
     supplement.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -238,13 +369,92 @@ export default function SupplementsPage() {
           </p>
         </div>
         
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button data-testid="button-add-supplement">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Supplement
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          {/* CSV Import Button */}
+          <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" data-testid="button-import-csv">
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Import CSV
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Import Supplements from CSV</DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Upload a CSV file with supplement data. Required column: <code>name</code>. 
+                  Optional columns: <code>imageUrl</code>, <code>personalNotes</code>, <code>referenceUrl</code>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={downloadSampleCSV}
+                    data-testid="button-download-sample"
+                  >
+                    <Download className="h-4 w-4 mr-1" />
+                    Download Sample
+                  </Button>
+                </div>
+
+                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    data-testid="input-csv-file"
+                  />
+                  <FileSpreadsheet className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    Click to select a CSV file or drag and drop
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isImporting}
+                    data-testid="button-select-csv"
+                  >
+                    {isImporting ? "Importing..." : "Select File"}
+                  </Button>
+                </div>
+
+                {importResults && (
+                  <div className="space-y-2">
+                    <div className="text-sm text-green-600 dark:text-green-400">
+                      ✓ Successfully imported {importResults.success} supplements
+                    </div>
+                    {importResults.errors.length > 0 && (
+                      <div className="space-y-1">
+                        <div className="text-sm text-red-600 dark:text-red-400">
+                          Errors encountered:
+                        </div>
+                        <div className="text-xs text-red-500 dark:text-red-400 max-h-32 overflow-y-auto">
+                          {importResults.errors.map((error, index) => (
+                            <div key={index}>• {error}</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+          
+          {/* Add Supplement Button */}
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button data-testid="button-add-supplement">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Supplement
+              </Button>
+            </DialogTrigger>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>
