@@ -363,6 +363,18 @@ export const stepEntries = pgTable("step_entries", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Supplements tracking with flippable card design and URL preview
+export const supplements = pgTable("supplements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(), // Supplement name
+  imageUrl: text("image_url").notNull(), // Object storage path for supplement image
+  personalNotes: text("personal_notes").default(""), // Personal reasoning/notes for taking supplement
+  referenceUrl: text("reference_url"), // External URL to studies/articles
+  urlPreview: text("url_preview"), // JSON string with URL metadata {title, description, siteName, previewImage}
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -614,6 +626,14 @@ export const insertStepEntrySchema = createInsertSchema(stepEntries).omit({
 
 export const updateStepEntrySchema = insertStepEntrySchema.partial();
 
+export const insertSupplementSchema = createInsertSchema(supplements).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateSupplementSchema = insertSupplementSchema.partial();
+
 export type ExerciseTemplate = typeof exerciseTemplates.$inferSelect;
 export type InsertExerciseTemplate = z.infer<typeof insertExerciseTemplateSchema>;
 export type UpdateExerciseTemplate = z.infer<typeof updateExerciseTemplateSchema>;
@@ -638,3 +658,6 @@ export type UpdateBodyMeasurement = z.infer<typeof updateBodyMeasurementSchema>;
 export type StepEntry = typeof stepEntries.$inferSelect;
 export type InsertStepEntry = z.infer<typeof insertStepEntrySchema>;
 export type UpdateStepEntry = z.infer<typeof updateStepEntrySchema>;
+export type Supplement = typeof supplements.$inferSelect;
+export type InsertSupplement = z.infer<typeof insertSupplementSchema>;
+export type UpdateSupplement = z.infer<typeof updateSupplementSchema>;
