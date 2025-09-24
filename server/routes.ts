@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import path from "path";
 import fs from "fs";
-import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertBloodOptimalRangeSchema, updateBloodOptimalRangeSchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema, insertExerciseTemplateSchema, updateExerciseTemplateSchema, insertChangesAuditSchema, updateChangesAuditSchema, insertPRChangesAuditSchema, insertWeightAuditSchema, updateWeightAuditSchema, insertWorkoutTimerSchema, updateWorkoutTimerSchema, insertTimerLapTimeSchema, updateTimerLapTimeSchema, insertBodyMeasurementSchema, updateBodyMeasurementSchema, insertStepEntrySchema, updateStepEntrySchema } from "@shared/schema";
+import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertBloodOptimalRangeSchema, updateBloodOptimalRangeSchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema, insertExerciseTemplateSchema, updateExerciseTemplateSchema, insertChangesAuditSchema, updateChangesAuditSchema, insertPRChangesAuditSchema, insertWeightAuditSchema, updateWeightAuditSchema, insertWorkoutTimerSchema, updateWorkoutTimerSchema, insertTimerLapTimeSchema, updateTimerLapTimeSchema, insertBodyMeasurementSchema, updateBodyMeasurementSchema, insertStepEntrySchema, updateStepEntrySchema, insertSupplementSchema, updateSupplementSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1628,6 +1628,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to clear lap times" });
+    }
+  });
+
+  // Supplements API endpoints
+  // Get all supplements
+  app.get("/api/supplements", async (req, res) => {
+    try {
+      const supplements = await storage.getAllSupplements();
+      res.json(supplements);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch supplements" });
+    }
+  });
+
+  // Create new supplement
+  app.post("/api/supplements", async (req, res) => {
+    try {
+      const validatedData = insertSupplementSchema.parse(req.body);
+      const supplement = await storage.createSupplement(validatedData);
+      res.status(201).json(supplement);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create supplement" });
+      }
+    }
+  });
+
+  // Update supplement
+  app.patch("/api/supplements/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const validatedData = updateSupplementSchema.parse(req.body);
+      const supplement = await storage.updateSupplement(id, validatedData);
+      
+      if (!supplement) {
+        return res.status(404).json({ message: "Supplement not found" });
+      }
+      
+      res.json(supplement);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update supplement" });
+      }
+    }
+  });
+
+  // Delete supplement
+  app.delete("/api/supplements/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const success = await storage.deleteSupplement(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Supplement not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete supplement" });
+    }
+  });
+
+  // URL metadata fetching with security and error handling
+  app.post("/api/url-metadata", async (req, res) => {
+    try {
+      const { url } = req.body;
+      
+      if (!url || typeof url !== "string") {
+        return res.status(400).json({ message: "Valid URL is required" });
+      }
+
+      // Import url-metadata module
+      const urlMetadata = (await import("url-metadata")).default;
+      
+      // Fetch metadata with security options
+      const metadata = await urlMetadata(url, {
+        timeout: 10000,
+        maxRedirects: 3,
+        requestHeaders: {
+          'User-Agent': 'Mozilla/5.0 (compatible; FitnessApp/1.0)',
+          'Accept': 'text/html,application/xhtml+xml'
+        }
+      });
+      
+      // Return structured metadata
+      const preview = {
+        title: metadata.title || '',
+        description: metadata.description || '',
+        siteName: metadata['og:site_name'] || '',
+        previewImage: metadata['og:image'] || metadata.image || '',
+        type: metadata['og:type'] || 'website',
+        url: metadata.url || url
+      };
+      
+      res.json(preview);
+    } catch (error) {
+      console.error('URL metadata fetch failed:', error);
+      // Return graceful fallback instead of error
+      const fallbackPreview = {
+        title: '',
+        description: '',
+        siteName: '',
+        previewImage: '',
+        type: 'website',
+        url: req.body.url || '',
+        error: 'Failed to fetch metadata'
+      };
+      res.json(fallbackPreview);
     }
   });
 

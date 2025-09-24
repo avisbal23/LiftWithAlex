@@ -1,5 +1,5 @@
-import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type BloodOptimalRange, type InsertBloodOptimalRange, type UpdateBloodOptimalRange, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress, type DailyWorkoutStatus, type InsertDailyWorkoutStatus, type UpdateDailyWorkoutStatus, type WorkoutNotes, type InsertWorkoutNotes, type UpdateWorkoutNotes, type ExerciseTemplate, type InsertExerciseTemplate, type UpdateExerciseTemplate, type ChangesAudit, type InsertChangesAudit, type UpdateChangesAudit, type PRChangesAudit, type InsertPRChangesAudit, type WeightAudit, type InsertWeightAudit, type UpdateWeightAudit, type WorkoutTimer, type InsertWorkoutTimer, type UpdateWorkoutTimer, type TimerLapTime, type InsertTimerLapTime, type UpdateTimerLapTime, type BodyMeasurement, type InsertBodyMeasurement, type UpdateBodyMeasurement, type StepEntry, type InsertStepEntry, type UpdateStepEntry } from "@shared/schema";
-import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, bloodOptimalRanges, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress, dailyWorkoutStatus, workoutNotes, exerciseTemplates, changesAudit, prChangesAudit, weightAudit, workoutTimers, timerLapTimes, bodyMeasurements, stepEntries } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type BloodOptimalRange, type InsertBloodOptimalRange, type UpdateBloodOptimalRange, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress, type DailyWorkoutStatus, type InsertDailyWorkoutStatus, type UpdateDailyWorkoutStatus, type WorkoutNotes, type InsertWorkoutNotes, type UpdateWorkoutNotes, type ExerciseTemplate, type InsertExerciseTemplate, type UpdateExerciseTemplate, type ChangesAudit, type InsertChangesAudit, type UpdateChangesAudit, type PRChangesAudit, type InsertPRChangesAudit, type WeightAudit, type InsertWeightAudit, type UpdateWeightAudit, type WorkoutTimer, type InsertWorkoutTimer, type UpdateWorkoutTimer, type TimerLapTime, type InsertTimerLapTime, type UpdateTimerLapTime, type BodyMeasurement, type InsertBodyMeasurement, type UpdateBodyMeasurement, type StepEntry, type InsertStepEntry, type UpdateStepEntry, type Supplement, type InsertSupplement, type UpdateSupplement } from "@shared/schema";
+import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, bloodOptimalRanges, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress, dailyWorkoutStatus, workoutNotes, exerciseTemplates, changesAudit, prChangesAudit, weightAudit, workoutTimers, timerLapTimes, bodyMeasurements, stepEntries, supplements } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc, sql } from "drizzle-orm";
@@ -138,6 +138,12 @@ export interface IStorage {
   getAllStepEntries(): Promise<StepEntry[]>;
   getStepEntriesInDateRange(startDate: Date, endDate: Date): Promise<StepEntry[]>;
   getLatestStepEntry(): Promise<StepEntry | undefined>;
+
+  // Supplements - supplement tracking with URL preview
+  createSupplement(entry: InsertSupplement): Promise<Supplement>;
+  updateSupplement(id: string, entry: UpdateSupplement): Promise<Supplement | undefined>;
+  deleteSupplement(id: string): Promise<boolean>;
+  getAllSupplements(): Promise<Supplement[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -2405,6 +2411,41 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(stepEntries.date))
       .limit(1);
     return latest;
+  }
+
+  // Supplements - supplement tracking with URL preview
+  async createSupplement(entry: InsertSupplement): Promise<Supplement> {
+    const [created] = await db.insert(supplements)
+      .values({
+        ...entry,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    return created;
+  }
+
+  async updateSupplement(id: string, entry: UpdateSupplement): Promise<Supplement | undefined> {
+    const [updated] = await db.update(supplements)
+      .set({
+        ...entry,
+        updatedAt: new Date(),
+      })
+      .where(eq(supplements.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteSupplement(id: string): Promise<boolean> {
+    const result = await db.delete(supplements)
+      .where(eq(supplements.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getAllSupplements(): Promise<Supplement[]> {
+    return await db.select()
+      .from(supplements)
+      .orderBy(asc(supplements.name)); // Alphabetical sorting as requested
   }
 }
 
