@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Upload, Download, Plus, Trash2, Search, Heart, Star, RotateCcw, Shuffle } from "lucide-react";
+import { Upload, Download, Plus, Trash2, Search, Heart, Star, RotateCcw, Shuffle, Mic, MicOff, Play, Pause, Square } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Affirmation, InsertAffirmation } from "@shared/schema";
@@ -20,6 +20,20 @@ export default function AffirmationsPage() {
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [importText, setImportText] = useState("");
   const [importResults, setImportResults] = useState<{ success: number; errors: string[] } | null>(null);
+  
+  // Voice recording state
+  const [voiceRecordings, setVoiceRecordings] = useState<Record<string, Blob>>({});
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingAffirmationId, setRecordingAffirmationId] = useState<string | null>(null);
+  const [isPlayingCombined, setIsPlayingCombined] = useState(false);
+  const [combinedAudioUrl, setCombinedAudioUrl] = useState<string | null>(null);
+  const [recordingSupported, setRecordingSupported] = useState(false);
+  
+  // Refs for voice recording
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const combinedAudioRef = useRef<HTMLAudioElement | null>(null);
+  
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -122,6 +136,227 @@ export default function AffirmationsPage() {
       });
     },
   });
+
+  // Check MediaRecorder support on component mount
+  useEffect(() => {
+    const checkRecordingSupport = () => {
+      setRecordingSupported(
+        !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder)
+      );
+    };
+    checkRecordingSupport();
+  }, []);
+
+  // Get supported audio MIME type
+  const getSupportedMimeType = () => {
+    const types = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/wav'
+    ];
+    return types.find(type => MediaRecorder.isTypeSupported(type)) || 'audio/webm';
+  };
+
+  // Start recording for a specific affirmation
+  const startRecording = async (affirmationId: string) => {
+    if (!recordingSupported) {
+      toast({
+        title: "Recording not supported",
+        description: "Your browser doesn't support voice recording.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 44100
+        }
+      });
+
+      const mimeType = getSupportedMimeType();
+      mediaRecorderRef.current = new MediaRecorder(stream, {
+        mimeType,
+        audioBitsPerSecond: 128000
+      });
+
+      audioChunksRef.current = [];
+      setIsRecording(true);
+      setRecordingAffirmationId(affirmationId);
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: mimeType });
+        setVoiceRecordings(prev => ({
+          ...prev,
+          [affirmationId]: blob
+        }));
+        
+        // Stop all tracks to release microphone
+        stream.getTracks().forEach(track => track.stop());
+        setIsRecording(false);
+        setRecordingAffirmationId(null);
+        
+        toast({
+          title: "Recording saved!",
+          description: "Voice memo recorded successfully."
+        });
+      };
+
+      mediaRecorderRef.current.onerror = (event) => {
+        console.error('Recording error:', event);
+        stream.getTracks().forEach(track => track.stop());
+        setIsRecording(false);
+        setRecordingAffirmationId(null);
+        toast({
+          title: "Recording failed",
+          description: "There was an error recording your voice memo.",
+          variant: "destructive"
+        });
+      };
+
+      mediaRecorderRef.current.start(1000); // 1-second chunks
+      
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      setIsRecording(false);
+      setRecordingAffirmationId(null);
+      toast({
+        title: "Microphone access denied",
+        description: "Please allow microphone access to record voice memos.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Stop current recording
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
+  // Delete a voice recording
+  const deleteRecording = (affirmationId: string) => {
+    setVoiceRecordings(prev => {
+      const updated = { ...prev };
+      delete updated[affirmationId];
+      return updated;
+    });
+    toast({
+      title: "Recording deleted",
+      description: "Voice memo removed successfully."
+    });
+  };
+
+  // Combine all recordings sequentially
+  const combineRecordings = () => {
+    const recordedAffirmations = activeAffirmations.filter(aff => voiceRecordings[aff.id]);
+    
+    if (recordedAffirmations.length === 0) {
+      toast({
+        title: "No recordings found",
+        description: "Please record voice memos for your active affirmations first.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Create combined blob by concatenating all recordings
+    const allChunks: Blob[] = [];
+    recordedAffirmations.forEach(affirmation => {
+      const recording = voiceRecordings[affirmation.id];
+      if (recording) {
+        allChunks.push(recording);
+      }
+    });
+
+    const combinedBlob = new Blob(allChunks, { type: getSupportedMimeType() });
+    const audioUrl = URL.createObjectURL(combinedBlob);
+    
+    // Clean up previous URL
+    if (combinedAudioUrl) {
+      URL.revokeObjectURL(combinedAudioUrl);
+    }
+    
+    setCombinedAudioUrl(audioUrl);
+    
+    toast({
+      title: "Recordings combined!",
+      description: `Combined ${recordedAffirmations.length} voice memos. Click play to listen.`
+    });
+  };
+
+  // Play combined recording
+  const playCombinedRecording = () => {
+    if (!combinedAudioUrl) {
+      combineRecordings();
+      return;
+    }
+
+    if (combinedAudioRef.current) {
+      combinedAudioRef.current.pause();
+      combinedAudioRef.current.currentTime = 0;
+    }
+
+    const audio = new Audio(combinedAudioUrl);
+    combinedAudioRef.current = audio;
+    
+    audio.onplay = () => setIsPlayingCombined(true);
+    audio.onpause = () => setIsPlayingCombined(false);
+    audio.onended = () => setIsPlayingCombined(false);
+    audio.onerror = () => {
+      setIsPlayingCombined(false);
+      toast({
+        title: "Playback failed",
+        description: "There was an error playing the combined recording.",
+        variant: "destructive"
+      });
+    };
+
+    audio.play().catch(error => {
+      console.error('Playback error:', error);
+      setIsPlayingCombined(false);
+      toast({
+        title: "Playback failed",
+        description: "Could not play the combined recording.",
+        variant: "destructive"
+      });
+    });
+  };
+
+  // Stop combined recording playback
+  const stopCombinedRecording = () => {
+    if (combinedAudioRef.current) {
+      combinedAudioRef.current.pause();
+      combinedAudioRef.current.currentTime = 0;
+      setIsPlayingCombined(false);
+    }
+  };
+
+  // Clean up audio URLs on component unmount
+  useEffect(() => {
+    return () => {
+      if (combinedAudioUrl) {
+        URL.revokeObjectURL(combinedAudioUrl);
+      }
+      Object.values(voiceRecordings).forEach(blob => {
+        if (blob instanceof Blob) {
+          URL.revokeObjectURL(URL.createObjectURL(blob));
+        }
+      });
+    };
+  }, [combinedAudioUrl, voiceRecordings]);
 
   const handleAddAffirmation = () => {
     if (!newAffirmationText.trim()) return;
@@ -298,6 +533,163 @@ export default function AffirmationsPage() {
           </Button>
         </div>
       </div>
+
+      {/* Voice Memo Recording Section */}
+      {recordingSupported && activeAffirmations.length > 0 && (
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mic className="h-5 w-5 text-blue-600" />
+              Voice Memo Recording
+            </CardTitle>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Record yourself saying each affirmation, then play back all recordings combined
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Recording Controls for Individual Affirmations */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {activeAffirmations.map((affirmation) => {
+                const hasRecording = !!voiceRecordings[affirmation.id];
+                const isCurrentlyRecording = recordingAffirmationId === affirmation.id;
+                
+                return (
+                  <div 
+                    key={affirmation.id} 
+                    className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {affirmation.text.length > 30 ? `${affirmation.text.slice(0, 30)}...` : affirmation.text}
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center gap-1 ml-2">
+                      {hasRecording && !isCurrentlyRecording && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteRecording(affirmation.id)}
+                          className="h-7 w-7 p-0 text-red-500 hover:text-red-600"
+                          data-testid={`button-delete-recording-${affirmation.id}`}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                      
+                      {isCurrentlyRecording ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={stopRecording}
+                          className="h-7 px-2 text-red-600 border-red-300 hover:bg-red-50"
+                          data-testid={`button-stop-recording-${affirmation.id}`}
+                        >
+                          <Square className="h-3 w-3 mr-1" />
+                          Stop
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => startRecording(affirmation.id)}
+                          disabled={isRecording}
+                          className={`h-7 px-2 ${
+                            hasRecording 
+                              ? 'text-green-600 border-green-300 hover:bg-green-50' 
+                              : 'text-blue-600 border-blue-300 hover:bg-blue-50'
+                          }`}
+                          data-testid={`button-record-${affirmation.id}`}
+                        >
+                          <Mic className="h-3 w-3 mr-1" />
+                          {hasRecording ? 'Re-record' : 'Record'}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Combined Playback Controls */}
+            <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-xs">
+                  {Object.keys(voiceRecordings).filter(id => activeAffirmations.some(a => a.id === id)).length} / {activeAffirmations.length} recorded
+                </Badge>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {Object.keys(voiceRecordings).some(id => activeAffirmations.some(a => a.id === id)) && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={combineRecordings}
+                      disabled={isRecording || isPlayingCombined}
+                      data-testid="button-combine-recordings"
+                    >
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Combine All
+                    </Button>
+                    
+                    {combinedAudioUrl && (
+                      <>
+                        {isPlayingCombined ? (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={stopCombinedRecording}
+                            className="bg-red-600 hover:bg-red-700"
+                            data-testid="button-stop-combined-playback"
+                          >
+                            <Square className="h-4 w-4 mr-2" />
+                            Stop Playback
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={playCombinedRecording}
+                            disabled={isRecording}
+                            className="bg-green-600 hover:bg-green-700"
+                            data-testid="button-play-combined-recording"
+                          >
+                            <Play className="h-4 w-4 mr-2" />
+                            Play All
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+            
+            {/* Recording Status */}
+            {isRecording && recordingAffirmationId && (
+              <div className="flex items-center justify-center p-2 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800">
+                <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium">Recording in progress...</span>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Show recording not supported message */}
+      {!recordingSupported && activeAffirmations.length > 0 && (
+        <Card className="border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-950/20">
+          <CardContent className="flex items-center gap-2 p-4">
+            <MicOff className="h-5 w-5 text-yellow-600" />
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+              Voice recording is not supported in your browser. Please use a modern browser like Chrome, Firefox, or Safari.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Active Affirmations Cards */}
       {activeAffirmations.length > 0 ? (
