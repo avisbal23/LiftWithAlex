@@ -375,6 +375,14 @@ export const supplements = pgTable("supplements", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const affirmations = pgTable("affirmations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  text: text("text").notNull(), // The affirmation text
+  isActive: text("is_active").default("false").notNull(), // Active/inactive status as text boolean
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -634,6 +642,14 @@ export const insertSupplementSchema = createInsertSchema(supplements).omit({
 
 export const updateSupplementSchema = insertSupplementSchema.partial();
 
+export const insertAffirmationSchema = createInsertSchema(affirmations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateAffirmationSchema = insertAffirmationSchema.partial();
+
 export type ExerciseTemplate = typeof exerciseTemplates.$inferSelect;
 export type InsertExerciseTemplate = z.infer<typeof insertExerciseTemplateSchema>;
 export type UpdateExerciseTemplate = z.infer<typeof updateExerciseTemplateSchema>;
@@ -661,3 +677,6 @@ export type UpdateStepEntry = z.infer<typeof updateStepEntrySchema>;
 export type Supplement = typeof supplements.$inferSelect;
 export type InsertSupplement = z.infer<typeof insertSupplementSchema>;
 export type UpdateSupplement = z.infer<typeof updateSupplementSchema>;
+export type Affirmation = typeof affirmations.$inferSelect;
+export type InsertAffirmation = z.infer<typeof insertAffirmationSchema>;
+export type UpdateAffirmation = z.infer<typeof updateAffirmationSchema>;
