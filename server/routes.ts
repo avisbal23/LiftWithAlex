@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import path from "path";
 import fs from "fs";
-import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertBloodOptimalRangeSchema, updateBloodOptimalRangeSchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema, insertExerciseTemplateSchema, updateExerciseTemplateSchema, insertChangesAuditSchema, updateChangesAuditSchema, insertPRChangesAuditSchema, insertWeightAuditSchema, updateWeightAuditSchema, insertWorkoutTimerSchema, updateWorkoutTimerSchema, insertTimerLapTimeSchema, updateTimerLapTimeSchema, insertBodyMeasurementSchema, updateBodyMeasurementSchema, insertStepEntrySchema, updateStepEntrySchema, insertSupplementSchema, updateSupplementSchema } from "@shared/schema";
+import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertBloodOptimalRangeSchema, updateBloodOptimalRangeSchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema, insertExerciseTemplateSchema, updateExerciseTemplateSchema, insertChangesAuditSchema, updateChangesAuditSchema, insertPRChangesAuditSchema, insertWeightAuditSchema, updateWeightAuditSchema, insertWorkoutTimerSchema, updateWorkoutTimerSchema, insertTimerLapTimeSchema, updateTimerLapTimeSchema, insertBodyMeasurementSchema, updateBodyMeasurementSchema, insertStepEntrySchema, updateStepEntrySchema, insertSupplementSchema, updateSupplementSchema, insertAffirmationSchema, updateAffirmationSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1723,6 +1723,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         imported,
         total: supplementsData.length,
+        errors: errors.length > 0 ? errors : undefined
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to process bulk import" });
+    }
+  });
+
+  // Affirmations API endpoints
+  app.get("/api/affirmations", async (req, res) => {
+    try {
+      const affirmations = await storage.getAllAffirmations();
+      res.json(affirmations);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch affirmations" });
+    }
+  });
+
+  app.get("/api/affirmations/active", async (req, res) => {
+    try {
+      const activeAffirmations = await storage.getActiveAffirmations();
+      res.json(activeAffirmations);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch active affirmations" });
+    }
+  });
+
+  app.post("/api/affirmations", async (req, res) => {
+    try {
+      const validatedData = insertAffirmationSchema.parse(req.body);
+      const affirmation = await storage.createAffirmation(validatedData);
+      res.status(201).json(affirmation);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid affirmation data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create affirmation" });
+      }
+    }
+  });
+
+  app.patch("/api/affirmations/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const validatedData = updateAffirmationSchema.parse(req.body);
+      const affirmation = await storage.updateAffirmation(id, validatedData);
+      
+      if (!affirmation) {
+        return res.status(404).json({ message: "Affirmation not found" });
+      }
+      
+      res.json(affirmation);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid affirmation data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update affirmation" });
+      }
+    }
+  });
+
+  app.delete("/api/affirmations/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const success = await storage.deleteAffirmation(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Affirmation not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete affirmation" });
+    }
+  });
+
+  // Bulk import affirmations
+  app.post("/api/affirmations/bulk", async (req, res) => {
+    try {
+      const affirmationsData = req.body;
+      
+      if (!Array.isArray(affirmationsData)) {
+        return res.status(400).json({ message: "Invalid data format. Expected array of affirmations." });
+      }
+
+      let imported = 0;
+      const errors: string[] = [];
+
+      for (const [index, affirmationData] of affirmationsData.entries()) {
+        try {
+          const validatedData = insertAffirmationSchema.parse(affirmationData);
+          await storage.createAffirmation(validatedData);
+          imported++;
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            errors.push(`Item ${index + 1}: ${error.errors.map(e => e.message).join(", ")}`);
+          } else {
+            errors.push(`Item ${index + 1}: Failed to import`);
+          }
+        }
+      }
+
+      res.json({
+        imported,
+        total: affirmationsData.length,
         errors: errors.length > 0 ? errors : undefined
       });
     } catch (error) {
