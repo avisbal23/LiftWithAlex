@@ -34,6 +34,8 @@ export default function AffirmationsPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const combinedAudioSourceRef = useRef<AudioBufferSourceNode | null>(null);
   
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -260,6 +262,136 @@ export default function AffirmationsPage() {
     });
   };
 
+  // Initialize AudioContext
+  const getAudioContext = () => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    return audioContextRef.current;
+  };
+
+  // Convert blob to ArrayBuffer
+  const blobToArrayBuffer = async (blob: Blob): Promise<ArrayBuffer> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as ArrayBuffer);
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(blob);
+    });
+  };
+
+  // Detect silence threshold and trim audio
+  const trimSilence = (audioBuffer: AudioBuffer, threshold = 0.01): AudioBuffer => {
+    const audioContext = getAudioContext();
+    const channelData = audioBuffer.getChannelData(0);
+    const sampleRate = audioBuffer.sampleRate;
+    
+    // Find start of audio (first sample above threshold)
+    let startSample = 0;
+    for (let i = 0; i < channelData.length; i++) {
+      if (Math.abs(channelData[i]) > threshold) {
+        startSample = Math.max(0, i - Math.floor(sampleRate * 0.1)); // Keep 0.1s before
+        break;
+      }
+    }
+    
+    // Find end of audio (last sample above threshold)
+    let endSample = channelData.length;
+    for (let i = channelData.length - 1; i >= 0; i--) {
+      if (Math.abs(channelData[i]) > threshold) {
+        endSample = Math.min(channelData.length, i + Math.floor(sampleRate * 0.1)); // Keep 0.1s after
+        break;
+      }
+    }
+    
+    // Create trimmed audio buffer
+    const trimmedLength = endSample - startSample;
+    const trimmedBuffer = audioContext.createBuffer(
+      audioBuffer.numberOfChannels,
+      trimmedLength,
+      audioBuffer.sampleRate
+    );
+    
+    for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+      const originalData = audioBuffer.getChannelData(channel);
+      const trimmedData = trimmedBuffer.getChannelData(channel);
+      for (let i = 0; i < trimmedLength; i++) {
+        trimmedData[i] = originalData[startSample + i];
+      }
+    }
+    
+    return trimmedBuffer;
+  };
+
+  // Concatenate multiple audio buffers into one
+  const concatenateAudioBuffers = (buffers: AudioBuffer[]): AudioBuffer => {
+    if (buffers.length === 0) throw new Error('No audio buffers to concatenate');
+    
+    const audioContext = getAudioContext();
+    const sampleRate = buffers[0].sampleRate;
+    const numberOfChannels = buffers[0].numberOfChannels;
+    
+    // Calculate total length
+    const totalLength = buffers.reduce((sum, buffer) => sum + buffer.length, 0);
+    
+    // Create combined buffer
+    const combinedBuffer = audioContext.createBuffer(numberOfChannels, totalLength, sampleRate);
+    
+    // Copy data from all buffers
+    let offset = 0;
+    for (const buffer of buffers) {
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        const combinedData = combinedBuffer.getChannelData(channel);
+        const bufferData = buffer.getChannelData(channel);
+        combinedData.set(bufferData, offset);
+      }
+      offset += buffer.length;
+    }
+    
+    return combinedBuffer;
+  };
+
+  // Process and combine all recordings with silence removal
+  const createGaplessAudio = async (): Promise<AudioBuffer | null> => {
+    try {
+      const recordedAffirmations = activeAffirmations.filter(aff => voiceRecordings[aff.id]);
+      
+      if (recordedAffirmations.length === 0) {
+        toast({
+          title: "No recordings found",
+          description: "Please record voice memos for your active affirmations first.",
+          variant: "destructive"
+        });
+        return null;
+      }
+
+      const audioContext = getAudioContext();
+      const audioBuffers: AudioBuffer[] = [];
+
+      // Process each recording
+      for (const affirmation of recordedAffirmations) {
+        const blob = voiceRecordings[affirmation.id];
+        const arrayBuffer = await blobToArrayBuffer(blob);
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        const trimmedBuffer = trimSilence(audioBuffer);
+        audioBuffers.push(trimmedBuffer);
+      }
+
+      // Concatenate all trimmed buffers
+      const combinedBuffer = concatenateAudioBuffers(audioBuffers);
+      return combinedBuffer;
+      
+    } catch (error) {
+      console.error('Error creating gapless audio:', error);
+      toast({
+        title: "Audio processing failed",
+        description: "Could not combine recordings. Please try again.",
+        variant: "destructive"
+      });
+      return null;
+    }
+  };
+
   // Prepare sequential playlist
   const preparePlaylist = () => {
     const recordedAffirmations = activeAffirmations.filter(aff => voiceRecordings[aff.id]);
@@ -326,44 +458,102 @@ export default function AffirmationsPage() {
     });
   };
 
-  // Start sequential playback
-  const playCombinedRecording = () => {
-    const urls = preparePlaylist();
-    if (urls.length === 0) return;
+  // Play gapless combined audio
+  const playCombinedRecording = async () => {
+    try {
+      setIsPlayingCombined(true);
+      
+      // Stop any current audio playback
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current.currentTime = 0;
+      }
+      if (combinedAudioSourceRef.current) {
+        combinedAudioSourceRef.current.stop();
+      }
 
-    // Stop current playback if any
-    if (currentAudioRef.current) {
-      currentAudioRef.current.pause();
-      currentAudioRef.current.currentTime = 0;
+      // Create gapless audio buffer
+      const combinedBuffer = await createGaplessAudio();
+      if (!combinedBuffer) {
+        setIsPlayingCombined(false);
+        return;
+      }
+
+      const audioContext = getAudioContext();
+      
+      // Resume audio context if suspended (required for some browsers)
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
+
+      // Create and configure audio source
+      const source = audioContext.createBufferSource();
+      source.buffer = combinedBuffer;
+      source.connect(audioContext.destination);
+      
+      source.onended = () => {
+        setIsPlayingCombined(false);
+        setCurrentPlayingIndex(0);
+        combinedAudioSourceRef.current = null;
+      };
+
+      combinedAudioSourceRef.current = source;
+      source.start(0);
+      
+      const recordedCount = activeAffirmations.filter(aff => voiceRecordings[aff.id]).length;
+      toast({
+        title: "Playing gapless audio!",
+        description: `Playing ${recordedCount} voice memos with no gaps.`
+      });
+      
+    } catch (error) {
+      console.error('Gapless playback error:', error);
+      setIsPlayingCombined(false);
+      toast({
+        title: "Playback failed",
+        description: "Could not play combined audio. Please try again.",
+        variant: "destructive"
+      });
     }
-
-    playSequentially(urls, 0);
-    
-    toast({
-      title: "Playing recordings!",
-      description: `Playing ${urls.length} voice memos sequentially.`
-    });
   };
 
-  // Stop sequential recording playback
+  // Stop audio playback
   const stopCombinedRecording = () => {
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current.currentTime = 0;
-      setIsPlayingCombined(false);
-      setCurrentPlayingIndex(0);
     }
+    if (combinedAudioSourceRef.current) {
+      combinedAudioSourceRef.current.stop();
+      combinedAudioSourceRef.current = null;
+    }
+    setIsPlayingCombined(false);
+    setCurrentPlayingIndex(0);
   };
 
-  // Clean up audio URLs on component unmount
+  // Clean up audio URLs and context on component unmount
   useEffect(() => {
     return () => {
+      // Clean up URLs
       playlistUrls.forEach(url => URL.revokeObjectURL(url));
       Object.values(voiceRecordings).forEach(blob => {
         if (blob instanceof Blob) {
           URL.revokeObjectURL(URL.createObjectURL(blob));
         }
       });
+      
+      // Clean up Web Audio API resources
+      if (combinedAudioSourceRef.current) {
+        try {
+          combinedAudioSourceRef.current.stop();
+        } catch (error) {
+          // Source may already be stopped
+        }
+      }
+      
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
     };
   }, [playlistUrls, voiceRecordings]);
 
@@ -658,7 +848,7 @@ export default function AffirmationsPage() {
                     
                     {isPlayingCombined && (
                       <Badge variant="secondary" className="text-xs">
-                        Playing {currentPlayingIndex + 1} of {playlistUrls.length}
+                        Playing gapless audio...
                       </Badge>
                     )}
                   </>
