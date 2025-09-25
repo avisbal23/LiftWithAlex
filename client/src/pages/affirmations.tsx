@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Upload, Download, Plus, Trash2, Search, Heart, Star, RotateCcw } from "lucide-react";
+import { Upload, Download, Plus, Trash2, Search, Heart, Star, RotateCcw, Shuffle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Affirmation, InsertAffirmation } from "@shared/schema";
@@ -81,6 +81,48 @@ export default function AffirmationsPage() {
     },
   });
 
+  // Random selection mutation
+  const randomSelectMutation = useMutation({
+    mutationFn: async () => {
+      if (affirmations.length < 10) {
+        throw new Error("Need at least 10 affirmations to randomly select");
+      }
+
+      // First deactivate all current active affirmations
+      const deactivatePromises = activeAffirmations.map(affirmation =>
+        apiRequest("PATCH", `/api/affirmations/${affirmation.id}`, { isActive: "false" })
+      );
+      await Promise.all(deactivatePromises);
+
+      // Randomly select 10 affirmations
+      const shuffled = [...affirmations].sort(() => Math.random() - 0.5);
+      const selectedAffirmations = shuffled.slice(0, 10);
+
+      // Activate the selected affirmations
+      const activatePromises = selectedAffirmations.map(affirmation =>
+        apiRequest("PATCH", `/api/affirmations/${affirmation.id}`, { isActive: "true" })
+      );
+      await Promise.all(activatePromises);
+
+      return selectedAffirmations.length;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/affirmations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/affirmations/active"] });
+      toast({
+        title: "Random selection complete!",
+        description: `Selected ${count} affirmations randomly.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Random selection failed",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleAddAffirmation = () => {
     if (!newAffirmationText.trim()) return;
     
@@ -131,6 +173,21 @@ export default function AffirmationsPage() {
 
     bulkImportMutation.mutate(affirmationsData);
     setImportText("");
+  };
+
+  const handleRandomSelect = () => {
+    if (affirmations.length < 10) {
+      toast({
+        title: "Not enough affirmations",
+        description: "You need at least 10 affirmations to use random selection.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (confirm("This will replace your current active affirmations with 10 randomly selected ones. Continue?")) {
+      randomSelectMutation.mutate();
+    }
   };
 
   const handleExport = () => {
@@ -243,13 +300,25 @@ export default function AffirmationsPage() {
       </div>
 
       {/* Active Affirmations Cards */}
-      {activeAffirmations.length > 0 && (
+      {activeAffirmations.length > 0 ? (
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Active Affirmations</h2>
-            <Badge variant="secondary" data-testid="badge-active-count">
-              {activeAffirmations.length}/10 active
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRandomSelect}
+                disabled={affirmations.length < 10 || randomSelectMutation.isPending}
+                data-testid="button-random-select"
+              >
+                <Shuffle className="h-4 w-4 mr-2" />
+                {randomSelectMutation.isPending ? "Selecting..." : "Random 10"}
+              </Button>
+              <Badge variant="secondary" data-testid="badge-active-count">
+                {activeAffirmations.length}/10 active
+              </Badge>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -269,6 +338,37 @@ export default function AffirmationsPage() {
             ))}
           </div>
         </div>
+      ) : (
+        affirmations.length >= 10 ? (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Active Affirmations</h2>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRandomSelect}
+                  disabled={affirmations.length < 10 || randomSelectMutation.isPending}
+                  data-testid="button-random-select-empty"
+                >
+                  <Shuffle className="h-4 w-4 mr-2" />
+                  {randomSelectMutation.isPending ? "Selecting..." : "Random 10"}
+                </Button>
+                <Badge variant="secondary" data-testid="badge-active-count-empty">
+                  0/10 active
+                </Badge>
+              </div>
+            </div>
+            <Card className="text-center py-8">
+              <CardContent>
+                <Heart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  No active affirmations selected. Choose your favorites manually or use random selection.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        ) : null
       )}
 
       {/* Add New Affirmation */}
