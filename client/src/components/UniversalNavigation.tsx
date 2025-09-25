@@ -31,6 +31,7 @@ export function UniversalNavigation() {
     { name: "Photo Progress", path: "/photos", key: "photos" },
     { name: "Thoughts & Reflections", path: "/thoughts", key: "thoughts" },
     { name: "Supplements", path: "/supplements", key: "supplements" },
+    { name: "Affirmations", path: "/affirmations", key: "affirmations" },
     { name: "Admin", path: "/admin", key: "admin" }
   ];
 
