@@ -26,13 +26,14 @@ export default function AffirmationsPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingAffirmationId, setRecordingAffirmationId] = useState<string | null>(null);
   const [isPlayingCombined, setIsPlayingCombined] = useState(false);
-  const [combinedAudioUrl, setCombinedAudioUrl] = useState<string | null>(null);
   const [recordingSupported, setRecordingSupported] = useState(false);
+  const [currentPlayingIndex, setCurrentPlayingIndex] = useState(0);
+  const [playlistUrls, setPlaylistUrls] = useState<string[]>([]);
   
   // Refs for voice recording
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const combinedAudioRef = useRef<HTMLAudioElement | null>(null);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -259,8 +260,8 @@ export default function AffirmationsPage() {
     });
   };
 
-  // Combine all recordings sequentially
-  const combineRecordings = () => {
+  // Prepare sequential playlist
+  const preparePlaylist = () => {
     const recordedAffirmations = activeAffirmations.filter(aff => voiceRecordings[aff.id]);
     
     if (recordedAffirmations.length === 0) {
@@ -269,57 +270,47 @@ export default function AffirmationsPage() {
         description: "Please record voice memos for your active affirmations first.",
         variant: "destructive"
       });
-      return;
+      return [];
     }
 
-    // Create combined blob by concatenating all recordings
-    const allChunks: Blob[] = [];
-    recordedAffirmations.forEach(affirmation => {
+    // Clean up previous URLs
+    playlistUrls.forEach(url => URL.revokeObjectURL(url));
+
+    // Create individual audio URLs for each recording
+    const urls = recordedAffirmations.map(affirmation => {
       const recording = voiceRecordings[affirmation.id];
-      if (recording) {
-        allChunks.push(recording);
-      }
+      return URL.createObjectURL(recording);
     });
-
-    const combinedBlob = new Blob(allChunks, { type: getSupportedMimeType() });
-    const audioUrl = URL.createObjectURL(combinedBlob);
     
-    // Clean up previous URL
-    if (combinedAudioUrl) {
-      URL.revokeObjectURL(combinedAudioUrl);
-    }
+    setPlaylistUrls(urls);
+    setCurrentPlayingIndex(0);
     
-    setCombinedAudioUrl(audioUrl);
-    
-    toast({
-      title: "Recordings combined!",
-      description: `Combined ${recordedAffirmations.length} voice memos. Click play to listen.`
-    });
+    return urls;
   };
 
-  // Play combined recording
-  const playCombinedRecording = () => {
-    if (!combinedAudioUrl) {
-      combineRecordings();
+  // Play recordings sequentially
+  const playSequentially = (urls: string[], index: number = 0) => {
+    if (index >= urls.length) {
+      // All recordings finished
+      setIsPlayingCombined(false);
+      setCurrentPlayingIndex(0);
       return;
     }
 
-    if (combinedAudioRef.current) {
-      combinedAudioRef.current.pause();
-      combinedAudioRef.current.currentTime = 0;
-    }
-
-    const audio = new Audio(combinedAudioUrl);
-    combinedAudioRef.current = audio;
+    const audio = new Audio(urls[index]);
+    currentAudioRef.current = audio;
+    setCurrentPlayingIndex(index);
     
     audio.onplay = () => setIsPlayingCombined(true);
-    audio.onpause = () => setIsPlayingCombined(false);
-    audio.onended = () => setIsPlayingCombined(false);
+    audio.onended = () => {
+      // Play next recording
+      playSequentially(urls, index + 1);
+    };
     audio.onerror = () => {
       setIsPlayingCombined(false);
       toast({
         title: "Playback failed",
-        description: "There was an error playing the combined recording.",
+        description: `Error playing recording ${index + 1}`,
         variant: "destructive"
       });
     };
@@ -329,34 +320,52 @@ export default function AffirmationsPage() {
       setIsPlayingCombined(false);
       toast({
         title: "Playback failed",
-        description: "Could not play the combined recording.",
+        description: `Could not play recording ${index + 1}`,
         variant: "destructive"
       });
     });
   };
 
-  // Stop combined recording playback
+  // Start sequential playback
+  const playCombinedRecording = () => {
+    const urls = preparePlaylist();
+    if (urls.length === 0) return;
+
+    // Stop current playback if any
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current.currentTime = 0;
+    }
+
+    playSequentially(urls, 0);
+    
+    toast({
+      title: "Playing recordings!",
+      description: `Playing ${urls.length} voice memos sequentially.`
+    });
+  };
+
+  // Stop sequential recording playback
   const stopCombinedRecording = () => {
-    if (combinedAudioRef.current) {
-      combinedAudioRef.current.pause();
-      combinedAudioRef.current.currentTime = 0;
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current.currentTime = 0;
       setIsPlayingCombined(false);
+      setCurrentPlayingIndex(0);
     }
   };
 
   // Clean up audio URLs on component unmount
   useEffect(() => {
     return () => {
-      if (combinedAudioUrl) {
-        URL.revokeObjectURL(combinedAudioUrl);
-      }
+      playlistUrls.forEach(url => URL.revokeObjectURL(url));
       Object.values(voiceRecordings).forEach(blob => {
         if (blob instanceof Blob) {
           URL.revokeObjectURL(URL.createObjectURL(blob));
         }
       });
     };
-  }, [combinedAudioUrl, voiceRecordings]);
+  }, [playlistUrls, voiceRecordings]);
 
   const handleAddAffirmation = () => {
     if (!newAffirmationText.trim()) return;
@@ -622,44 +631,35 @@ export default function AffirmationsPage() {
               <div className="flex items-center gap-2">
                 {Object.keys(voiceRecordings).some(id => activeAffirmations.some(a => a.id === id)) && (
                   <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={combineRecordings}
-                      disabled={isRecording || isPlayingCombined}
-                      data-testid="button-combine-recordings"
-                    >
-                      <RotateCcw className="h-4 w-4 mr-2" />
-                      Combine All
-                    </Button>
+                    {isPlayingCombined ? (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={stopCombinedRecording}
+                        className="bg-red-600 hover:bg-red-700"
+                        data-testid="button-stop-combined-playback"
+                      >
+                        <Square className="h-4 w-4 mr-2" />
+                        Stop Playback
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={playCombinedRecording}
+                        disabled={isRecording}
+                        className="bg-green-600 hover:bg-green-700"
+                        data-testid="button-play-combined-recording"
+                      >
+                        <Play className="h-4 w-4 mr-2" />
+                        Play All
+                      </Button>
+                    )}
                     
-                    {combinedAudioUrl && (
-                      <>
-                        {isPlayingCombined ? (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={stopCombinedRecording}
-                            className="bg-red-600 hover:bg-red-700"
-                            data-testid="button-stop-combined-playback"
-                          >
-                            <Square className="h-4 w-4 mr-2" />
-                            Stop Playback
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={playCombinedRecording}
-                            disabled={isRecording}
-                            className="bg-green-600 hover:bg-green-700"
-                            data-testid="button-play-combined-recording"
-                          >
-                            <Play className="h-4 w-4 mr-2" />
-                            Play All
-                          </Button>
-                        )}
-                      </>
+                    {isPlayingCombined && (
+                      <Badge variant="secondary" className="text-xs">
+                        Playing {currentPlayingIndex + 1} of {playlistUrls.length}
+                      </Badge>
                     )}
                   </>
                 )}
