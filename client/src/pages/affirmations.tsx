@@ -144,7 +144,7 @@ export default function AffirmationsPage() {
   useEffect(() => {
     const checkRecordingSupport = () => {
       setRecordingSupported(
-        !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder)
+        !!(navigator.mediaDevices?.getUserMedia && window.MediaRecorder && MediaRecorder.isTypeSupported)
       );
     };
     checkRecordingSupport();
@@ -354,6 +354,11 @@ export default function AffirmationsPage() {
   // Process and combine all recordings with silence removal
   const createGaplessAudio = async (): Promise<AudioBuffer | null> => {
     try {
+      // Check Web Audio API support
+      if (!window.AudioContext && !(window as any).webkitAudioContext) {
+        throw new Error('Web Audio API not supported in this browser');
+      }
+
       const recordedAffirmations = activeAffirmations.filter(aff => voiceRecordings[aff.id]);
       
       if (recordedAffirmations.length === 0) {
@@ -366,6 +371,12 @@ export default function AffirmationsPage() {
       }
 
       const audioContext = getAudioContext();
+      
+      // Ensure audio context is running
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
+
       const audioBuffers: AudioBuffer[] = [];
 
       // Process each recording
@@ -383,9 +394,14 @@ export default function AffirmationsPage() {
       
     } catch (error) {
       console.error('Error creating gapless audio:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : undefined
+      });
       toast({
         title: "Audio processing failed",
-        description: "Could not combine recordings. Please try again.",
+        description: error instanceof Error ? error.message : "Could not combine recordings. Please try again.",
         variant: "destructive"
       });
       return null;
@@ -420,7 +436,7 @@ export default function AffirmationsPage() {
     return urls;
   };
 
-  // Play recordings sequentially
+  // Play recordings sequentially with minimal gaps
   const playSequentially = (urls: string[], index: number = 0) => {
     if (index >= urls.length) {
       // All recordings finished
@@ -433,10 +449,16 @@ export default function AffirmationsPage() {
     currentAudioRef.current = audio;
     setCurrentPlayingIndex(index);
     
+    // Preload next audio for smoother transitions
+    if (index + 1 < urls.length) {
+      const nextAudio = new Audio(urls[index + 1]);
+      nextAudio.preload = 'auto';
+    }
+    
     audio.onplay = () => setIsPlayingCombined(true);
     audio.onended = () => {
-      // Play next recording
-      playSequentially(urls, index + 1);
+      // Minimize gap by immediately playing next
+      setTimeout(() => playSequentially(urls, index + 1), 50); // 50ms minimal gap
     };
     audio.onerror = () => {
       setIsPlayingCombined(false);
@@ -458,63 +480,26 @@ export default function AffirmationsPage() {
     });
   };
 
-  // Play gapless combined audio
-  const playCombinedRecording = async () => {
-    try {
-      setIsPlayingCombined(true);
-      
-      // Stop any current audio playback
-      if (currentAudioRef.current) {
-        currentAudioRef.current.pause();
-        currentAudioRef.current.currentTime = 0;
-      }
-      if (combinedAudioSourceRef.current) {
-        combinedAudioSourceRef.current.stop();
-      }
+  // Play recordings with minimal gaps
+  const playCombinedRecording = () => {
+    const urls = preparePlaylist();
+    if (urls.length === 0) return;
 
-      // Create gapless audio buffer
-      const combinedBuffer = await createGaplessAudio();
-      if (!combinedBuffer) {
-        setIsPlayingCombined(false);
-        return;
-      }
-
-      const audioContext = getAudioContext();
-      
-      // Resume audio context if suspended (required for some browsers)
-      if (audioContext.state === 'suspended') {
-        await audioContext.resume();
-      }
-
-      // Create and configure audio source
-      const source = audioContext.createBufferSource();
-      source.buffer = combinedBuffer;
-      source.connect(audioContext.destination);
-      
-      source.onended = () => {
-        setIsPlayingCombined(false);
-        setCurrentPlayingIndex(0);
-        combinedAudioSourceRef.current = null;
-      };
-
-      combinedAudioSourceRef.current = source;
-      source.start(0);
-      
-      const recordedCount = activeAffirmations.filter(aff => voiceRecordings[aff.id]).length;
-      toast({
-        title: "Playing gapless audio!",
-        description: `Playing ${recordedCount} voice memos with no gaps.`
-      });
-      
-    } catch (error) {
-      console.error('Gapless playback error:', error);
-      setIsPlayingCombined(false);
-      toast({
-        title: "Playback failed",
-        description: "Could not play combined audio. Please try again.",
-        variant: "destructive"
-      });
+    // Stop any current audio playback
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current.currentTime = 0;
     }
+    if (combinedAudioSourceRef.current) {
+      combinedAudioSourceRef.current.stop();
+    }
+
+    playSequentially(urls, 0);
+    
+    toast({
+      title: "Playing recordings!",
+      description: `Playing ${urls.length} voice memos with minimal gaps.`
+    });
   };
 
   // Stop audio playback
@@ -848,7 +833,7 @@ export default function AffirmationsPage() {
                     
                     {isPlayingCombined && (
                       <Badge variant="secondary" className="text-xs">
-                        Playing gapless audio...
+                        Playing {currentPlayingIndex + 1} of {playlistUrls.length}
                       </Badge>
                     )}
                   </>
