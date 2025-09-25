@@ -29,6 +29,8 @@ export default function AffirmationsPage() {
   const [recordingSupported, setRecordingSupported] = useState(false);
   const [currentPlayingIndex, setCurrentPlayingIndex] = useState(0);
   const [playlistUrls, setPlaylistUrls] = useState<string[]>([]);
+  const [pressStartTime, setPressStartTime] = useState<number | null>(null);
+  const [isPressingCard, setIsPressingCard] = useState<string | null>(null);
   
   // Refs for voice recording
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -260,6 +262,39 @@ export default function AffirmationsPage() {
       title: "Recording deleted",
       description: "Voice memo removed successfully."
     });
+  };
+
+  // Handle tap and hold recording
+  const handleCardPressStart = (affirmationId: string, event: React.TouchEvent | React.MouseEvent) => {
+    event.preventDefault();
+    if (isRecording) return; // Don't start new recording if already recording
+    
+    const currentTime = Date.now();
+    setPressStartTime(currentTime);
+    setIsPressingCard(affirmationId);
+    
+    // Start recording after 300ms hold
+    setTimeout(() => {
+      if (isPressingCard === affirmationId && pressStartTime === currentTime) {
+        startRecording(affirmationId);
+      }
+    }, 300);
+  };
+
+  const handleCardPressEnd = (affirmationId: string, event: React.TouchEvent | React.MouseEvent) => {
+    event.preventDefault();
+    setPressStartTime(null);
+    setIsPressingCard(null);
+    
+    // Stop recording if currently recording this affirmation
+    if (recordingAffirmationId === affirmationId && isRecording) {
+      stopRecording();
+    }
+  };
+
+  // Prevent context menu on long press
+  const handleCardContextMenu = (event: React.MouseEvent) => {
+    event.preventDefault();
   };
 
   // Initialize AudioContext
@@ -727,67 +762,99 @@ export default function AffirmationsPage() {
               Voice Memo Recording
             </CardTitle>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Record yourself saying each affirmation, then play back all recordings combined
+              Tap & hold any affirmation card to record yourself saying it, then play back all recordings combined
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Recording Controls for Individual Affirmations */}
+            {/* Tap and Hold Recording Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {activeAffirmations.map((affirmation) => {
                 const hasRecording = !!voiceRecordings[affirmation.id];
                 const isCurrentlyRecording = recordingAffirmationId === affirmation.id;
+                const isBeingPressed = isPressingCard === affirmation.id;
                 
                 return (
                   <div 
-                    key={affirmation.id} 
-                    className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                    key={affirmation.id}
+                    className={`relative p-3 rounded-lg border cursor-pointer transition-all duration-200 select-none ${
+                      isCurrentlyRecording 
+                        ? 'bg-red-50 dark:bg-red-950/20 border-red-300 dark:border-red-700 shadow-lg' 
+                        : isBeingPressed
+                        ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-300 dark:border-blue-700 transform scale-95'
+                        : hasRecording 
+                        ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 hover:shadow-md' 
+                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-700'
+                    }`}
+                    onTouchStart={(e) => handleCardPressStart(affirmation.id, e)}
+                    onTouchEnd={(e) => handleCardPressEnd(affirmation.id, e)}
+                    onMouseDown={(e) => handleCardPressStart(affirmation.id, e)}
+                    onMouseUp={(e) => handleCardPressEnd(affirmation.id, e)}
+                    onMouseLeave={(e) => handleCardPressEnd(affirmation.id, e)}
+                    onContextMenu={handleCardContextMenu}
+                    data-testid={`card-affirmation-${affirmation.id}`}
                   >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {affirmation.text.length > 30 ? `${affirmation.text.slice(0, 30)}...` : affirmation.text}
-                      </p>
-                    </div>
-                    
-                    <div className="flex items-center gap-1 ml-2">
+                    {/* Recording Status Indicator */}
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        {isCurrentlyRecording && (
+                          <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                            <span className="text-xs text-red-600 dark:text-red-400 font-medium">REC</span>
+                          </div>
+                        )}
+                        {hasRecording && !isCurrentlyRecording && (
+                          <div className="flex items-center gap-1">
+                            <Mic className="h-3 w-3 text-green-600" />
+                            <span className="text-xs text-green-600 dark:text-green-400 font-medium">✓</span>
+                          </div>
+                        )}
+                        {!hasRecording && !isCurrentlyRecording && !isBeingPressed && (
+                          <Mic className="h-3 w-3 text-gray-400" />
+                        )}
+                        {isBeingPressed && !isCurrentlyRecording && (
+                          <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">Hold...</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Delete button for existing recordings */}
                       {hasRecording && !isCurrentlyRecording && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => deleteRecording(affirmation.id)}
-                          className="h-7 w-7 p-0 text-red-500 hover:text-red-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteRecording(affirmation.id);
+                          }}
+                          className="h-6 w-6 p-0 text-red-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-950/20"
                           data-testid={`button-delete-recording-${affirmation.id}`}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       )}
-                      
+                    </div>
+                    
+                    {/* Affirmation Text */}
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 leading-relaxed">
+                      {affirmation.text}
+                    </p>
+                    
+                    {/* Instruction Text */}
+                    <div className="mt-2">
                       {isCurrentlyRecording ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={stopRecording}
-                          className="h-7 px-2 text-red-600 border-red-300 hover:bg-red-50"
-                          data-testid={`button-stop-recording-${affirmation.id}`}
-                        >
-                          <Square className="h-3 w-3 mr-1" />
-                          Stop
-                        </Button>
+                        <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+                          🎙️ Recording... Release to stop
+                        </p>
+                      ) : hasRecording ? (
+                        <p className="text-xs text-green-600 dark:text-green-400">
+                          ✓ Recorded • Tap & hold to re-record
+                        </p>
                       ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => startRecording(affirmation.id)}
-                          disabled={isRecording}
-                          className={`h-7 px-2 ${
-                            hasRecording 
-                              ? 'text-green-600 border-green-300 hover:bg-green-50' 
-                              : 'text-blue-600 border-blue-300 hover:bg-blue-50'
-                          }`}
-                          data-testid={`button-record-${affirmation.id}`}
-                        >
-                          <Mic className="h-3 w-3 mr-1" />
-                          {hasRecording ? 'Re-record' : 'Record'}
-                        </Button>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Tap & hold to record
+                        </p>
                       )}
                     </div>
                   </div>
