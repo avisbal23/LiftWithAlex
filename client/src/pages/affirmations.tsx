@@ -31,6 +31,7 @@ export default function AffirmationsPage() {
   const [playlistUrls, setPlaylistUrls] = useState<string[]>([]);
   const [pressStartTime, setPressStartTime] = useState<number | null>(null);
   const [isPressingCard, setIsPressingCard] = useState<string | null>(null);
+  const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Refs for voice recording
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -273,21 +274,34 @@ export default function AffirmationsPage() {
     setPressStartTime(currentTime);
     setIsPressingCard(affirmationId);
     
+    // Clear any existing timer
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+    }
+    
     // Start recording after 300ms hold
-    setTimeout(() => {
-      if (isPressingCard === affirmationId && pressStartTime === currentTime) {
-        startRecording(affirmationId);
-      }
+    holdTimerRef.current = setTimeout(() => {
+      console.log('Hold timer fired, starting recording for:', affirmationId);
+      startRecording(affirmationId);
     }, 300);
   };
 
   const handleCardPressEnd = (affirmationId: string, event: React.TouchEvent | React.MouseEvent) => {
     event.preventDefault();
+    console.log('Card press ended for:', affirmationId);
+    
+    // Clear the hold timer if still pending
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    
     setPressStartTime(null);
     setIsPressingCard(null);
     
     // Stop recording if currently recording this affirmation
     if (recordingAffirmationId === affirmationId && isRecording) {
+      console.log('Stopping recording for:', affirmationId);
       stopRecording();
     }
   };
