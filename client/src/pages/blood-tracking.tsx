@@ -254,20 +254,16 @@ export default function BloodTracking() {
                           {item.baseValue} → {item.comparisonValue} {item.unit}
                         </div>
                       </div>
-                      <div className={`flex items-center gap-2 ${getChangeColor()}`}>
-                        {getChangeIcon()}
-                        <div className="text-sm font-medium">
-                          {item.absoluteChange !== null && (
-                            <>
-                              {item.absoluteChange > 0 ? '+' : ''}{item.absoluteChange.toFixed(2)}
-                              {item.percentageChange !== null && (
-                                <span className="text-xs ml-1">
-                                  ({item.percentageChange > 0 ? '+' : ''}{item.percentageChange.toFixed(1)}%)
-                                </span>
-                              )}
-                            </>
-                          )}
-                        </div>
+                      <div className="text-2xl font-bold">
+                        {item.isBetterTrend === true && (
+                          <span className="text-green-600 dark:text-green-400">+</span>
+                        )}
+                        {item.isBetterTrend === false && (
+                          <span className="text-red-600 dark:text-red-400">-</span>
+                        )}
+                        {item.isBetterTrend === null && (
+                          <span className="text-gray-600 dark:text-gray-400">-</span>
+                        )}
                       </div>
                     </div>
                   </CardContent>
