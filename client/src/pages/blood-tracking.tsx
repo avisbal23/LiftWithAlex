@@ -12,13 +12,15 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Droplets, Plus, Calendar, Upload, Download, ChevronDown, ChevronUp, Target, Activity, BarChart, CheckCircle, FileText, Save, X, Paperclip, Trash2, ExternalLink, FlipHorizontal, TrendingUp, TrendingDown, Minus, GitCompare } from "lucide-react";
+import { Droplets, Plus, Calendar, Upload, Download, ChevronDown, ChevronUp, Target, Activity, BarChart, CheckCircle, FileText, Save, X, Paperclip, Trash2, ExternalLink, FlipHorizontal, TrendingUp, TrendingDown } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { type BloodEntry, type BloodOptimalRange, type BloodWorkComparisonResult, insertBloodEntrySchema } from "@shared/schema";
+import { type BloodEntry, type BloodOptimalRange, insertBloodEntrySchema } from "@shared/schema";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
 import { ObjectUploader } from "@/components/ObjectUploader";
+import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
+import { format, subDays } from "date-fns";
 
 // Biomarker information for flip cards
 const BIOMARKER_INFO = {
@@ -93,11 +95,9 @@ export default function BloodTracking() {
   // Editing state for optimal ranges
   const [editingBiomarker, setEditingBiomarker] = useState<keyof typeof BIOMARKER_INFO | null>(null);
   
-  // Comparison state
-  const [comparisonResult, setComparisonResult] = useState<BloodWorkComparisonResult | null>(null);
-  const [isComparisonDialogOpen, setIsComparisonDialogOpen] = useState(false);
-  const [manualComparisonBase, setManualComparisonBase] = useState<string>("");
-  const [manualComparisonTarget, setManualComparisonTarget] = useState<string>("");
+  // Chart state for trending
+  const [selectedBiomarkers, setSelectedBiomarkers] = useState<(keyof typeof BIOMARKER_INFO)[]>(['totalTestosterone', 'freeTestosterone']);
+  const [chartDateRange, setChartDateRange] = useState<string>("90");
   
   // Import state
   const [importData, setImportData] = useState("");
@@ -139,139 +139,32 @@ export default function BloodTracking() {
     return relevantRange.optimal;
   };
 
-  // Blood work comparison functions
-  const triggerAutoComparison = async (entryId: string) => {
-    try {
-      const result = await apiRequest(`/api/blood-entries/${entryId}/auto-compare`);
-      setComparisonResult(result as BloodWorkComparisonResult);
-      setIsComparisonDialogOpen(true);
-    } catch (error: any) {
-      if (error.message !== "No previous entry found for comparison") {
-        toast({
-          title: "Comparison failed",
-          description: error.message || "Failed to calculate comparison",
-          variant: "destructive",
-        });
-      }
-    }
-  };
+  // Chart data preparation
+  const chartData = useMemo(() => {
+    const daysBack = parseInt(chartDateRange);
+    const cutoffDate = subDays(new Date(), daysBack);
+    
+    return bloodEntries
+      .filter(entry => new Date(entry.asOf) >= cutoffDate)
+      .map(entry => ({
+        date: format(new Date(entry.asOf), "MMM dd"),
+        fullDate: entry.asOf,
+        totalTestosterone: entry.totalTestosterone,
+        freeTestosterone: entry.freeTestosterone,
+        tsh: entry.tsh,
+        ldlCalc: entry.ldlCalc,
+        vitaminD25oh: entry.vitaminD25oh,
+        hba1c: entry.hba1c,
+        apob: entry.apob,
+      }))
+      .sort((a, b) => new Date(a.fullDate).getTime() - new Date(b.fullDate).getTime());
+  }, [bloodEntries, chartDateRange]);
 
-  const triggerManualComparison = async () => {
-    if (!manualComparisonBase || !manualComparisonTarget) {
-      toast({
-        title: "Please select both entries",
-        description: "Select both base and comparison entries to compare.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const result = await apiRequest('/api/blood-entries/compare', {
-        method: 'POST',
-        body: JSON.stringify({
-          baseEntryId: manualComparisonBase,
-          comparisonEntryId: manualComparisonTarget,
-        }),
-      });
-      setComparisonResult(result as BloodWorkComparisonResult);
-      setIsComparisonDialogOpen(true);
-    } catch (error: any) {
-      toast({
-        title: "Comparison failed",
-        description: error.message || "Failed to calculate comparison",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const BloodWorkComparisonDisplay = ({ comparison }: { comparison: BloodWorkComparisonResult }) => {
-    return (
-      <div className="space-y-4">
-        {/* Summary */}
-        <div className="grid grid-cols-3 gap-4">
-          <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
-            <CardContent className="p-3 text-center">
-              <div className="text-2xl font-bold text-green-700 dark:text-green-400">
-                {comparison.summary.improvedMetrics}
-              </div>
-              <div className="text-sm text-green-600 dark:text-green-400">Improved</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800">
-            <CardContent className="p-3 text-center">
-              <div className="text-2xl font-bold text-red-700 dark:text-red-400">
-                {comparison.summary.worsenedMetrics}
-              </div>
-              <div className="text-sm text-red-600 dark:text-red-400">Worsened</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-gray-50 dark:bg-gray-950/20 border-gray-200 dark:border-gray-800">
-            <CardContent className="p-3 text-center">
-              <div className="text-2xl font-bold text-gray-700 dark:text-gray-400">
-                {comparison.summary.unchangedMetrics}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Unchanged</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Date range */}
-        <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-          Comparing {new Date(comparison.baseEntry.asOf).toLocaleDateString()} → {new Date(comparison.comparisonEntry.asOf).toLocaleDateString()}
-        </div>
-
-        {/* Detailed comparisons */}
-        <div className="space-y-2 max-h-96 overflow-y-auto">
-          {comparison.comparisons
-            .filter(c => c.baseValue !== null && c.comparisonValue !== null)
-            .map((item) => {
-              const getChangeIcon = () => {
-                if (item.changeDirection === 'increase') return <TrendingUp className="h-4 w-4" />;
-                if (item.changeDirection === 'decrease') return <TrendingDown className="h-4 w-4" />;
-                return <Minus className="h-4 w-4" />;
-              };
-
-              const getChangeColor = () => {
-                if (item.isBetterTrend === true) return 'text-green-600 dark:text-green-400';
-                if (item.isBetterTrend === false) return 'text-red-600 dark:text-red-400';
-                return 'text-gray-600 dark:text-gray-400';
-              };
-
-              const getBgColor = () => {
-                if (item.isBetterTrend === true) return 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800';
-                if (item.isBetterTrend === false) return 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800';
-                return 'bg-gray-50 dark:bg-gray-950/20 border-gray-200 dark:border-gray-800';
-              };
-
-              return (
-                <Card key={item.markerKey} className={getBgColor()}>
-                  <CardContent className="p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{item.markerName}</div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400">
-                          {item.baseValue} → {item.comparisonValue} {item.unit}
-                        </div>
-                      </div>
-                      <div className="text-2xl font-bold">
-                        {item.isBetterTrend === true && (
-                          <span className="text-green-600 dark:text-green-400">+</span>
-                        )}
-                        {item.isBetterTrend === false && (
-                          <span className="text-red-600 dark:text-red-400">-</span>
-                        )}
-                        {item.isBetterTrend === null && (
-                          <span className="text-gray-600 dark:text-gray-400">-</span>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-        </div>
-      </div>
+  const toggleBiomarker = (biomarker: keyof typeof BIOMARKER_INFO) => {
+    setSelectedBiomarkers(prev => 
+      prev.includes(biomarker) 
+        ? prev.filter(b => b !== biomarker)
+        : [...prev, biomarker]
     );
   };
 
@@ -752,7 +645,7 @@ export default function BloodTracking() {
   const updateBloodEntry = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<BloodEntry> }) =>
       apiRequest("PATCH", `/api/blood-entries/${id}`, data),
-    onSuccess: (_, { id }) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/blood-entries"] });
       setEditingEntry(null);
       setEditingValues({});
@@ -760,9 +653,6 @@ export default function BloodTracking() {
         title: "Success",
         description: "Blood entry updated successfully",
       });
-      
-      // Trigger automatic comparison with most recent entry
-      triggerAutoComparison(id);
     },
     onError: () => {
       toast({
@@ -1883,86 +1773,112 @@ export default function BloodTracking() {
       {/* Edit Range Modal */}
       <EditRangeModal />
 
-      {/* Comparison Result Dialog */}
-      <Dialog open={isComparisonDialogOpen} onOpenChange={setIsComparisonDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden" data-testid="dialog-comparison-result">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <GitCompare className="h-5 w-5" />
-              Blood Work Comparison
-            </DialogTitle>
-          </DialogHeader>
-          <div className="overflow-y-auto">
-            {comparisonResult && <BloodWorkComparisonDisplay comparison={comparisonResult} />}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Manual Comparison Dialog */}
-      <Dialog open={false} onOpenChange={() => {}}>
-        <DialogTrigger asChild>
-          <Button 
-            variant="outline" 
-            className="fixed bottom-4 right-4 shadow-lg"
-            data-testid="button-open-manual-comparison"
-          >
-            <GitCompare className="h-4 w-4 mr-2" />
-            Compare Entries
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-md" data-testid="dialog-manual-comparison">
-          <DialogHeader>
-            <DialogTitle>Compare Blood Work Entries</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Base Entry (From)</label>
-              <Select value={manualComparisonBase} onValueChange={setManualComparisonBase}>
-                <SelectTrigger data-testid="select-comparison-base">
-                  <SelectValue placeholder="Select base entry" />
+      {/* Trending Chart */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5" />
+            Blood Work Trends
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Chart Controls */}
+          <div className="flex flex-wrap gap-4 mb-6">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">Time Range:</label>
+              <Select value={chartDateRange} onValueChange={setChartDateRange}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {bloodEntries
-                    .sort((a, b) => new Date(b.asOf).getTime() - new Date(a.asOf).getTime())
-                    .map((entry) => (
-                      <SelectItem key={entry.id} value={entry.id}>
-                        {new Date(entry.asOf).toLocaleDateString()} - {entry.source}
-                      </SelectItem>
-                    ))}
+                  <SelectItem value="30">30 Days</SelectItem>
+                  <SelectItem value="90">90 Days</SelectItem>
+                  <SelectItem value="180">6 Months</SelectItem>
+                  <SelectItem value="365">1 Year</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Comparison Entry (To)</label>
-              <Select value={manualComparisonTarget} onValueChange={setManualComparisonTarget}>
-                <SelectTrigger data-testid="select-comparison-target">
-                  <SelectValue placeholder="Select comparison entry" />
-                </SelectTrigger>
-                <SelectContent>
-                  {bloodEntries
-                    .sort((a, b) => new Date(b.asOf).getTime() - new Date(a.asOf).getTime())
-                    .map((entry) => (
-                      <SelectItem key={entry.id} value={entry.id}>
-                        {new Date(entry.asOf).toLocaleDateString()} - {entry.source}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button 
-              onClick={triggerManualComparison} 
-              className="w-full"
-              disabled={!manualComparisonBase || !manualComparisonTarget}
-              data-testid="button-trigger-manual-comparison"
-            >
-              <GitCompare className="h-4 w-4 mr-2" />
-              Compare Entries
-            </Button>
           </div>
-        </DialogContent>
-      </Dialog>
+
+          {/* Biomarker Selection */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
+            {Object.keys(BIOMARKER_INFO).map((biomarker) => {
+              const key = biomarker as keyof typeof BIOMARKER_INFO;
+              const isSelected = selectedBiomarkers.includes(key);
+              return (
+                <Button
+                  key={biomarker}
+                  variant={isSelected ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => toggleBiomarker(key)}
+                  className="justify-start"
+                  data-testid={`toggle-biomarker-${biomarker}`}
+                >
+                  {getBiomarkerDisplayName(key)}
+                </Button>
+              );
+            })}
+          </div>
+
+          {/* Chart */}
+          {chartData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-96 text-muted-foreground">
+              <BarChart className="w-12 h-12 mb-4" />
+              <p className="text-lg font-medium">No blood work data available</p>
+              <p className="text-sm">Add your first entry to see trends</p>
+            </div>
+          ) : (
+            <div className="h-96 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={chartData} margin={{ top: 15, right: 15, left: 15, bottom: 25 }}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{ fontSize: 11 }}
+                    interval={chartData.length > 30 ? Math.floor(chartData.length / 15) : 'preserveStartEnd'}
+                    angle={chartData.length > 20 ? -45 : 0}
+                    textAnchor={chartData.length > 20 ? 'end' : 'middle'}
+                    height={chartData.length > 20 ? 60 : 30}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 11 }}
+                    width={50}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px',
+                      fontSize: '12px'
+                    }}
+                    labelFormatter={(label) => {
+                      const entry = chartData.find(d => d.date === label);
+                      return entry ? new Date(entry.fullDate).toLocaleDateString() : label;
+                    }}
+                  />
+                  
+                  {/* Render lines for selected biomarkers */}
+                  {selectedBiomarkers.map((biomarker, index) => {
+                    const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00ff7f', '#ff1493'];
+                    return (
+                      <Line
+                        key={biomarker}
+                        type="monotone"
+                        dataKey={biomarker}
+                        stroke={colors[index % colors.length]}
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                        connectNulls={false}
+                        name={getBiomarkerDisplayName(biomarker)}
+                      />
+                    );
+                  })}
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
