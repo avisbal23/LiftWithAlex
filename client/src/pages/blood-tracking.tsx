@@ -12,11 +12,11 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Droplets, Plus, Calendar, Upload, Download, ChevronDown, ChevronUp, Target, Activity, BarChart, CheckCircle, FileText, Save, X, Paperclip, Trash2, ExternalLink, FlipHorizontal } from "lucide-react";
+import { Droplets, Plus, Calendar, Upload, Download, ChevronDown, ChevronUp, Target, Activity, BarChart, CheckCircle, FileText, Save, X, Paperclip, Trash2, ExternalLink, FlipHorizontal, TrendingUp, TrendingDown, Minus, GitCompare } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { type BloodEntry, type BloodOptimalRange, insertBloodEntrySchema } from "@shared/schema";
+import { type BloodEntry, type BloodOptimalRange, type BloodWorkComparisonResult, insertBloodEntrySchema } from "@shared/schema";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
 import { ObjectUploader } from "@/components/ObjectUploader";
 
@@ -93,6 +93,12 @@ export default function BloodTracking() {
   // Editing state for optimal ranges
   const [editingBiomarker, setEditingBiomarker] = useState<keyof typeof BIOMARKER_INFO | null>(null);
   
+  // Comparison state
+  const [comparisonResult, setComparisonResult] = useState<BloodWorkComparisonResult | null>(null);
+  const [isComparisonDialogOpen, setIsComparisonDialogOpen] = useState(false);
+  const [manualComparisonBase, setManualComparisonBase] = useState<string>("");
+  const [manualComparisonTarget, setManualComparisonTarget] = useState<string>("");
+  
   // Import state
   const [importData, setImportData] = useState("");
   const [csvImportData, setCsvImportData] = useState("");
@@ -131,6 +137,146 @@ export default function BloodTracking() {
     const info = BIOMARKER_INFO[biomarkerKey];
     const relevantRange = info.ranges.find(range => range.unit === currentUnit) || info.ranges[0];
     return relevantRange.optimal;
+  };
+
+  // Blood work comparison functions
+  const triggerAutoComparison = async (entryId: string) => {
+    try {
+      const result = await apiRequest(`/api/blood-entries/${entryId}/auto-compare`);
+      setComparisonResult(result as BloodWorkComparisonResult);
+      setIsComparisonDialogOpen(true);
+    } catch (error: any) {
+      if (error.message !== "No previous entry found for comparison") {
+        toast({
+          title: "Comparison failed",
+          description: error.message || "Failed to calculate comparison",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const triggerManualComparison = async () => {
+    if (!manualComparisonBase || !manualComparisonTarget) {
+      toast({
+        title: "Please select both entries",
+        description: "Select both base and comparison entries to compare.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const result = await apiRequest('/api/blood-entries/compare', {
+        method: 'POST',
+        body: JSON.stringify({
+          baseEntryId: manualComparisonBase,
+          comparisonEntryId: manualComparisonTarget,
+        }),
+      });
+      setComparisonResult(result as BloodWorkComparisonResult);
+      setIsComparisonDialogOpen(true);
+    } catch (error: any) {
+      toast({
+        title: "Comparison failed",
+        description: error.message || "Failed to calculate comparison",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const BloodWorkComparisonDisplay = ({ comparison }: { comparison: BloodWorkComparisonResult }) => {
+    return (
+      <div className="space-y-4">
+        {/* Summary */}
+        <div className="grid grid-cols-3 gap-4">
+          <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
+            <CardContent className="p-3 text-center">
+              <div className="text-2xl font-bold text-green-700 dark:text-green-400">
+                {comparison.summary.improvedMetrics}
+              </div>
+              <div className="text-sm text-green-600 dark:text-green-400">Improved</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800">
+            <CardContent className="p-3 text-center">
+              <div className="text-2xl font-bold text-red-700 dark:text-red-400">
+                {comparison.summary.worsenedMetrics}
+              </div>
+              <div className="text-sm text-red-600 dark:text-red-400">Worsened</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-gray-50 dark:bg-gray-950/20 border-gray-200 dark:border-gray-800">
+            <CardContent className="p-3 text-center">
+              <div className="text-2xl font-bold text-gray-700 dark:text-gray-400">
+                {comparison.summary.unchangedMetrics}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Unchanged</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Date range */}
+        <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+          Comparing {new Date(comparison.baseEntry.asOf).toLocaleDateString()} → {new Date(comparison.comparisonEntry.asOf).toLocaleDateString()}
+        </div>
+
+        {/* Detailed comparisons */}
+        <div className="space-y-2 max-h-96 overflow-y-auto">
+          {comparison.comparisons
+            .filter(c => c.baseValue !== null && c.comparisonValue !== null)
+            .map((item) => {
+              const getChangeIcon = () => {
+                if (item.changeDirection === 'increase') return <TrendingUp className="h-4 w-4" />;
+                if (item.changeDirection === 'decrease') return <TrendingDown className="h-4 w-4" />;
+                return <Minus className="h-4 w-4" />;
+              };
+
+              const getChangeColor = () => {
+                if (item.isBetterTrend === true) return 'text-green-600 dark:text-green-400';
+                if (item.isBetterTrend === false) return 'text-red-600 dark:text-red-400';
+                return 'text-gray-600 dark:text-gray-400';
+              };
+
+              const getBgColor = () => {
+                if (item.isBetterTrend === true) return 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800';
+                if (item.isBetterTrend === false) return 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800';
+                return 'bg-gray-50 dark:bg-gray-950/20 border-gray-200 dark:border-gray-800';
+              };
+
+              return (
+                <Card key={item.markerKey} className={getBgColor()}>
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{item.markerName}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                          {item.baseValue} → {item.comparisonValue} {item.unit}
+                        </div>
+                      </div>
+                      <div className={`flex items-center gap-2 ${getChangeColor()}`}>
+                        {getChangeIcon()}
+                        <div className="text-sm font-medium">
+                          {item.absoluteChange !== null && (
+                            <>
+                              {item.absoluteChange > 0 ? '+' : ''}{item.absoluteChange.toFixed(2)}
+                              {item.percentageChange !== null && (
+                                <span className="text-xs ml-1">
+                                  ({item.percentageChange > 0 ? '+' : ''}{item.percentageChange.toFixed(1)}%)
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+        </div>
+      </div>
+    );
   };
 
   // Optimal Range Editor Component
