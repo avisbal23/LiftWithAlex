@@ -680,3 +680,34 @@ export type UpdateSupplement = z.infer<typeof updateSupplementSchema>;
 export type Affirmation = typeof affirmations.$inferSelect;
 export type InsertAffirmation = z.infer<typeof insertAffirmationSchema>;
 export type UpdateAffirmation = z.infer<typeof updateAffirmationSchema>;
+
+// Blood work comparison types
+export type BloodWorkComparison = {
+  markerKey: string;
+  markerName: string;
+  baseValue: number | null;
+  comparisonValue: number | null;
+  unit: string;
+  absoluteChange: number | null;
+  percentageChange: number | null;
+  changeDirection: 'increase' | 'decrease' | 'no_change';
+  isBetterTrend: boolean | null; // Whether the change is in a better direction
+};
+
+export type BloodWorkComparisonResult = {
+  type: 'automatic' | 'manual';
+  baseEntry: BloodEntry;
+  comparisonEntry: BloodEntry;
+  comparisons: BloodWorkComparison[];
+  summary: {
+    totalMetrics: number;
+    improvedMetrics: number;
+    worsenedMetrics: number;
+    unchangedMetrics: number;
+  };
+};
+
+export const bloodWorkComparisonRequestSchema = z.object({
+  baseEntryId: z.string(),
+  comparisonEntryId: z.string(),
+});

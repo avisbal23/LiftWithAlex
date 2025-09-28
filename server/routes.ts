@@ -4,8 +4,105 @@ import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import path from "path";
 import fs from "fs";
-import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertBloodOptimalRangeSchema, updateBloodOptimalRangeSchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema, insertExerciseTemplateSchema, updateExerciseTemplateSchema, insertChangesAuditSchema, updateChangesAuditSchema, insertPRChangesAuditSchema, insertWeightAuditSchema, updateWeightAuditSchema, insertWorkoutTimerSchema, updateWorkoutTimerSchema, insertTimerLapTimeSchema, updateTimerLapTimeSchema, insertBodyMeasurementSchema, updateBodyMeasurementSchema, insertStepEntrySchema, updateStepEntrySchema, insertSupplementSchema, updateSupplementSchema, insertAffirmationSchema, updateAffirmationSchema } from "@shared/schema";
+import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertBloodOptimalRangeSchema, updateBloodOptimalRangeSchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema, insertExerciseTemplateSchema, updateExerciseTemplateSchema, insertChangesAuditSchema, updateChangesAuditSchema, insertPRChangesAuditSchema, insertWeightAuditSchema, updateWeightAuditSchema, insertWorkoutTimerSchema, updateWorkoutTimerSchema, insertTimerLapTimeSchema, updateTimerLapTimeSchema, insertBodyMeasurementSchema, updateBodyMeasurementSchema, insertStepEntrySchema, updateStepEntrySchema, insertSupplementSchema, updateSupplementSchema, insertAffirmationSchema, updateAffirmationSchema, bloodWorkComparisonRequestSchema, type BloodEntry, type BloodWorkComparison, type BloodWorkComparisonResult } from "@shared/schema";
 import { z } from "zod";
+
+// Blood work comparison calculation function
+function calculateBloodWorkComparison(
+  baseEntry: BloodEntry, 
+  comparisonEntry: BloodEntry, 
+  type: 'automatic' | 'manual'
+): BloodWorkComparisonResult {
+  const biomarkers = [
+    { key: 'totalTestosterone', name: 'Total Testosterone', unit: 'totalTestosteroneUnit', betterDirection: 'higher' },
+    { key: 'freeTestosterone', name: 'Free Testosterone', unit: 'freeTestosteroneUnit', betterDirection: 'higher' },
+    { key: 'shbg', name: 'SHBG', unit: 'shbgUnit', betterDirection: 'optimal' },
+    { key: 'estradiol', name: 'Estradiol', unit: 'estradiolUnit', betterDirection: 'optimal' },
+    { key: 'dheasulfate', name: 'DHEA Sulfate', unit: 'dheasulfateUnit', betterDirection: 'higher' },
+    { key: 'cortisolAm', name: 'Cortisol AM', unit: 'cortisolAmUnit', betterDirection: 'optimal' },
+    { key: 'psa', name: 'PSA', unit: 'psaUnit', betterDirection: 'lower' },
+    { key: 'tsh', name: 'TSH', unit: 'tshUnit', betterDirection: 'optimal' },
+    { key: 'freeT3', name: 'Free T3', unit: 'freeT3Unit', betterDirection: 'optimal' },
+    { key: 'freeT4', name: 'Free T4', unit: 'freeT4Unit', betterDirection: 'optimal' },
+    { key: 'vitaminD25oh', name: 'Vitamin D', unit: 'vitaminD25ohUnit', betterDirection: 'higher' },
+    { key: 'crpHs', name: 'CRP (hs)', unit: 'crpHsUnit', betterDirection: 'lower' },
+    { key: 'insulin', name: 'Insulin', unit: 'insulinUnit', betterDirection: 'lower' },
+    { key: 'hba1c', name: 'HbA1c', unit: 'hba1cUnit', betterDirection: 'lower' },
+    { key: 'cholesterolTotal', name: 'Total Cholesterol', unit: 'cholesterolTotalUnit', betterDirection: 'lower' },
+    { key: 'triglycerides', name: 'Triglycerides', unit: 'triglyceridesUnit', betterDirection: 'lower' },
+    { key: 'hdl', name: 'HDL', unit: 'hdlUnit', betterDirection: 'higher' },
+    { key: 'ldlCalc', name: 'LDL', unit: 'ldlCalcUnit', betterDirection: 'lower' },
+    { key: 'vldlCalc', name: 'VLDL', unit: 'vldlCalcUnit', betterDirection: 'lower' },
+    { key: 'apob', name: 'ApoB', unit: 'apobUnit', betterDirection: 'lower' },
+    { key: 'albumin', name: 'Albumin', unit: 'albuminUnit', betterDirection: 'optimal' },
+    { key: 'ferritin', name: 'Ferritin', unit: 'ferritinUnit', betterDirection: 'optimal' },
+  ];
+
+  const comparisons: BloodWorkComparison[] = [];
+  let improvedMetrics = 0;
+  let worsenedMetrics = 0;
+  let unchangedMetrics = 0;
+
+  for (const biomarker of biomarkers) {
+    const baseValue = (baseEntry as any)[biomarker.key] as number | null;
+    const comparisonValue = (comparisonEntry as any)[biomarker.key] as number | null;
+    const unit = (comparisonEntry as any)[biomarker.unit] as string || '';
+
+    // Skip if both values are null
+    if (baseValue === null && comparisonValue === null) continue;
+
+    let absoluteChange: number | null = null;
+    let percentageChange: number | null = null;
+    let changeDirection: 'increase' | 'decrease' | 'no_change' = 'no_change';
+    let isBetterTrend: boolean | null = null;
+
+    if (baseValue !== null && comparisonValue !== null) {
+      absoluteChange = comparisonValue - baseValue;
+      percentageChange = baseValue !== 0 ? (absoluteChange / baseValue) * 100 : null;
+      
+      if (absoluteChange > 0) {
+        changeDirection = 'increase';
+        isBetterTrend = biomarker.betterDirection === 'higher';
+      } else if (absoluteChange < 0) {
+        changeDirection = 'decrease';
+        isBetterTrend = biomarker.betterDirection === 'lower';
+      } else {
+        changeDirection = 'no_change';
+        isBetterTrend = null;
+      }
+    }
+
+    comparisons.push({
+      markerKey: biomarker.key,
+      markerName: biomarker.name,
+      baseValue,
+      comparisonValue,
+      unit,
+      absoluteChange,
+      percentageChange,
+      changeDirection,
+      isBetterTrend,
+    });
+
+    // Count improvement/worsening
+    if (isBetterTrend === true) improvedMetrics++;
+    else if (isBetterTrend === false) worsenedMetrics++;
+    else unchangedMetrics++;
+  }
+
+  return {
+    type,
+    baseEntry,
+    comparisonEntry,
+    comparisons: comparisons.filter(c => c.baseValue !== null || c.comparisonValue !== null),
+    summary: {
+      totalMetrics: comparisons.filter(c => c.baseValue !== null || c.comparisonValue !== null).length,
+      improvedMetrics,
+      worsenedMetrics,
+      unchangedMetrics,
+    },
+  };
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Serve static images from server/public/images
@@ -607,6 +704,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete blood optimal range" });
+    }
+  });
+
+  // Blood Work Comparison Routes
+
+  // Calculate comparison between two blood entries
+  app.post("/api/blood-entries/compare", async (req, res) => {
+    try {
+      const { baseEntryId, comparisonEntryId } = bloodWorkComparisonRequestSchema.parse(req.body);
+      
+      const allEntries = await storage.getAllBloodEntries();
+      const baseEntry = allEntries.find(e => e.id === baseEntryId);
+      const comparisonEntry = allEntries.find(e => e.id === comparisonEntryId);
+      
+      if (!baseEntry || !comparisonEntry) {
+        return res.status(404).json({ message: "One or both blood entries not found" });
+      }
+      
+      const comparison = calculateBloodWorkComparison(baseEntry, comparisonEntry, 'manual');
+      res.json(comparison);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to calculate comparison" });
+      }
+    }
+  });
+
+  // Get automatic comparison for a blood entry (compares with most recent previous entry)
+  app.get("/api/blood-entries/:id/auto-compare", async (req, res) => {
+    try {
+      const entryId = req.params.id;
+      
+      const allEntries = await storage.getAllBloodEntries();
+      const currentEntry = allEntries.find(e => e.id === entryId);
+      
+      if (!currentEntry) {
+        return res.status(404).json({ message: "Blood entry not found" });
+      }
+      
+      // Find the most recent previous entry
+      const sortedEntries = allEntries
+        .filter(e => e.id !== entryId && new Date(e.asOf) < new Date(currentEntry.asOf))
+        .sort((a, b) => new Date(b.asOf).getTime() - new Date(a.asOf).getTime());
+      
+      if (sortedEntries.length === 0) {
+        return res.status(404).json({ message: "No previous entry found for comparison" });
+      }
+      
+      const previousEntry = sortedEntries[0];
+      const comparison = calculateBloodWorkComparison(previousEntry, currentEntry, 'automatic');
+      
+      res.json(comparison);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to calculate automatic comparison" });
     }
   });
 
