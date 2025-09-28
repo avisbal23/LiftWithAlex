@@ -756,7 +756,7 @@ export default function BloodTracking() {
   const updateBloodEntry = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<BloodEntry> }) =>
       apiRequest("PATCH", `/api/blood-entries/${id}`, data),
-    onSuccess: () => {
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/blood-entries"] });
       setEditingEntry(null);
       setEditingValues({});
@@ -764,6 +764,9 @@ export default function BloodTracking() {
         title: "Success",
         description: "Blood entry updated successfully",
       });
+      
+      // Trigger automatic comparison with most recent entry
+      triggerAutoComparison(id);
     },
     onError: () => {
       toast({
@@ -1883,6 +1886,87 @@ export default function BloodTracking() {
       
       {/* Edit Range Modal */}
       <EditRangeModal />
+
+      {/* Comparison Result Dialog */}
+      <Dialog open={isComparisonDialogOpen} onOpenChange={setIsComparisonDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden" data-testid="dialog-comparison-result">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <GitCompare className="h-5 w-5" />
+              Blood Work Comparison
+            </DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto">
+            {comparisonResult && <BloodWorkComparisonDisplay comparison={comparisonResult} />}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual Comparison Dialog */}
+      <Dialog open={false} onOpenChange={() => {}}>
+        <DialogTrigger asChild>
+          <Button 
+            variant="outline" 
+            className="fixed bottom-4 right-4 shadow-lg"
+            data-testid="button-open-manual-comparison"
+          >
+            <GitCompare className="h-4 w-4 mr-2" />
+            Compare Entries
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md" data-testid="dialog-manual-comparison">
+          <DialogHeader>
+            <DialogTitle>Compare Blood Work Entries</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Base Entry (From)</label>
+              <Select value={manualComparisonBase} onValueChange={setManualComparisonBase}>
+                <SelectTrigger data-testid="select-comparison-base">
+                  <SelectValue placeholder="Select base entry" />
+                </SelectTrigger>
+                <SelectContent>
+                  {bloodEntries
+                    .sort((a, b) => new Date(b.asOf).getTime() - new Date(a.asOf).getTime())
+                    .map((entry) => (
+                      <SelectItem key={entry.id} value={entry.id}>
+                        {new Date(entry.asOf).toLocaleDateString()} - {entry.source}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Comparison Entry (To)</label>
+              <Select value={manualComparisonTarget} onValueChange={setManualComparisonTarget}>
+                <SelectTrigger data-testid="select-comparison-target">
+                  <SelectValue placeholder="Select comparison entry" />
+                </SelectTrigger>
+                <SelectContent>
+                  {bloodEntries
+                    .sort((a, b) => new Date(b.asOf).getTime() - new Date(a.asOf).getTime())
+                    .map((entry) => (
+                      <SelectItem key={entry.id} value={entry.id}>
+                        {new Date(entry.asOf).toLocaleDateString()} - {entry.source}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button 
+              onClick={triggerManualComparison} 
+              className="w-full"
+              disabled={!manualComparisonBase || !manualComparisonTarget}
+              data-testid="button-trigger-manual-comparison"
+            >
+              <GitCompare className="h-4 w-4 mr-2" />
+              Compare Entries
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
