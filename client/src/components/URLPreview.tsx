@@ -186,7 +186,7 @@ export const renderTextWithURLs = (text: string) => {
   const urls = detectURLs(text);
   
   if (urls.length === 0) {
-    return <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{text}</p>;
+    return <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap break-words">{text}</p>;
   }
 
   // Split text and insert URL previews
@@ -225,7 +225,7 @@ export const renderTextWithURLs = (text: string) => {
   return (
     <div className="space-y-4">
       {/* Text with clickable URLs */}
-      <div className="whitespace-pre-wrap">
+      <div className="whitespace-pre-wrap break-words">
         {parts.map((part, index) => {
           if (typeof part === 'object' && part.type === 'url') {
             return (
