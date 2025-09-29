@@ -506,6 +506,48 @@ export default function BloodTracking() {
     return entry?.[unitFieldName] as string || "";
   };
 
+  // Helper function to get previous value and determine change direction
+  const getPreviousValueData = (fieldName: keyof BloodEntry, unitFieldName: keyof BloodEntry) => {
+    const sortedEntries = bloodEntries
+      .filter(entry => entry[fieldName] != null)
+      .sort((a, b) => new Date(b.asOf).getTime() - new Date(a.asOf).getTime());
+    
+    if (sortedEntries.length < 2) {
+      return { previousValue: null, changeDirection: null };
+    }
+
+    const currentEntry = sortedEntries[0];
+    const previousEntry = sortedEntries[1];
+    
+    const currentValue = currentEntry[fieldName] as number;
+    const previousValue = previousEntry[fieldName] as number;
+    const unit = currentEntry[unitFieldName] as string || "";
+    
+    // Determine if change is positive or negative based on biomarker type
+    // For most biomarkers, higher values within optimal range are better
+    // For some like LDL cholesterol, lower values are better
+    const isLowerBetter = fieldName.includes('ldl') || 
+                          fieldName.includes('triglycerides') || 
+                          fieldName.includes('cholesterolTotal') ||
+                          fieldName.includes('vldlCalc') ||
+                          fieldName.includes('crpHs') ||
+                          fieldName.includes('cortisolAm') ||
+                          fieldName.includes('insulin');
+    
+    let changeDirection: 'positive' | 'negative' | 'neutral' = 'neutral';
+    
+    if (currentValue > previousValue) {
+      changeDirection = isLowerBetter ? 'negative' : 'positive';
+    } else if (currentValue < previousValue) {
+      changeDirection = isLowerBetter ? 'positive' : 'negative';
+    }
+    
+    return {
+      previousValue: `${previousValue}${unit ? ` ${unit}` : ''}`,
+      changeDirection
+    };
+  };
+
   // FlipKpiCard Component
   const FlipKpiCard = ({ 
     biomarkerKey, 
@@ -522,6 +564,12 @@ export default function BloodTracking() {
     const info = BIOMARKER_INFO[biomarkerKey];
     const currentUnit = getCurrentUnit(
       biomarkerKey as keyof BloodEntry, 
+      `${biomarkerKey}Unit` as keyof BloodEntry
+    );
+    
+    // Get previous value data for change indication
+    const { previousValue, changeDirection } = getPreviousValueData(
+      biomarkerKey as keyof BloodEntry,
       `${biomarkerKey}Unit` as keyof BloodEntry
     );
     
@@ -557,6 +605,15 @@ export default function BloodTracking() {
               <div className={`text-2xl font-bold ${colorClass}`}>
                 {value}
               </div>
+              {previousValue && (
+                <div className={`text-xs mt-1 ${
+                  changeDirection === 'positive' ? 'text-green-600 dark:text-green-400' :
+                  changeDirection === 'negative' ? 'text-red-600 dark:text-red-400' :
+                  'text-gray-500 dark:text-gray-400'
+                }`} data-testid={`text-previous-${biomarkerKey}`}>
+                  Previous: {previousValue}
+                </div>
+              )}
               <div className="flex items-center justify-between mt-1">
                 <div className="text-xs text-gray-500 dark:text-gray-400" data-testid={`text-optimal-${biomarkerKey}`}>
                   Optimal: {getOptimalRange(biomarkerKey, currentUnit)}
