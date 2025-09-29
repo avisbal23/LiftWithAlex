@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { type BloodEntry, type BloodOptimalRange, insertBloodEntrySchema } from "@shared/schema";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
 import { ObjectUploader } from "@/components/ObjectUploader";
+import PageNotes from "@/components/page-notes";
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { format, subDays } from "date-fns";
 
@@ -935,6 +936,11 @@ export default function BloodTracking() {
       <UniversalNavigation />
       
       <div className="max-w-6xl mx-auto p-4 space-y-6">
+        <PageNotes 
+          page="blood-tracking" 
+          title="How to Add Blood Work Data"
+          placeholder="Add instructions for importing blood work data from your lab results..."
+        />
         <div className="flex flex-col space-y-4">
           <div className="flex items-center justify-between">
             <div>

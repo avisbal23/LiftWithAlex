@@ -7,6 +7,7 @@ import { type StepEntry, type InsertStepEntry } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
+import PageNotes from "@/components/page-notes";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -367,6 +368,11 @@ export default function StepsTracking() {
     <>
       <UniversalNavigation />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <PageNotes 
+          page="steps-tracking" 
+          title="How to Add Step Data"
+          placeholder="Add instructions for adding daily steps, syncing from fitness apps, or importing CSV data..."
+        />
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-foreground" data-testid="heading-steps-tracking">

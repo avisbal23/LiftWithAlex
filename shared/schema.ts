@@ -206,6 +206,15 @@ export const workoutNotes = pgTable("workout_notes", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Page notes for tracking instructions on how to use different pages
+export const pageNotes = pgTable("page_notes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  page: text("page").notNull().unique(), // 'blood-tracking', 'steps-tracking', 'affirmations', etc.
+  notes: text("notes").notNull().default(""), // Instructions/notes for the page
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // User settings for storing current body weight and other preferences
 export const userSettings = pgTable("user_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -488,6 +497,14 @@ export const insertWorkoutNotesSchema = createInsertSchema(workoutNotes).omit({
 
 export const updateWorkoutNotesSchema = insertWorkoutNotesSchema.partial();
 
+export const insertPageNotesSchema = createInsertSchema(pageNotes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updatePageNotesSchema = insertPageNotesSchema.partial();
+
 export const insertPersonalRecordSchema = createInsertSchema(personalRecords).omit({
   id: true,
   createdAt: true,
@@ -557,6 +574,9 @@ export type UpdateDailyWorkoutStatus = z.infer<typeof updateDailyWorkoutStatusSc
 export type WorkoutNotes = typeof workoutNotes.$inferSelect;
 export type InsertWorkoutNotes = z.infer<typeof insertWorkoutNotesSchema>;
 export type UpdateWorkoutNotes = z.infer<typeof updateWorkoutNotesSchema>;
+export type PageNotes = typeof pageNotes.$inferSelect;
+export type InsertPageNotes = z.infer<typeof insertPageNotesSchema>;
+export type UpdatePageNotes = z.infer<typeof updatePageNotesSchema>;
 export type PersonalRecord = typeof personalRecords.$inferSelect;
 export type InsertPersonalRecord = z.infer<typeof insertPersonalRecordSchema>;
 export type UpdatePersonalRecord = z.infer<typeof updatePersonalRecordSchema>;

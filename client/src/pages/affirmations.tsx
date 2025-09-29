@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Upload, Download, Plus, Trash2, Search, Heart, Star, RotateCcw, Shuffle, Mic, MicOff, Play, Pause, Square } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import PageNotes from "@/components/page-notes";
 import { apiRequest } from "@/lib/queryClient";
 import type { Affirmation, InsertAffirmation } from "@shared/schema";
 
@@ -685,6 +686,12 @@ export default function AffirmationsPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-8">
+      <PageNotes 
+        page="affirmations" 
+        title="How to Manage Affirmations"
+        placeholder="Add instructions for adding affirmations, importing from files, recording voice memos, or activating random selections..."
+      />
+      
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>

@@ -1,5 +1,5 @@
-import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type BloodOptimalRange, type InsertBloodOptimalRange, type UpdateBloodOptimalRange, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress, type DailyWorkoutStatus, type InsertDailyWorkoutStatus, type UpdateDailyWorkoutStatus, type WorkoutNotes, type InsertWorkoutNotes, type UpdateWorkoutNotes, type ExerciseTemplate, type InsertExerciseTemplate, type UpdateExerciseTemplate, type ChangesAudit, type InsertChangesAudit, type UpdateChangesAudit, type PRChangesAudit, type InsertPRChangesAudit, type WeightAudit, type InsertWeightAudit, type UpdateWeightAudit, type WorkoutTimer, type InsertWorkoutTimer, type UpdateWorkoutTimer, type TimerLapTime, type InsertTimerLapTime, type UpdateTimerLapTime, type BodyMeasurement, type InsertBodyMeasurement, type UpdateBodyMeasurement, type StepEntry, type InsertStepEntry, type UpdateStepEntry, type Supplement, type InsertSupplement, type UpdateSupplement, type Affirmation, type InsertAffirmation, type UpdateAffirmation } from "@shared/schema";
-import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, bloodOptimalRanges, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress, dailyWorkoutStatus, workoutNotes, exerciseTemplates, changesAudit, prChangesAudit, weightAudit, workoutTimers, timerLapTimes, bodyMeasurements, stepEntries, supplements, affirmations } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type BloodOptimalRange, type InsertBloodOptimalRange, type UpdateBloodOptimalRange, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress, type DailyWorkoutStatus, type InsertDailyWorkoutStatus, type UpdateDailyWorkoutStatus, type WorkoutNotes, type InsertWorkoutNotes, type UpdateWorkoutNotes, type PageNotes, type InsertPageNotes, type UpdatePageNotes, type ExerciseTemplate, type InsertExerciseTemplate, type UpdateExerciseTemplate, type ChangesAudit, type InsertChangesAudit, type UpdateChangesAudit, type PRChangesAudit, type InsertPRChangesAudit, type WeightAudit, type InsertWeightAudit, type UpdateWeightAudit, type WorkoutTimer, type InsertWorkoutTimer, type UpdateWorkoutTimer, type TimerLapTime, type InsertTimerLapTime, type UpdateTimerLapTime, type BodyMeasurement, type InsertBodyMeasurement, type UpdateBodyMeasurement, type StepEntry, type InsertStepEntry, type UpdateStepEntry, type Supplement, type InsertSupplement, type UpdateSupplement, type Affirmation, type InsertAffirmation, type UpdateAffirmation } from "@shared/schema";
+import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, bloodOptimalRanges, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress, dailyWorkoutStatus, workoutNotes, pageNotes, exerciseTemplates, changesAudit, prChangesAudit, weightAudit, workoutTimers, timerLapTimes, bodyMeasurements, stepEntries, supplements, affirmations } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc, sql } from "drizzle-orm";
@@ -97,6 +97,10 @@ export interface IStorage {
   getWorkoutNotes(category: string, date: Date): Promise<WorkoutNotes | undefined>;
   saveWorkoutNotes(category: string, date: Date, notes: string): Promise<WorkoutNotes>;
   getTodaysPSTDate(): Date;
+  
+  // Page notes tracking
+  getPageNotes(page: string): Promise<PageNotes | undefined>;
+  savePageNotes(page: string, notes: string): Promise<PageNotes>;
   
   // Changes audit tracking
   getAllChangesAudit(): Promise<ChangesAudit[]>;
@@ -1101,6 +1105,25 @@ export class MemStorage implements IStorage {
     return workoutNote;
   }
 
+  // Page notes methods (stubs for MemStorage)
+  async getPageNotes(page: string): Promise<PageNotes | undefined> {
+    return undefined; // Not implemented for in-memory storage
+  }
+
+  async savePageNotes(page: string, notes: string): Promise<PageNotes> {
+    const id = randomUUID();
+    const now = new Date();
+    const pageNote: PageNotes = {
+      id,
+      page,
+      notes,
+      createdAt: now,
+      updatedAt: now,
+    };
+    // Note: MemStorage doesn't persist this data
+    return pageNote;
+  }
+
   getTodaysPSTDate(): Date {
     const now = new Date();
     const pstTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
@@ -2102,6 +2125,38 @@ export class DatabaseStorage implements IStorage {
         .values({
           category,
           date,
+          notes
+        })
+        .returning();
+      return created;
+    }
+  }
+
+  // Page notes tracking methods
+  async getPageNotes(page: string): Promise<PageNotes | undefined> {
+    const [result] = await db.select()
+      .from(pageNotes)
+      .where(eq(pageNotes.page, page));
+    
+    return result;
+  }
+
+  async savePageNotes(page: string, notes: string): Promise<PageNotes> {
+    const existing = await this.getPageNotes(page);
+    
+    if (existing) {
+      const [updated] = await db.update(pageNotes)
+        .set({
+          notes,
+          updatedAt: new Date()
+        })
+        .where(eq(pageNotes.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(pageNotes)
+        .values({
+          page,
           notes
         })
         .returning();

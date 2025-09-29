@@ -1449,6 +1449,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Page Notes Routes
+  
+  // Get page notes for a specific page
+  app.get("/api/page-notes/:page", async (req, res) => {
+    try {
+      const page = req.params.page;
+      const notes = await storage.getPageNotes(page);
+      res.json({ notes: notes?.notes || "" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch page notes" });
+    }
+  });
+
+  // Save page notes for a specific page
+  app.post("/api/page-notes/:page", async (req, res) => {
+    try {
+      const page = req.params.page;
+      const { notes } = req.body;
+      
+      if (typeof notes !== "string") {
+        return res.status(400).json({ message: "Notes must be a string" });
+      }
+      
+      const savedNotes = await storage.savePageNotes(page, notes);
+      res.json({ notes: savedNotes.notes });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to save page notes" });
+    }
+  });
+
   // Get all changes audit entries
   app.get("/api/changes-audit", async (req, res) => {
     try {
