@@ -1094,6 +1094,122 @@ export default function BloodTracking() {
             />
           </div>
 
+          {/* Trending Chart */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5" />
+                Blood Work Trends
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Chart Controls */}
+              <div className="flex flex-wrap gap-4 mb-6">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium">Time Range:</label>
+                  <Select value={chartDateRange} onValueChange={setChartDateRange}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="30">30 Days</SelectItem>
+                      <SelectItem value="90">90 Days</SelectItem>
+                      <SelectItem value="180">6 Months</SelectItem>
+                      <SelectItem value="365">1 Year</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Biomarker Selection */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
+                {Object.keys(BIOMARKER_INFO).map((biomarker) => {
+                  const key = biomarker as keyof typeof BIOMARKER_INFO;
+                  const isSelected = selectedBiomarkers.includes(key);
+                  return (
+                    <Button
+                      key={biomarker}
+                      variant={isSelected ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedBiomarkers(prev => prev.filter(b => b !== key));
+                        } else {
+                          setSelectedBiomarkers(prev => [...prev, key]);
+                        }
+                      }}
+                      className="text-xs"
+                      data-testid={`button-biomarker-${biomarker}`}
+                    >
+                      {getBiomarkerDisplayName(biomarker)}
+                    </Button>
+                  );
+                })}
+              </div>
+
+              {/* Chart */}
+              {selectedBiomarkers.length > 0 && (
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart
+                      data={chartData}
+                      margin={{
+                        top: 20,
+                        right: 30,
+                        left: 20,
+                        bottom: 5,
+                      }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="date" 
+                        type="category"
+                        tick={{ fontSize: 12 }}
+                        interval={Math.max(0, Math.floor(chartData.length / 8))}
+                        height={50}
+                        width={50}
+                      />
+                      <YAxis 
+                        type="number"
+                        tick={{ fontSize: 12 }}
+                        width={50}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--background))', 
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '6px',
+                          fontSize: '12px'
+                        }}
+                        labelFormatter={(label) => {
+                          const entry = chartData.find(d => d.date === label);
+                          return entry ? new Date(entry.fullDate).toLocaleDateString() : label;
+                        }}
+                      />
+                      
+                      {/* Render lines for selected biomarkers */}
+                      {selectedBiomarkers.map((biomarker, index) => {
+                        const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00ff7f', '#ff1493'];
+                        return (
+                          <Line
+                            key={biomarker}
+                            type="monotone"
+                            dataKey={biomarker}
+                            stroke={colors[index % colors.length]}
+                            strokeWidth={2}
+                            dot={{ r: 3 }}
+                            connectNulls={false}
+                            name={getBiomarkerDisplayName(biomarker)}
+                          />
+                        );
+                      })}
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Blood Entries List */}
           <div className="space-y-4">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Your Blood Lab Records</h2>
@@ -1772,113 +1888,6 @@ export default function BloodTracking() {
       
       {/* Edit Range Modal */}
       <EditRangeModal />
-
-      {/* Trending Chart */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5" />
-            Blood Work Trends
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* Chart Controls */}
-          <div className="flex flex-wrap gap-4 mb-6">
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium">Time Range:</label>
-              <Select value={chartDateRange} onValueChange={setChartDateRange}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="30">30 Days</SelectItem>
-                  <SelectItem value="90">90 Days</SelectItem>
-                  <SelectItem value="180">6 Months</SelectItem>
-                  <SelectItem value="365">1 Year</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Biomarker Selection */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
-            {Object.keys(BIOMARKER_INFO).map((biomarker) => {
-              const key = biomarker as keyof typeof BIOMARKER_INFO;
-              const isSelected = selectedBiomarkers.includes(key);
-              return (
-                <Button
-                  key={biomarker}
-                  variant={isSelected ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => toggleBiomarker(key)}
-                  className="justify-start"
-                  data-testid={`toggle-biomarker-${biomarker}`}
-                >
-                  {getBiomarkerDisplayName(key)}
-                </Button>
-              );
-            })}
-          </div>
-
-          {/* Chart */}
-          {chartData.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-96 text-muted-foreground">
-              <BarChart className="w-12 h-12 mb-4" />
-              <p className="text-lg font-medium">No blood work data available</p>
-              <p className="text-sm">Add your first entry to see trends</p>
-            </div>
-          ) : (
-            <div className="h-96 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={chartData} margin={{ top: 15, right: 15, left: 15, bottom: 25 }}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis 
-                    dataKey="date" 
-                    tick={{ fontSize: 11 }}
-                    interval={chartData.length > 30 ? Math.floor(chartData.length / 15) : 'preserveStartEnd'}
-                    angle={chartData.length > 20 ? -45 : 0}
-                    textAnchor={chartData.length > 20 ? 'end' : 'middle'}
-                    height={chartData.length > 20 ? 60 : 30}
-                  />
-                  <YAxis 
-                    tick={{ fontSize: 11 }}
-                    width={50}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--background))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '6px',
-                      fontSize: '12px'
-                    }}
-                    labelFormatter={(label) => {
-                      const entry = chartData.find(d => d.date === label);
-                      return entry ? new Date(entry.fullDate).toLocaleDateString() : label;
-                    }}
-                  />
-                  
-                  {/* Render lines for selected biomarkers */}
-                  {selectedBiomarkers.map((biomarker, index) => {
-                    const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00ff7f', '#ff1493'];
-                    return (
-                      <Line
-                        key={biomarker}
-                        type="monotone"
-                        dataKey={biomarker}
-                        stroke={colors[index % colors.length]}
-                        strokeWidth={2}
-                        dot={{ r: 3 }}
-                        connectNulls={false}
-                        name={getBiomarkerDisplayName(biomarker)}
-                      />
-                    );
-                  })}
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
