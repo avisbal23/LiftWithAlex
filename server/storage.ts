@@ -1817,13 +1817,14 @@ export class DatabaseStorage implements IStorage {
       { shortcutKey: 'push2', shortcutName: 'SHARMS', routePath: '/push2', isVisible: 1, order: 4 },
       { shortcutKey: 'pull2', shortcutName: 'BACK', routePath: '/pull2', isVisible: 1, order: 5 },
       { shortcutKey: 'legs2', shortcutName: 'Legs 2', routePath: '/legs2', isVisible: 0, order: 6 },
-      { shortcutKey: 'cardio', shortcutName: 'Cardio', routePath: '/cardio', isVisible: 1, order: 7 },
-      { shortcutKey: 'weight', shortcutName: 'Weight', routePath: '/weight', isVisible: 0, order: 8 },
-      { shortcutKey: 'steps', shortcutName: 'Steps', routePath: '/steps', isVisible: 1, order: 9 },
-      { shortcutKey: 'blood', shortcutName: 'Blood', routePath: '/blood', isVisible: 0, order: 10 },
-      { shortcutKey: 'photos', shortcutName: 'Photos', routePath: '/photo-progress', isVisible: 0, order: 11 },
-      { shortcutKey: 'thoughts', shortcutName: 'Thoughts', routePath: '/thoughts', isVisible: 0, order: 12 },
-      { shortcutKey: 'admin', shortcutName: 'Admin', routePath: '/admin', isVisible: 0, order: 13 }
+      { shortcutKey: 'arms', shortcutName: 'Arms Day', routePath: '/arms', isVisible: 1, order: 7 },
+      { shortcutKey: 'cardio', shortcutName: 'Cardio', routePath: '/cardio', isVisible: 1, order: 8 },
+      { shortcutKey: 'weight', shortcutName: 'Weight', routePath: '/weight', isVisible: 0, order: 9 },
+      { shortcutKey: 'steps', shortcutName: 'Steps', routePath: '/steps', isVisible: 1, order: 10 },
+      { shortcutKey: 'blood', shortcutName: 'Blood', routePath: '/blood', isVisible: 0, order: 11 },
+      { shortcutKey: 'photos', shortcutName: 'Photos', routePath: '/photo-progress', isVisible: 0, order: 12 },
+      { shortcutKey: 'thoughts', shortcutName: 'Thoughts', routePath: '/thoughts', isVisible: 0, order: 13 },
+      { shortcutKey: 'admin', shortcutName: 'Admin', routePath: '/admin', isVisible: 0, order: 14 }
     ];
 
     // Insert all default shortcuts
@@ -1893,12 +1894,13 @@ export class DatabaseStorage implements IStorage {
       { tabKey: 'push2', tabName: 'SHARMS', routePath: '/push2', isVisible: 1, order: 4 },
       { tabKey: 'pull2', tabName: 'BACK', routePath: '/pull2', isVisible: 0, order: 5 },
       { tabKey: 'legs2', tabName: 'Legs 2', routePath: '/legs2', isVisible: 0, order: 6 },
-      { tabKey: 'cardio', tabName: 'Cardio', routePath: '/cardio', isVisible: 1, order: 7 },
-      { tabKey: 'weight', tabName: 'Weight', routePath: '/weight', isVisible: 0, order: 8 },
-      { tabKey: 'blood', tabName: 'Blood', routePath: '/blood', isVisible: 0, order: 9 },
-      { tabKey: 'photos', tabName: 'Photos', routePath: '/photos', isVisible: 0, order: 10 },
-      { tabKey: 'thoughts', tabName: 'Thoughts', routePath: '/thoughts', isVisible: 0, order: 11 },
-      { tabKey: 'admin', tabName: 'Admin', routePath: '/admin', isVisible: 0, order: 12 }
+      { tabKey: 'arms', tabName: 'Arms', routePath: '/arms', isVisible: 1, order: 7 },
+      { tabKey: 'cardio', tabName: 'Cardio', routePath: '/cardio', isVisible: 1, order: 8 },
+      { tabKey: 'weight', tabName: 'Weight', routePath: '/weight', isVisible: 0, order: 9 },
+      { tabKey: 'blood', tabName: 'Blood', routePath: '/blood', isVisible: 0, order: 10 },
+      { tabKey: 'photos', tabName: 'Photos', routePath: '/photos', isVisible: 0, order: 11 },
+      { tabKey: 'thoughts', tabName: 'Thoughts', routePath: '/thoughts', isVisible: 0, order: 12 },
+      { tabKey: 'admin', tabName: 'Admin', routePath: '/admin', isVisible: 0, order: 13 }
     ];
   }
 
