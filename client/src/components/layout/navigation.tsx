@@ -12,6 +12,7 @@ const allTabs = [
   { name: "SHARMS", path: "/push2", key: "push2" },
   { name: "BACK", path: "/pull2", key: "pull2" },
   { name: "Legs 2", path: "/legs2", key: "legs2" },
+  { name: "Arms", path: "/arms", key: "arms" },
   { name: "Cardio", path: "/cardio", key: "cardio" },
 ];
 

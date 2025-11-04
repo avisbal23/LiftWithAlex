@@ -88,6 +88,7 @@ export function NavigationMenu({ isOpen, onClose }: NavigationMenuProps) {
       push2: Dumbbell,
       pull2: Dumbbell,
       legs2: Dumbbell,
+      arms: Dumbbell,
       cardio: Activity,
       weight: Scale,
       blood: Heart,
