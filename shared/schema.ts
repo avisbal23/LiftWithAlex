@@ -15,7 +15,7 @@ export const exercises = pgTable("exercises", {
   weight: integer("weight").default(0),
   reps: integer("reps").default(0),
   notes: text("notes").default(""),
-  category: text("category").notNull(), // 'push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'cardio'
+  category: text("category").notNull(), // 'push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'arms', 'cardio'
   order: integer("order").default(0), // For custom ordering
   // Cardio-specific fields
   duration: text("duration").default(""), // "28:32"
@@ -36,7 +36,7 @@ export const weightHistory = pgTable("weight_history", {
 
 export const workoutLogs = pgTable("workout_logs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  category: text("category").notNull(), // 'push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'cardio'
+  category: text("category").notNull(), // 'push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'arms', 'cardio'
   completedAt: timestamp("completed_at").defaultNow(),
 });
 
@@ -190,7 +190,7 @@ export const dailySetProgress = pgTable("daily_set_progress", {
 
 export const dailyWorkoutStatus = pgTable("daily_workout_status", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  category: text("category").notNull(), // 'push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'cardio'
+  category: text("category").notNull(), // 'push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'arms', 'cardio'
   date: timestamp("date").notNull(), // Date in PST timezone (reset at midnight PST)
   isCompleted: integer("is_completed").default(0), // 1 for completed, 0 for not completed
   createdAt: timestamp("created_at").defaultNow(),
@@ -199,7 +199,7 @@ export const dailyWorkoutStatus = pgTable("daily_workout_status", {
 
 export const workoutNotes = pgTable("workout_notes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  category: text("category").notNull(), // 'push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'cardio'
+  category: text("category").notNull(), // 'push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'arms', 'cardio'
   date: timestamp("date").notNull(), // Date in PST timezone
   notes: text("notes").notNull().default(""), // The workout notes/prep text
   createdAt: timestamp("created_at").defaultNow(),

@@ -11,6 +11,7 @@ import Legs from "@/pages/legs";
 import Push2 from "@/pages/push2";
 import Pull2 from "@/pages/pull2";
 import Legs2 from "@/pages/legs2";
+import Arms from "@/pages/arms";
 import Cardio from "@/pages/cardio";
 import WeightTracking from "@/pages/weight-tracking";
 import StepsTracking from "@/pages/steps-tracking";
@@ -43,6 +44,7 @@ function Router() {
         <Route path="/push2" component={Push2} />
         <Route path="/pull2" component={Pull2} />
         <Route path="/legs2" component={Legs2} />
+        <Route path="/arms" component={Arms} />
         <Route path="/cardio" component={Cardio} />
         <Route path="/weight" component={WeightTracking} />
         <Route path="/steps" component={StepsTracking} />
