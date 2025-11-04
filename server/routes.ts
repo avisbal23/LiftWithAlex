@@ -121,7 +121,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/exercises/:category", async (req, res) => {
     try {
       const category = req.params.category;
-      if (!["push", "pull", "legs", "push2", "pull2", "legs2", "cardio"].includes(category)) {
+      if (!["push", "pull", "legs", "push2", "pull2", "legs2", "arms", "cardio"].includes(category)) {
         return res.status(400).json({ message: "Invalid category" });
       }
       
@@ -1286,7 +1286,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/daily-set-progress/:category", async (req, res) => {
     try {
       const category = req.params.category;
-      if (!["push", "pull", "legs", "push2", "pull2", "legs2", "cardio"].includes(category)) {
+      if (!["push", "pull", "legs", "push2", "pull2", "legs2", "arms", "cardio"].includes(category)) {
         return res.status(400).json({ message: "Invalid category" });
       }
       
@@ -1367,7 +1367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/daily-workout-status/:category", async (req, res) => {
     try {
       const category = req.params.category;
-      if (!["push", "pull", "legs", "push2", "pull2", "legs2", "cardio"].includes(category)) {
+      if (!["push", "pull", "legs", "push2", "pull2", "legs2", "arms", "cardio"].includes(category)) {
         return res.status(400).json({ message: "Invalid category" });
       }
       
@@ -1383,7 +1383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/daily-workout-status/:category", async (req, res) => {
     try {
       const category = req.params.category;
-      if (!["push", "pull", "legs", "push2", "pull2", "legs2", "cardio"].includes(category)) {
+      if (!["push", "pull", "legs", "push2", "pull2", "legs2", "arms", "cardio"].includes(category)) {
         return res.status(400).json({ message: "Invalid category" });
       }
       
@@ -1416,7 +1416,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/workout-notes/:category", async (req, res) => {
     try {
       const category = req.params.category;
-      if (!["push", "pull", "legs", "push2", "pull2", "legs2", "cardio"].includes(category)) {
+      if (!["push", "pull", "legs", "push2", "pull2", "legs2", "arms", "cardio"].includes(category)) {
         return res.status(400).json({ message: "Invalid category" });
       }
       
@@ -1432,7 +1432,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/workout-notes/:category", async (req, res) => {
     try {
       const category = req.params.category;
-      if (!["push", "pull", "legs", "push2", "pull2", "legs2", "cardio"].includes(category)) {
+      if (!["push", "pull", "legs", "push2", "pull2", "legs2", "arms", "cardio"].includes(category)) {
         return res.status(400).json({ message: "Invalid category" });
       }
       

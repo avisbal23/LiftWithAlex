@@ -73,8 +73,8 @@ export default function Home() {
       return "Push Day"; // Default to starting with push
     }
 
-    // Define the workout cycle
-    const workoutCycle = ["push", "pull", "legs"];
+    // Define the workout cycle: push → pull → push2 → arms → legs
+    const workoutCycle = ["push", "pull", "push2", "arms", "legs"];
     const currentIndex = workoutCycle.indexOf(latestWorkoutLog.category);
     
     if (currentIndex === -1) {
@@ -112,6 +112,7 @@ export default function Home() {
       case "push2": return "SHARMS";
       case "pull2": return "BACK";
       case "legs2": return "Leg Day 2";
+      case "arms": return "Arms Day";
       case "cardio": return "Cardio";
       default: return category;
     }
@@ -125,6 +126,7 @@ export default function Home() {
       case "SHARMS": return "/push2";
       case "BACK": return "/pull2";
       case "Leg Day 2": return "/legs2";
+      case "Arms Day": return "/arms";
       case "Cardio": return "/cardio";
       default: return "/push";
     }
@@ -148,6 +150,7 @@ export default function Home() {
       push2: "bg-red-400/10 text-red-500 border-red-100 hover:bg-red-400/20",
       pull2: "bg-blue-400/10 text-blue-500 border-blue-100 hover:bg-blue-400/20",
       legs2: "bg-green-400/10 text-green-500 border-green-100 hover:bg-green-400/20",
+      arms: "bg-yellow-500/10 text-yellow-600 border-yellow-200 hover:bg-yellow-500/20",
       cardio: "bg-red-500/10 text-red-600 border-red-200 hover:bg-red-500/20",
       weight: "bg-purple-500/10 text-purple-600 border-purple-200 hover:bg-purple-500/20",
       steps: "bg-orange-500/10 text-orange-600 border-orange-200 hover:bg-orange-500/20",
@@ -189,10 +192,10 @@ export default function Home() {
     }
     
     const workoutShortcuts = shortcuts.filter(s => 
-      ['push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'cardio'].includes(s.shortcutKey)
+      ['push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'arms', 'cardio'].includes(s.shortcutKey)
     );
     const otherShortcuts = shortcuts.filter(s => 
-      !['push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'cardio'].includes(s.shortcutKey)
+      !['push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'arms', 'cardio'].includes(s.shortcutKey)
     );
 
     const rows = [];
@@ -203,14 +206,14 @@ export default function Home() {
       rows.push(mainWorkouts);
     }
 
-    // Second row: day 2 workouts (push2, pull2)  
-    const day2Workouts = workoutShortcuts.filter(s => ['push2', 'pull2'].includes(s.shortcutKey));
+    // Second row: day 2 workouts (push2, arms)  
+    const day2Workouts = workoutShortcuts.filter(s => ['push2', 'arms'].includes(s.shortcutKey));
     if (day2Workouts.length > 0) {
       rows.push(day2Workouts);
     }
 
     // Third row: cardio and other workout shortcuts
-    const cardioAndOthers = workoutShortcuts.filter(s => ['cardio', 'legs2'].includes(s.shortcutKey));
+    const cardioAndOthers = workoutShortcuts.filter(s => ['pull2', 'cardio', 'legs2'].includes(s.shortcutKey));
     if (cardioAndOthers.length > 0) {
       rows.push(cardioAndOthers);
     }
