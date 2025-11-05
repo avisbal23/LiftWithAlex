@@ -109,7 +109,7 @@ export default function Home() {
       case "push": return "Push Day";
       case "pull": return "Pull Day"; 
       case "legs": return "Leg Day";
-      case "push2": return "Push 2";
+      case "push2": return "Push 2 (Shoulders)";
       case "pull2": return "BACK";
       case "legs2": return "Leg Day 2";
       case "arms": return "Arms Day";
@@ -123,7 +123,7 @@ export default function Home() {
       case "Push Day": return "/push";
       case "Pull Day": return "/pull";
       case "Leg Day": return "/legs";
-      case "Push 2": return "/push2";
+      case "Push 2 (Shoulders)": return "/push2";
       case "BACK": return "/pull2";
       case "Leg Day 2": return "/legs2";
       case "Arms Day": return "/arms";
