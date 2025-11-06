@@ -14,8 +14,8 @@ export default function Push2() {
         <WorkoutNotes category="push2" />
         <WorkoutTable
           category="push2"
-          title="SHARMS Workouts"
-          description="SHARMS workout - chest, shoulders, and triceps exercises"
+          title="Push 2 (Shoulders)"
+          description="Shoulders workout - chest, shoulders, and triceps exercises"
         />
         <ChangesAudit category="push2" />
       </div>
