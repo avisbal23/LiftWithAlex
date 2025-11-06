@@ -113,6 +113,7 @@ export default function Home() {
       case "pull2": return "BACK";
       case "legs2": return "Leg Day 2";
       case "arms": return "Arms Day";
+      case "core": return "Core";
       case "cardio": return "Cardio";
       default: return category;
     }
@@ -127,6 +128,7 @@ export default function Home() {
       case "BACK": return "/pull2";
       case "Leg Day 2": return "/legs2";
       case "Arms Day": return "/arms";
+      case "Core": return "/core";
       case "Cardio": return "/cardio";
       default: return "/push";
     }
@@ -151,6 +153,7 @@ export default function Home() {
       pull2: "bg-blue-400/10 text-blue-500 border-blue-100 hover:bg-blue-400/20",
       legs2: "bg-green-400/10 text-green-500 border-green-100 hover:bg-green-400/20",
       arms: "bg-yellow-500/10 text-yellow-600 border-yellow-200 hover:bg-yellow-500/20",
+      core: "bg-teal-500/10 text-teal-600 border-teal-200 hover:bg-teal-500/20",
       cardio: "bg-red-500/10 text-red-600 border-red-200 hover:bg-red-500/20",
       weight: "bg-purple-500/10 text-purple-600 border-purple-200 hover:bg-purple-500/20",
       steps: "bg-orange-500/10 text-orange-600 border-orange-200 hover:bg-orange-500/20",
