@@ -13,6 +13,7 @@ const allTabs = [
   { name: "BACK", path: "/pull2", key: "pull2" },
   { name: "Legs 2", path: "/legs2", key: "legs2" },
   { name: "Arms", path: "/arms", key: "arms" },
+  { name: "Core", path: "/core", key: "core" },
   { name: "Cardio", path: "/cardio", key: "cardio" },
 ];
 
