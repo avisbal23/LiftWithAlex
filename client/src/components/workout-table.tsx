@@ -32,6 +32,7 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
   const timeoutRefs = useRef<Record<string, NodeJS.Timeout>>({});
   const [editingExercises, setEditingExercises] = useState<Record<string, Partial<Exercise>>>({});
   const [weightInputs, setWeightInputs] = useState<Record<string, string>>({});
+  const [textInputs, setTextInputs] = useState<Record<string, Record<string, string>>>({});
 
   const { data: exercises = [], isLoading } = useQuery<Exercise[]>({
     queryKey: ["/api/exercises", category],
@@ -355,6 +356,38 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
     // Use local editing state if available, otherwise use exercise weight
     return weightInputs[exerciseId] !== undefined ? weightInputs[exerciseId] : (exerciseWeight || 0).toString();
   }, [weightInputs]);
+
+  // Text input handlers that commit on blur to prevent flickering
+  const handleTextChange = useCallback((exerciseId: string, field: string, value: string) => {
+    setTextInputs(prev => ({
+      ...prev,
+      [exerciseId]: {
+        ...prev[exerciseId],
+        [field]: value
+      }
+    }));
+  }, []);
+
+  const commitTextChange = useCallback((exerciseId: string, field: keyof UpdateExercise, value: string) => {
+    updateExercise(exerciseId, field, value);
+    // Clear the local state after committing
+    setTextInputs(prev => {
+      const newState = { ...prev };
+      if (newState[exerciseId]) {
+        delete newState[exerciseId][field];
+        // Clean up empty objects
+        if (Object.keys(newState[exerciseId]).length === 0) {
+          delete newState[exerciseId];
+        }
+      }
+      return newState;
+    });
+  }, [updateExercise]);
+
+  const getTextValue = useCallback((exerciseId: string, field: string, exerciseValue: string | null | undefined) => {
+    // Use local editing state if available, otherwise use exercise value
+    return textInputs[exerciseId]?.[field] !== undefined ? textInputs[exerciseId][field] : (exerciseValue || "");
+  }, [textInputs]);
 
   // Simple debounced update for non-weight fields
   const debouncedUpdate = useCallback((id: string, field: keyof UpdateExercise, value: string | number) => {
@@ -838,8 +871,9 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                       <td className="px-3 py-2">
                         <Input
                           type="text"
-                          value={exercise.name}
-                          onChange={(e) => updateExercise(exercise.id, "name", e.target.value)}
+                          value={getTextValue(exercise.id, "name", exercise.name)}
+                          onChange={(e) => handleTextChange(exercise.id, "name", e.target.value)}
+                          onBlur={(e) => commitTextChange(exercise.id, "name", e.target.value)}
                           className="border-none bg-transparent p-1 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors whitespace-normal break-words"
                           data-testid={`input-exercise-name-${exercise.id}`}
                         />
@@ -849,8 +883,9 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                           <td className="px-3 py-2">
                             <Input
                               type="text"
-                              value={exercise.duration || ""}
-                              onChange={(e) => updateExercise(exercise.id, "duration", e.target.value)}
+                              value={getTextValue(exercise.id, "duration", exercise.duration)}
+                              onChange={(e) => handleTextChange(exercise.id, "duration", e.target.value)}
+                              onBlur={(e) => commitTextChange(exercise.id, "duration", e.target.value)}
                               placeholder="28:32"
                               className="border-none bg-transparent p-1 text-sm text-foreground focus:bg-background hover:bg-accent transition-colors w-20"
                               data-testid={`input-duration-${exercise.id}`}
@@ -1133,8 +1168,9 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                           </div>
                           <Input
                             type="text"
-                            value={exercise.name}
-                            onChange={(e) => updateExercise(exercise.id, "name", e.target.value)}
+                            value={getTextValue(exercise.id, "name", exercise.name)}
+                            onChange={(e) => handleTextChange(exercise.id, "name", e.target.value)}
+                            onBlur={(e) => commitTextChange(exercise.id, "name", e.target.value)}
                             className="font-semibold text-base border-none bg-transparent p-0 text-foreground focus:bg-background hover:bg-accent transition-colors flex-1 whitespace-normal break-words pointer-events-auto"
                             data-testid={`input-exercise-name-mobile-${exercise.id}`}
                           />
@@ -1144,8 +1180,9 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                               <div className="flex items-center gap-1">
                                 <Input
                                   type="text"
-                                  value={exercise.duration || ""}
-                                  onChange={(e) => debouncedUpdate(exercise.id, "duration", e.target.value)}
+                                  value={getTextValue(exercise.id, "duration", exercise.duration)}
+                                  onChange={(e) => handleTextChange(exercise.id, "duration", e.target.value)}
+                                  onBlur={(e) => commitTextChange(exercise.id, "duration", e.target.value)}
                                   placeholder="28:32"
                                   className="text-sm font-medium text-muted-foreground bg-transparent border-none p-0 w-16 text-center hover:bg-accent focus:bg-background transition-colors pointer-events-auto"
                                   data-testid={`input-duration-collapsed-${exercise.id}`}
@@ -1235,8 +1272,9 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                       <div className="text-sm font-medium text-muted-foreground">Duration</div>
                                       <Input
                                         type="text"
-                                        value={exercise.duration || ""}
-                                        onChange={(e) => updateExercise(exercise.id, "duration", e.target.value)}
+                                        value={getTextValue(exercise.id, "duration", exercise.duration)}
+                                        onChange={(e) => handleTextChange(exercise.id, "duration", e.target.value)}
+                                        onBlur={(e) => commitTextChange(exercise.id, "duration", e.target.value)}
                                         placeholder="28:32"
                                         className="text-xl font-bold text-primary border border-input"
                                         data-testid={`input-duration-detail-mobile-${exercise.id}`}
@@ -1246,8 +1284,9 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                       <div className="text-sm font-medium text-muted-foreground">Distance</div>
                                       <Input
                                         type="text"
-                                        value={exercise.distance || ""}
-                                        onChange={(e) => updateExercise(exercise.id, "distance", e.target.value)}
+                                        value={getTextValue(exercise.id, "distance", exercise.distance)}
+                                        onChange={(e) => handleTextChange(exercise.id, "distance", e.target.value)}
+                                        onBlur={(e) => commitTextChange(exercise.id, "distance", e.target.value)}
                                         placeholder="3.1 miles"
                                         className="text-xl font-bold text-primary border border-input"
                                         data-testid={`input-distance-detail-mobile-${exercise.id}`}
@@ -1257,8 +1296,9 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                       <div className="text-sm font-medium text-muted-foreground">Pace</div>
                                       <Input
                                         type="text"
-                                        value={exercise.pace || ""}
-                                        onChange={(e) => updateExercise(exercise.id, "pace", e.target.value)}
+                                        value={getTextValue(exercise.id, "pace", exercise.pace)}
+                                        onChange={(e) => handleTextChange(exercise.id, "pace", e.target.value)}
+                                        onBlur={(e) => commitTextChange(exercise.id, "pace", e.target.value)}
                                         placeholder="9:10/mile"
                                         className="text-xl font-bold text-primary border border-input"
                                         data-testid={`input-pace-detail-mobile-${exercise.id}`}
@@ -1268,8 +1308,12 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                       <div className="text-sm font-medium text-muted-foreground">Calories</div>
                                       <Input
                                         type="number"
-                                        value={exercise.calories || 0}
-                                        onChange={(e) => updateExercise(exercise.id, "calories", parseInt(e.target.value) || 0)}
+                                        value={getTextValue(exercise.id, "calories", exercise.calories?.toString())}
+                                        onChange={(e) => handleTextChange(exercise.id, "calories", e.target.value)}
+                                        onBlur={(e) => {
+                                          const value = parseInt(e.target.value) || 0;
+                                          commitTextChange(exercise.id, "calories", value as any);
+                                        }}
                                         className="text-xl font-bold text-primary border border-input"
                                         data-testid={`input-calories-detail-mobile-${exercise.id}`}
                                       />
@@ -1278,8 +1322,12 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                       <div className="text-sm font-medium text-muted-foreground">RPE (1-10)</div>
                                       <Input
                                         type="number"
-                                        value={exercise.rpe || 0}
-                                        onChange={(e) => updateExercise(exercise.id, "rpe", parseInt(e.target.value) || 0)}
+                                        value={getTextValue(exercise.id, "rpe", exercise.rpe?.toString())}
+                                        onChange={(e) => handleTextChange(exercise.id, "rpe", e.target.value)}
+                                        onBlur={(e) => {
+                                          const value = parseInt(e.target.value) || 0;
+                                          commitTextChange(exercise.id, "rpe", value as any);
+                                        }}
                                         min="1"
                                         max="10"
                                         className="text-xl font-bold text-primary border border-input"
@@ -1310,8 +1358,12 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                       <div className="text-sm font-medium text-muted-foreground">Reps</div>
                                       <Input
                                         type="number"
-                                        value={exercise.reps || 0}
-                                        onChange={(e) => updateExercise(exercise.id, "reps", parseInt(e.target.value) || 0)}
+                                        value={getTextValue(exercise.id, "reps", exercise.reps?.toString())}
+                                        onChange={(e) => handleTextChange(exercise.id, "reps", e.target.value)}
+                                        onBlur={(e) => {
+                                          const value = parseInt(e.target.value) || 0;
+                                          commitTextChange(exercise.id, "reps", value as any);
+                                        }}
                                         className="text-xl font-bold text-primary border border-input"
                                         data-testid={`input-reps-detail-mobile-${exercise.id}`}
                                       />
@@ -1321,8 +1373,9 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
                                 <div className="space-y-2">
                                   <div className="text-sm font-medium text-muted-foreground">Notes & Instructions</div>
                                   <textarea
-                                    value={exercise.notes || ""}
-                                    onChange={(e) => updateExercise(exercise.id, "notes", e.target.value)}
+                                    value={getTextValue(exercise.id, "notes", exercise.notes)}
+                                    onChange={(e) => handleTextChange(exercise.id, "notes", e.target.value)}
+                                    onBlur={(e) => commitTextChange(exercise.id, "notes", e.target.value)}
                                     placeholder="Add notes or instructions..."
                                     className="w-full p-3 bg-muted rounded-lg border border-input text-sm leading-relaxed resize-none focus:bg-background focus:border-primary transition-colors"
                                     rows={4}
