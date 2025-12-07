@@ -19,6 +19,7 @@ export function UniversalNavigation() {
     { name: "Home", path: "/", key: "home" },
     { name: "Push", path: "/push", key: "push" },
     { name: "Pull", path: "/pull", key: "pull" },
+    { name: "Arms", path: "/arms", key: "arms" },
     { name: "Legs", path: "/legs", key: "legs" },
     { name: "Cardio", path: "/cardio", key: "cardio" }
   ];
