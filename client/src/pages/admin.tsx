@@ -428,7 +428,7 @@ export default function Admin() {
                     Loading shortcut settings...
                   </p>
                 ) : (
-                  shortcutSettings.map((shortcut) => {
+                  shortcutSettings.filter(s => s.shortcutKey !== 'home').map((shortcut) => {
                     const isEditing = editingShortcut === shortcut.shortcutKey;
                     
                     if (isEditing) {
