@@ -73,8 +73,8 @@ export default function Home() {
       return "Push Day"; // Default to starting with push
     }
 
-    // Define the workout cycle: push → pull → push2 → arms → legs
-    const workoutCycle = ["push", "pull", "push2", "arms", "legs"];
+    // Define the workout cycle: push → pull → arms → legs
+    const workoutCycle = ["push", "pull", "arms", "legs"];
     const currentIndex = workoutCycle.indexOf(latestWorkoutLog.category);
     
     if (currentIndex === -1) {
@@ -109,7 +109,6 @@ export default function Home() {
       case "push": return "Push Day";
       case "pull": return "Pull Day"; 
       case "legs": return "Leg Day";
-      case "push2": return "Push 2 (Shoulders)";
       case "pull2": return "BACK";
       case "legs2": return "Leg Day 2";
       case "arms": return "Arms Day";
@@ -124,7 +123,6 @@ export default function Home() {
       case "Push Day": return "/push";
       case "Pull Day": return "/pull";
       case "Leg Day": return "/legs";
-      case "Push 2 (Shoulders)": return "/push2";
       case "BACK": return "/pull2";
       case "Leg Day 2": return "/legs2";
       case "Arms Day": return "/arms";
@@ -149,7 +147,6 @@ export default function Home() {
       push: "bg-red-500/10 text-red-600 border-red-200 hover:bg-red-500/20",
       pull: "bg-blue-500/10 text-blue-600 border-blue-200 hover:bg-blue-500/20",
       legs: "bg-green-500/10 text-green-600 border-green-200 hover:bg-green-500/20",
-      push2: "bg-red-400/10 text-red-500 border-red-100 hover:bg-red-400/20",
       pull2: "bg-blue-400/10 text-blue-500 border-blue-100 hover:bg-blue-400/20",
       legs2: "bg-green-400/10 text-green-500 border-green-100 hover:bg-green-400/20",
       arms: "bg-yellow-500/10 text-yellow-600 border-yellow-200 hover:bg-yellow-500/20",
