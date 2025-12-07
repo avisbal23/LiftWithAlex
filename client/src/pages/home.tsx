@@ -192,10 +192,10 @@ export default function Home() {
     }
     
     const workoutShortcuts = shortcuts.filter(s => 
-      ['push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'arms', 'cardio'].includes(s.shortcutKey)
+      ['push', 'pull', 'legs', 'arms', 'pull2', 'legs2', 'cardio'].includes(s.shortcutKey)
     );
     const otherShortcuts = shortcuts.filter(s => 
-      !['push', 'pull', 'legs', 'push2', 'pull2', 'legs2', 'arms', 'cardio'].includes(s.shortcutKey)
+      !['push', 'pull', 'legs', 'arms', 'pull2', 'legs2', 'cardio'].includes(s.shortcutKey)
     );
 
     const rows = [];
@@ -206,8 +206,8 @@ export default function Home() {
       rows.push(mainWorkouts);
     }
 
-    // Second row: day 2 workouts (push2, arms)  
-    const day2Workouts = workoutShortcuts.filter(s => ['push2', 'arms'].includes(s.shortcutKey));
+    // Second row: remaining workouts  
+    const day2Workouts = workoutShortcuts.filter(s => !['push', 'pull', 'legs'].includes(s.shortcutKey));
     if (day2Workouts.length > 0) {
       rows.push(day2Workouts);
     }

@@ -8,7 +8,6 @@ import Home from "@/pages/home";
 import Push from "@/pages/push";
 import Pull from "@/pages/pull";
 import Legs from "@/pages/legs";
-import Push2 from "@/pages/push2";
 import Pull2 from "@/pages/pull2";
 import Legs2 from "@/pages/legs2";
 import Arms from "@/pages/arms";
@@ -42,7 +41,6 @@ function Router() {
         <Route path="/push" component={Push} />
         <Route path="/pull" component={Pull} />
         <Route path="/legs" component={Legs} />
-        <Route path="/push2" component={Push2} />
         <Route path="/pull2" component={Pull2} />
         <Route path="/legs2" component={Legs2} />
         <Route path="/arms" component={Arms} />
