@@ -2188,12 +2188,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           {
             role: "system",
             content: `You are a fitness assistant that parses voice transcriptions of cardio workouts into structured data.
-Extract the following information from the user's description:
-- workoutType: The type of cardio (running, cycling, walking, rowing, elliptical, swimming, hiking, jump rope, stair climbing, etc.)
-- duration: How long the workout lasted (format as natural text like "30 minutes" or "45 min" or "1 hour")
-- distance: How far they went if mentioned (format as natural text like "3.5 miles" or "5 km")
+
+Categorize workouts using these keywords:
+- Running: run, jog, treadmill, outdoor run, sprint
+- Walking: walk, outdoor walk, treadmill walk
+- Biking: bike, cycling, stationary bike, outdoor bike
+- Rowing: rowing, row machine, rowing machine
+- Stairs: stairs, stair climber, stair master, steps
+
+Extract the following 4 categories:
+- workoutType: The type of cardio (Running, Walking, Biking, Rowing, Stairs, etc.) - capitalize first letter
+- duration: How long the workout lasted (format as "X hours Y minutes" or "X minutes" or "X:XX:XX")
+- distance: How far they went if mentioned (include unit like "3.5 miles" or "5 km" or "2000 yards")
 - caloriesBurned: The number of calories burned if mentioned (as a number, e.g. 350)
-- notes: Any other relevant details (intensity, terrain, heart rate, feelings, weather, etc.)
+- notes: Location (outdoor, gym, home) or any other relevant details
 
 Return a JSON object with these fields. If a field is not mentioned, use null for that field.
 Always identify the workout type - if unclear, use the most likely type based on context.`

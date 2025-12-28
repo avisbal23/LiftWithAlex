@@ -243,6 +243,30 @@ export default function Cardio() {
                 : "Tap to start recording"}
           </p>
 
+          <Card className="mt-4 w-full bg-muted/50">
+            <CardContent className="pt-4 pb-3">
+              <p className="text-xs font-medium text-muted-foreground mb-2">Include these in your voice input:</p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-purple-500 font-semibold">Type</span>
+                  <span className="text-muted-foreground">Running, Walking, Biking, Rowing, Stairs</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-blue-500 font-semibold">Time</span>
+                  <span className="text-muted-foreground">hours, minutes, seconds</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-green-500 font-semibold">Distance</span>
+                  <span className="text-muted-foreground">miles, km, yards</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-orange-500 font-semibold">Calories</span>
+                  <span className="text-muted-foreground">calories burned</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {transcription && (
             <Card className="mt-4 w-full">
               <CardContent className="pt-4">
