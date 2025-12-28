@@ -4,7 +4,7 @@ import { UniversalNavigation } from "@/components/UniversalNavigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mic, MicOff, Loader2, Trash2, Clock, MapPin, Activity, Calendar, Flame, Gauge } from "lucide-react";
+import { Mic, MicOff, Loader2, Trash2, Clock, MapPin, Activity, Calendar, Flame, Gauge, RotateCcw } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -22,8 +22,21 @@ export default function Cardio() {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcription, setTranscription] = useState("");
+  const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
   const recognitionRef = useRef<any>(null);
   const finalTranscriptRef = useRef<string>("");
+
+  const toggleFlip = (id: string) => {
+    setFlippedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
 
   const { data: entries = [], isLoading } = useQuery<CardioLogEntry[]>({
     queryKey: ["/api/cardio-log-entries"],
@@ -298,59 +311,99 @@ export default function Cardio() {
           ) : (
             entries.map((entry) => (
               <Card key={entry.id} data-testid={`card-cardio-entry-${entry.id}`}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">{getWorkoutIcon(entry.workoutType)}</span>
-                      <div>
-                        <CardTitle className="text-lg">{entry.workoutType}</CardTitle>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(entry.date), "MMM d, yyyy 'at' h:mm a")}
-                        </p>
+                {flippedCards.has(entry.id) ? (
+                  <>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-sm text-muted-foreground">Voice Input</CardTitle>
+                        </div>
+                        <Button
+                          data-testid={`button-flip-back-${entry.id}`}
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => toggleFlip(entry.id)}
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                        </Button>
                       </div>
-                    </div>
-                    <Button
-                      data-testid={`button-delete-cardio-${entry.id}`}
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteEntryMutation.mutate(entry.id)}
-                      disabled={deleteEntryMutation.isPending}
-                    >
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {entry.duration && (
-                      <Badge variant="secondary" className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {entry.duration}
-                      </Badge>
-                    )}
-                    {entry.distance && (
-                      <Badge variant="secondary" className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        {entry.distance}
-                      </Badge>
-                    )}
-                    {entry.caloriesBurned && (
-                      <Badge variant="secondary" className="flex items-center gap-1">
-                        <Flame className="w-3 h-3" />
-                        {entry.caloriesBurned} cal
-                      </Badge>
-                    )}
-                    {entry.pace && (
-                      <Badge variant="secondary" className="flex items-center gap-1">
-                        <Gauge className="w-3 h-3" />
-                        {entry.pace}
-                      </Badge>
-                    )}
-                  </div>
-                  {entry.notes && (
-                    <p className="text-sm text-muted-foreground">{entry.notes}</p>
-                  )}
-                </CardContent>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm italic">
+                        "{entry.rawTranscription || 'No transcription available'}"
+                      </p>
+                    </CardContent>
+                  </>
+                ) : (
+                  <>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">{getWorkoutIcon(entry.workoutType)}</span>
+                          <div>
+                            <CardTitle className="text-lg">{entry.workoutType}</CardTitle>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(entry.date), "MMM d, yyyy 'at' h:mm a")}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-1">
+                          {entry.rawTranscription && (
+                            <Button
+                              data-testid={`button-flip-${entry.id}`}
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => toggleFlip(entry.id)}
+                              title="View voice input"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                            </Button>
+                          )}
+                          <Button
+                            data-testid={`button-delete-cardio-${entry.id}`}
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteEntryMutation.mutate(entry.id)}
+                            disabled={deleteEntryMutation.isPending}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {entry.duration && (
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {entry.duration}
+                          </Badge>
+                        )}
+                        {entry.distance && (
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            {entry.distance}
+                          </Badge>
+                        )}
+                        {entry.caloriesBurned && (
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            <Flame className="w-3 h-3" />
+                            {entry.caloriesBurned} cal
+                          </Badge>
+                        )}
+                        {entry.pace && (
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            <Gauge className="w-3 h-3" />
+                            {entry.pace}
+                          </Badge>
+                        )}
+                      </div>
+                      {entry.notes && (
+                        <p className="text-sm text-muted-foreground">{entry.notes}</p>
+                      )}
+                    </CardContent>
+                  </>
+                )}
               </Card>
             ))
           )}
