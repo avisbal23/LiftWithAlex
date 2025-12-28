@@ -293,7 +293,7 @@ export default function Cardio() {
         <div className="space-y-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Calendar className="w-5 h-5" />
-            Recent Workouts
+            Cardio Workouts
           </h2>
 
           {isLoading ? (
