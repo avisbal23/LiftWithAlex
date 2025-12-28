@@ -1,5 +1,5 @@
-import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type BloodOptimalRange, type InsertBloodOptimalRange, type UpdateBloodOptimalRange, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress, type DailyWorkoutStatus, type InsertDailyWorkoutStatus, type UpdateDailyWorkoutStatus, type WorkoutNotes, type InsertWorkoutNotes, type UpdateWorkoutNotes, type PageNotes, type InsertPageNotes, type UpdatePageNotes, type ExerciseTemplate, type InsertExerciseTemplate, type UpdateExerciseTemplate, type ChangesAudit, type InsertChangesAudit, type UpdateChangesAudit, type PRChangesAudit, type InsertPRChangesAudit, type WeightAudit, type InsertWeightAudit, type UpdateWeightAudit, type WorkoutTimer, type InsertWorkoutTimer, type UpdateWorkoutTimer, type TimerLapTime, type InsertTimerLapTime, type UpdateTimerLapTime, type BodyMeasurement, type InsertBodyMeasurement, type UpdateBodyMeasurement, type StepEntry, type InsertStepEntry, type UpdateStepEntry, type Supplement, type InsertSupplement, type UpdateSupplement, type Affirmation, type InsertAffirmation, type UpdateAffirmation } from "@shared/schema";
-import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, bloodOptimalRanges, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress, dailyWorkoutStatus, workoutNotes, pageNotes, exerciseTemplates, changesAudit, prChangesAudit, weightAudit, workoutTimers, timerLapTimes, bodyMeasurements, stepEntries, supplements, affirmations } from "@shared/schema";
+import { type User, type InsertUser, type Exercise, type InsertExercise, type UpdateExercise, type WorkoutLog, type InsertWorkoutLog, type WeightHistory, type InsertWeightHistory, type UpdateWeightHistory, type WeightEntry, type InsertWeightEntry, type UpdateWeightEntry, type BloodEntry, type InsertBloodEntry, type UpdateBloodEntry, type BloodOptimalRange, type InsertBloodOptimalRange, type UpdateBloodOptimalRange, type PhotoProgress, type InsertPhotoProgress, type UpdatePhotoProgress, type Thought, type InsertThought, type UpdateThought, type Quote, type InsertQuote, type UpdateQuote, type PersonalRecord, type InsertPersonalRecord, type UpdatePersonalRecord, type UserSettings, type InsertUserSettings, type UpdateUserSettings, type ShortcutSettings, type InsertShortcutSettings, type UpdateShortcutSettings, type TabSettings, type UpdateTabSettings, type DailySetProgress, type InsertDailySetProgress, type UpdateDailySetProgress, type DailyWorkoutStatus, type InsertDailyWorkoutStatus, type UpdateDailyWorkoutStatus, type WorkoutNotes, type InsertWorkoutNotes, type UpdateWorkoutNotes, type PageNotes, type InsertPageNotes, type UpdatePageNotes, type ExerciseTemplate, type InsertExerciseTemplate, type UpdateExerciseTemplate, type ChangesAudit, type InsertChangesAudit, type UpdateChangesAudit, type PRChangesAudit, type InsertPRChangesAudit, type WeightAudit, type InsertWeightAudit, type UpdateWeightAudit, type WorkoutTimer, type InsertWorkoutTimer, type UpdateWorkoutTimer, type TimerLapTime, type InsertTimerLapTime, type UpdateTimerLapTime, type BodyMeasurement, type InsertBodyMeasurement, type UpdateBodyMeasurement, type StepEntry, type InsertStepEntry, type UpdateStepEntry, type Supplement, type InsertSupplement, type UpdateSupplement, type Affirmation, type InsertAffirmation, type UpdateAffirmation, type CardioLogEntry, type InsertCardioLogEntry, type UpdateCardioLogEntry } from "@shared/schema";
+import { exercises, workoutLogs, weightHistory, weightEntries, bloodEntries, bloodOptimalRanges, photoProgress, thoughts, quotes, users, personalRecords, userSettings, shortcutSettings, tabSettings, dailySetProgress, dailyWorkoutStatus, workoutNotes, pageNotes, exerciseTemplates, changesAudit, prChangesAudit, weightAudit, workoutTimers, timerLapTimes, bodyMeasurements, stepEntries, supplements, affirmations, cardioLogEntries } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc, sql } from "drizzle-orm";
@@ -155,6 +155,12 @@ export interface IStorage {
   deleteAffirmation(id: string): Promise<boolean>;
   getAllAffirmations(): Promise<Affirmation[]>;
   getActiveAffirmations(): Promise<Affirmation[]>;
+
+  // Cardio Log Entries - voice-recorded cardio workouts
+  createCardioLogEntry(entry: InsertCardioLogEntry): Promise<CardioLogEntry>;
+  updateCardioLogEntry(id: string, entry: UpdateCardioLogEntry): Promise<CardioLogEntry | undefined>;
+  deleteCardioLogEntry(id: string): Promise<boolean>;
+  getAllCardioLogEntries(): Promise<CardioLogEntry[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -2554,6 +2560,31 @@ export class DatabaseStorage implements IStorage {
       .from(affirmations)
       .where(eq(affirmations.isActive, "true"))
       .orderBy(asc(affirmations.text));
+  }
+
+  // Cardio Log Entries methods
+  async createCardioLogEntry(entry: InsertCardioLogEntry): Promise<CardioLogEntry> {
+    const [created] = await db.insert(cardioLogEntries).values(entry).returning();
+    return created;
+  }
+
+  async updateCardioLogEntry(id: string, entry: UpdateCardioLogEntry): Promise<CardioLogEntry | undefined> {
+    const [updated] = await db.update(cardioLogEntries)
+      .set(entry)
+      .where(eq(cardioLogEntries.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteCardioLogEntry(id: string): Promise<boolean> {
+    const result = await db.delete(cardioLogEntries).where(eq(cardioLogEntries.id, id)).returning();
+    return result.length > 0;
+  }
+
+  async getAllCardioLogEntries(): Promise<CardioLogEntry[]> {
+    return await db.select()
+      .from(cardioLogEntries)
+      .orderBy(desc(cardioLogEntries.date));
   }
 }
 

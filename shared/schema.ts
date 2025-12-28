@@ -392,6 +392,34 @@ export const affirmations = pgTable("affirmations", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Cardio Log Entries - voice-recorded cardio workouts
+export const cardioLogEntries = pgTable("cardio_log_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  date: timestamp("date").notNull(), // Date of the workout
+  workoutType: text("workout_type").notNull(), // Running, cycling, walking, rowing, etc.
+  duration: text("duration"), // Duration as string like "30 min" or "45:00"
+  distance: text("distance"), // Distance like "3.5 miles" or "5 km"
+  notes: text("notes").default(""), // Additional notes/details
+  rawTranscription: text("raw_transcription"), // Original voice input text
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertCardioLogEntrySchema = createInsertSchema(cardioLogEntries).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  date: z.union([
+    z.string().transform((str) => new Date(str)),
+    z.date()
+  ]).transform((date) => date instanceof Date ? date : new Date(date)),
+});
+
+export const updateCardioLogEntrySchema = insertCardioLogEntrySchema.partial();
+
+export type CardioLogEntry = typeof cardioLogEntries.$inferSelect;
+export type InsertCardioLogEntry = z.infer<typeof insertCardioLogEntrySchema>;
+export type UpdateCardioLogEntry = z.infer<typeof updateCardioLogEntrySchema>;
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,

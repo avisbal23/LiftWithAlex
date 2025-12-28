@@ -4,7 +4,8 @@ import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import path from "path";
 import fs from "fs";
-import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertBloodOptimalRangeSchema, updateBloodOptimalRangeSchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema, insertExerciseTemplateSchema, updateExerciseTemplateSchema, insertChangesAuditSchema, updateChangesAuditSchema, insertPRChangesAuditSchema, insertWeightAuditSchema, updateWeightAuditSchema, insertWorkoutTimerSchema, updateWorkoutTimerSchema, insertTimerLapTimeSchema, updateTimerLapTimeSchema, insertBodyMeasurementSchema, updateBodyMeasurementSchema, insertStepEntrySchema, updateStepEntrySchema, insertSupplementSchema, updateSupplementSchema, insertAffirmationSchema, updateAffirmationSchema, bloodWorkComparisonRequestSchema, type BloodEntry, type BloodWorkComparison, type BloodWorkComparisonResult } from "@shared/schema";
+import { insertExerciseSchema, updateExerciseSchema, insertWorkoutLogSchema, insertWeightEntrySchema, updateWeightEntrySchema, insertBloodEntrySchema, updateBloodEntrySchema, insertBloodOptimalRangeSchema, updateBloodOptimalRangeSchema, insertPhotoProgressSchema, updatePhotoProgressSchema, insertThoughtSchema, updateThoughtSchema, insertQuoteSchema, updateQuoteSchema, insertPersonalRecordSchema, updatePersonalRecordSchema, insertUserSettingsSchema, updateUserSettingsSchema, updateShortcutSettingsSchema, updateTabSettingsSchema, insertDailySetProgressSchema, updateDailySetProgressSchema, insertExerciseTemplateSchema, updateExerciseTemplateSchema, insertChangesAuditSchema, updateChangesAuditSchema, insertPRChangesAuditSchema, insertWeightAuditSchema, updateWeightAuditSchema, insertWorkoutTimerSchema, updateWorkoutTimerSchema, insertTimerLapTimeSchema, updateTimerLapTimeSchema, insertBodyMeasurementSchema, updateBodyMeasurementSchema, insertStepEntrySchema, updateStepEntrySchema, insertSupplementSchema, updateSupplementSchema, insertAffirmationSchema, updateAffirmationSchema, insertCardioLogEntrySchema, updateCardioLogEntrySchema, bloodWorkComparisonRequestSchema, type BloodEntry, type BloodWorkComparison, type BloodWorkComparisonResult } from "@shared/schema";
+import OpenAI from "openai";
 import { z } from "zod";
 
 // Blood work comparison calculation function
@@ -2101,6 +2102,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isYouTube: false
       };
       res.json(fallbackPreview);
+    }
+  });
+
+  // Cardio Log Entries routes
+  app.get("/api/cardio-log-entries", async (req, res) => {
+    try {
+      const entries = await storage.getAllCardioLogEntries();
+      res.json(entries);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch cardio log entries" });
+    }
+  });
+
+  app.post("/api/cardio-log-entries", async (req, res) => {
+    try {
+      const validatedData = insertCardioLogEntrySchema.parse(req.body);
+      const entry = await storage.createCardioLogEntry(validatedData);
+      res.status(201).json(entry);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create cardio log entry" });
+      }
+    }
+  });
+
+  app.patch("/api/cardio-log-entries/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const validatedData = updateCardioLogEntrySchema.parse(req.body);
+      const entry = await storage.updateCardioLogEntry(id, validatedData);
+      
+      if (!entry) {
+        return res.status(404).json({ message: "Cardio log entry not found" });
+      }
+      
+      res.json(entry);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update cardio log entry" });
+      }
+    }
+  });
+
+  app.delete("/api/cardio-log-entries/:id", async (req, res) => {
+    try {
+      const id = req.params.id;
+      const deleted = await storage.deleteCardioLogEntry(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Cardio log entry not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete cardio log entry" });
+    }
+  });
+
+  // AI-powered cardio transcription parsing
+  app.post("/api/cardio-log-entries/parse-voice", async (req, res) => {
+    try {
+      const { transcription } = req.body;
+      
+      if (!transcription || typeof transcription !== "string") {
+        return res.status(400).json({ message: "Transcription text is required" });
+      }
+
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(503).json({ message: "AI service not configured. Please add OPENAI_API_KEY." });
+      }
+
+      const openai = new OpenAI();
+      
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are a fitness assistant that parses voice transcriptions of cardio workouts into structured data.
+Extract the following information from the user's description:
+- workoutType: The type of cardio (running, cycling, walking, rowing, elliptical, swimming, hiking, jump rope, stair climbing, etc.)
+- duration: How long the workout lasted (format as natural text like "30 minutes" or "45 min" or "1 hour")
+- distance: How far they went if mentioned (format as natural text like "3.5 miles" or "5 km")
+- notes: Any other relevant details (intensity, terrain, heart rate, feelings, weather, etc.)
+
+Return a JSON object with these fields. If a field is not mentioned, use null for that field.
+Always identify the workout type - if unclear, use the most likely type based on context.`
+          },
+          {
+            role: "user",
+            content: transcription
+          }
+        ],
+        response_format: { type: "json_object" }
+      });
+
+      const parsedContent = completion.choices[0].message.content;
+      if (!parsedContent) {
+        return res.status(500).json({ message: "Failed to parse transcription" });
+      }
+
+      const parsedData = JSON.parse(parsedContent);
+      
+      res.json({
+        workoutType: parsedData.workoutType || "Cardio",
+        duration: parsedData.duration || null,
+        distance: parsedData.distance || null,
+        notes: parsedData.notes || "",
+        rawTranscription: transcription
+      });
+    } catch (error) {
+      console.error("Voice parsing error:", error);
+      res.status(500).json({ message: "Failed to parse voice transcription" });
     }
   });
 
