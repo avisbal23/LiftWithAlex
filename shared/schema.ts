@@ -400,6 +400,7 @@ export const cardioLogEntries = pgTable("cardio_log_entries", {
   duration: text("duration"), // Duration as string like "30 min" or "45:00"
   distance: text("distance"), // Distance like "3.5 miles" or "5 km"
   caloriesBurned: integer("calories_burned"), // Calories burned during workout
+  pace: text("pace"), // Average pace for running/walking (e.g. "10:00 /mi")
   notes: text("notes").default(""), // Additional notes/details
   rawTranscription: text("raw_transcription"), // Original voice input text
   createdAt: timestamp("created_at").defaultNow(),

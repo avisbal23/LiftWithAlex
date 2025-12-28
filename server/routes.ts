@@ -2196,11 +2196,12 @@ Categorize workouts using these keywords:
 - Rowing: rowing, row machine, rowing machine
 - Stairs: stairs, stair climber, stair master, steps
 
-Extract the following 4 categories:
+Extract the following categories:
 - workoutType: The type of cardio (Running, Walking, Biking, Rowing, Stairs, etc.) - capitalize first letter
 - duration: How long the workout lasted (format as "X hours Y minutes" or "X minutes" or "X:XX:XX")
 - distance: How far they went if mentioned (include unit like "3.5 miles" or "5 km" or "2000 yards")
 - caloriesBurned: The number of calories burned if mentioned (as a number, e.g. 350)
+- pace: For running/walking workouts ONLY, calculate average pace as time divided by distance. Format as "X:XX /mi" or "X:XX /km" depending on the distance unit. For example, 30 minutes for 3 miles = "10:00 /mi". If duration or distance is missing, set to null.
 - notes: Location (outdoor, gym, home) or any other relevant details
 
 Return a JSON object with these fields. If a field is not mentioned, use null for that field.
@@ -2226,6 +2227,7 @@ Always identify the workout type - if unclear, use the most likely type based on
         duration: parsedData.duration || null,
         distance: parsedData.distance || null,
         caloriesBurned: parsedData.caloriesBurned || null,
+        pace: parsedData.pace || null,
         notes: parsedData.notes || "",
         rawTranscription: transcription
       });
