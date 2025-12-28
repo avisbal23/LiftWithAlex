@@ -2173,11 +2173,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Transcription text is required" });
       }
 
-      if (!process.env.OPENAI_API_KEY) {
-        return res.status(503).json({ message: "AI service not configured. Please add OPENAI_API_KEY." });
+      if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
+        return res.status(503).json({ message: "AI service not configured." });
       }
 
-      const openai = new OpenAI();
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
       
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
