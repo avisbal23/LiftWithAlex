@@ -4,7 +4,7 @@ import { UniversalNavigation } from "@/components/UniversalNavigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mic, MicOff, Loader2, Trash2, Clock, MapPin, Activity, Calendar } from "lucide-react";
+import { Mic, MicOff, Loader2, Trash2, Clock, MapPin, Activity, Calendar, Flame } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -147,6 +147,7 @@ export default function Cardio() {
               workoutType: parsed.workoutType,
               duration: parsed.duration,
               distance: parsed.distance,
+              caloriesBurned: parsed.caloriesBurned,
               notes: parsed.notes,
               rawTranscription: textToProcess,
             });
@@ -306,6 +307,12 @@ export default function Cardio() {
                       <Badge variant="secondary" className="flex items-center gap-1">
                         <MapPin className="w-3 h-3" />
                         {entry.distance}
+                      </Badge>
+                    )}
+                    {entry.caloriesBurned && (
+                      <Badge variant="secondary" className="flex items-center gap-1">
+                        <Flame className="w-3 h-3" />
+                        {entry.caloriesBurned} cal
                       </Badge>
                     )}
                   </div>

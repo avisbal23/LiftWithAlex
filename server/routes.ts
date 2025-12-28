@@ -2192,6 +2192,7 @@ Extract the following information from the user's description:
 - workoutType: The type of cardio (running, cycling, walking, rowing, elliptical, swimming, hiking, jump rope, stair climbing, etc.)
 - duration: How long the workout lasted (format as natural text like "30 minutes" or "45 min" or "1 hour")
 - distance: How far they went if mentioned (format as natural text like "3.5 miles" or "5 km")
+- caloriesBurned: The number of calories burned if mentioned (as a number, e.g. 350)
 - notes: Any other relevant details (intensity, terrain, heart rate, feelings, weather, etc.)
 
 Return a JSON object with these fields. If a field is not mentioned, use null for that field.
@@ -2216,6 +2217,7 @@ Always identify the workout type - if unclear, use the most likely type based on
         workoutType: parsedData.workoutType || "Cardio",
         duration: parsedData.duration || null,
         distance: parsedData.distance || null,
+        caloriesBurned: parsedData.caloriesBurned || null,
         notes: parsedData.notes || "",
         rawTranscription: transcription
       });
