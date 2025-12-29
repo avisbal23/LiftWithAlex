@@ -1,6 +1,6 @@
 # Overview
 
-This is a full-stack gym workout tracking application built with React, Express.js, and PostgreSQL. The application follows a Push/Pull/Legs (PPL) workout split system, allowing users to track exercises across three main categories: push exercises (chest, shoulders, triceps), pull exercises (back, biceps), and leg exercises (quadriceps, hamstrings, glutes). Users can create, read, update, and delete workout exercises with details like weight, reps, and notes.
+This is a full-stack gym workout tracking application built with React, Express.js, and PostgreSQL. The application follows a Chest/Arms/Back/Legs workout split system, allowing users to track exercises across four main categories: chest exercises, arm exercises (biceps, triceps), back exercises, and leg exercises (quadriceps, hamstrings, glutes). Users can create, read, update, and delete workout exercises with details like weight, reps, and notes. The workout flow follows: Chest → Arms → Back → Legs.
 
 # User Preferences
 
@@ -10,7 +10,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Frontend Architecture
 - **Framework**: React 18 with TypeScript for type safety and better developer experience
-- **Routing**: Wouter for lightweight client-side routing with four main routes (/, /push, /pull, /legs)
+- **Routing**: Wouter for lightweight client-side routing with main routes (/, /chest, /arms, /back, /legs, /cardio)
 - **State Management**: TanStack Query (React Query) for server state management, caching, and synchronization
 - **UI Components**: Radix UI primitives with shadcn/ui component library for consistent, accessible design
 - **Styling**: Tailwind CSS with CSS variables for theming and dark mode support
