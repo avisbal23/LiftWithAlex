@@ -157,8 +157,8 @@ export default function WorkoutTable({ category, title, description }: WorkoutTa
 
   const getCategoryDisplayName = (cat: string) => {
     switch (cat) {
-      case "push": return "Push Day";
-      case "pull": return "Pull Day";
+      case "chest": return "Chest Day";
+      case "back": return "Back Day";
       case "arms": return "Arms Day";
       case "legs": return "Leg Day";
       case "pull2": return "BACK";

@@ -31,7 +31,7 @@ export default function Home() {
     weight: "",
     reps: "",
     time: "",
-    category: "Push"
+    category: "Chest"
   });
 
   const { data: latestWorkoutLog } = useQuery<WorkoutLog | null>({
@@ -70,16 +70,16 @@ export default function Home() {
 
   const getNextWorkoutDay = () => {
     if (!latestWorkoutLog) {
-      return "Push Day"; // Default to starting with push
+      return "Chest Day"; // Default to starting with chest
     }
 
-    // Define the workout cycle: push → pull → arms → legs
-    const workoutCycle = ["push", "pull", "arms", "legs"];
+    // Define the workout cycle: chest → arms → back → legs
+    const workoutCycle = ["chest", "arms", "back", "legs"];
     const currentIndex = workoutCycle.indexOf(latestWorkoutLog.category);
     
     if (currentIndex === -1) {
-      // If it's cardio or unknown, suggest push
-      return "Push Day";
+      // If it's cardio or unknown, suggest chest
+      return "Chest Day";
     }
     
     // Move to next in cycle, wrap around to beginning
@@ -106,8 +106,8 @@ export default function Home() {
 
   const getCategoryDisplayName = (category: string) => {
     switch (category) {
-      case "push": return "Push Day";
-      case "pull": return "Pull Day"; 
+      case "chest": return "Chest Day";
+      case "back": return "Back Day"; 
       case "legs": return "Leg Day";
       case "pull2": return "BACK";
       case "legs2": return "Leg Day 2";
@@ -120,15 +120,15 @@ export default function Home() {
 
   const getCategoryUrl = (displayName: string) => {
     switch (displayName) {
-      case "Push Day": return "/push";
-      case "Pull Day": return "/pull";
+      case "Chest Day": return "/chest";
+      case "Back Day": return "/back";
       case "Leg Day": return "/legs";
       case "BACK": return "/pull2";
       case "Leg Day 2": return "/legs2";
       case "Arms Day": return "/arms";
       case "Core": return "/core";
       case "Cardio": return "/cardio";
-      default: return "/push";
+      default: return "/chest";
     }
   };
 
@@ -144,8 +144,8 @@ export default function Home() {
     };
 
     const colorMap: Record<string, string> = {
-      push: "bg-red-500/10 text-red-600 border-red-200 hover:bg-red-500/20",
-      pull: "bg-blue-500/10 text-blue-600 border-blue-200 hover:bg-blue-500/20",
+      chest: "bg-red-500/10 text-red-600 border-red-200 hover:bg-red-500/20",
+      back: "bg-blue-500/10 text-blue-600 border-blue-200 hover:bg-blue-500/20",
       legs: "bg-green-500/10 text-green-600 border-green-200 hover:bg-green-500/20",
       pull2: "bg-blue-400/10 text-blue-500 border-blue-100 hover:bg-blue-400/20",
       legs2: "bg-green-400/10 text-green-500 border-green-100 hover:bg-green-400/20",
@@ -192,16 +192,16 @@ export default function Home() {
     }
     
     const workoutShortcuts = shortcuts.filter(s => 
-      ['push', 'pull', 'legs', 'arms', 'pull2', 'legs2', 'cardio', 'core'].includes(s.shortcutKey)
+      ['chest', 'back', 'legs', 'arms', 'pull2', 'legs2', 'cardio', 'core'].includes(s.shortcutKey)
     );
     const otherShortcuts = shortcuts.filter(s => 
-      !['push', 'pull', 'legs', 'arms', 'pull2', 'legs2', 'cardio', 'core'].includes(s.shortcutKey)
+      !['chest', 'back', 'legs', 'arms', 'pull2', 'legs2', 'cardio', 'core'].includes(s.shortcutKey)
     );
 
     const rows = [];
     
-    // First row: main workout days (push, pull, arms, legs - the 4-day rotation)
-    const mainWorkouts = workoutShortcuts.filter(s => ['push', 'pull', 'arms', 'legs'].includes(s.shortcutKey));
+    // First row: main workout days (chest, arms, back, legs - the 4-day rotation)
+    const mainWorkouts = workoutShortcuts.filter(s => ['chest', 'arms', 'back', 'legs'].includes(s.shortcutKey));
     if (mainWorkouts.length > 0) {
       rows.push(mainWorkouts);
     }
@@ -222,8 +222,8 @@ export default function Home() {
 
   const getCategoryColor = (category: string) => {
     switch (category.toLowerCase()) {
-      case "push": return "bg-red-500/10 text-red-600 border-red-200";
-      case "pull": return "bg-blue-500/10 text-blue-600 border-blue-200";
+      case "chest": return "bg-red-500/10 text-red-600 border-red-200";
+      case "back": return "bg-blue-500/10 text-blue-600 border-blue-200";
       case "legs": return "bg-green-500/10 text-green-600 border-green-200";
       case "cardio": return "bg-purple-500/10 text-purple-600 border-purple-200";
       default: return "bg-muted/10 text-muted-foreground";
@@ -326,7 +326,7 @@ export default function Home() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/personal-records"] });
-      setNewPR({ exercise: "", weight: "", reps: "", time: "", category: "Push" });
+      setNewPR({ exercise: "", weight: "", reps: "", time: "", category: "Chest" });
     },
   });
   
@@ -505,8 +505,9 @@ export default function Home() {
                         className="w-full px-3 py-2 border border-border rounded-md bg-background"
                         data-testid="select-category"
                       >
-                        <option value="Push">Push</option>
-                        <option value="Pull">Pull</option>
+                        <option value="Chest">Chest</option>
+                        <option value="Arms">Arms</option>
+                        <option value="Back">Back</option>
                         <option value="Legs">Legs</option>
                         <option value="Cardio">Cardio</option>
                       </select>

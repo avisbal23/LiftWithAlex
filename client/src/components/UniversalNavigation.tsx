@@ -17,9 +17,9 @@ export function UniversalNavigation() {
   // Fixed main navigation items that are always visible
   const mainNavItems = [
     { name: "Home", path: "/", key: "home" },
-    { name: "Push", path: "/push", key: "push" },
-    { name: "Pull", path: "/pull", key: "pull" },
+    { name: "Chest", path: "/chest", key: "chest" },
     { name: "Arms", path: "/arms", key: "arms" },
+    { name: "Back", path: "/back", key: "back" },
     { name: "Legs", path: "/legs", key: "legs" },
     { name: "Cardio", path: "/cardio", key: "cardio" }
   ];

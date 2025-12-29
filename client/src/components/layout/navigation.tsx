@@ -6,9 +6,9 @@ import { type TabSettings } from "@shared/schema";
 
 const allTabs = [
   { name: "Home", path: "/", key: "home" },
-  { name: "Push", path: "/push", key: "push" },
-  { name: "Pull", path: "/pull", key: "pull" },
+  { name: "Chest", path: "/chest", key: "chest" },
   { name: "Arms", path: "/arms", key: "arms" },
+  { name: "Back", path: "/back", key: "back" },
   { name: "Legs", path: "/legs", key: "legs" },
   { name: "BACK", path: "/pull2", key: "pull2" },
   { name: "Legs 2", path: "/legs2", key: "legs2" },

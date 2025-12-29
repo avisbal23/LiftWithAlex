@@ -5,8 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
-import Push from "@/pages/push";
-import Pull from "@/pages/pull";
+import Chest from "@/pages/chest";
+import Back from "@/pages/back";
 import Legs from "@/pages/legs";
 import Pull2 from "@/pages/pull2";
 import Legs2 from "@/pages/legs2";
@@ -38,8 +38,8 @@ function Router() {
       <Header />
       <Switch>
         <Route path="/" component={Home} />
-        <Route path="/push" component={Push} />
-        <Route path="/pull" component={Pull} />
+        <Route path="/chest" component={Chest} />
+        <Route path="/back" component={Back} />
         <Route path="/legs" component={Legs} />
         <Route path="/pull2" component={Pull2} />
         <Route path="/legs2" component={Legs2} />

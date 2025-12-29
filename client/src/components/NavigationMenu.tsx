@@ -82,8 +82,8 @@ export function NavigationMenu({ isOpen, onClose }: NavigationMenuProps) {
   const getNavigationItems = () => {
     const iconMap: Record<string, React.ComponentType<any>> = {
       home: Home,
-      push: Dumbbell,
-      pull: Dumbbell,
+      chest: Dumbbell,
+      back: Dumbbell,
       legs: Dumbbell,
       push2: Dumbbell,
       pull2: Dumbbell,
@@ -99,7 +99,7 @@ export function NavigationMenu({ isOpen, onClose }: NavigationMenuProps) {
     };
 
     // Filter out main navigation items that are now in the header
-    const mainNavItems = ['home', 'push', 'pull', 'legs', 'cardio'];
+    const mainNavItems = ['home', 'chest', 'arms', 'back', 'legs', 'cardio'];
     
     return tabSettings
       .filter(tab => !mainNavItems.includes(tab.tabKey))

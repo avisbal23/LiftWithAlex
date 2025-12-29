@@ -5,19 +5,19 @@ import ChangesAudit from "@/components/changes-audit";
 import WorkoutStopwatch from "@/components/workout-stopwatch";
 import WorkoutNotes from "@/components/workout-notes";
 
-export default function Pull() {
+export default function Back() {
   return (
     <>
       <UniversalNavigation />
       <div className="container mx-auto px-4 pb-6">
         <WorkoutStopwatch />
-        <WorkoutNotes category="pull" />
+        <WorkoutNotes category="back" />
         <WorkoutTable
-          category="pull"
-          title="Pull Workouts"
-          description="Back, biceps, and rear delt exercises"
+          category="back"
+          title="Back Workouts"
+          description="Back exercises"
         />
-        <ChangesAudit category="pull" />
+        <ChangesAudit category="back" />
       </div>
     </>
   );
