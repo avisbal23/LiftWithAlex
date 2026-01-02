@@ -17,11 +17,11 @@ export function UniversalNavigation() {
   // Fixed main navigation items that are always visible
   const mainNavItems = [
     { name: "Home", path: "/", key: "home" },
-    { name: "C", path: "/chest", key: "chest" },
-    { name: "A", path: "/arms", key: "arms" },
-    { name: "B", path: "/back", key: "back" },
-    { name: "L", path: "/legs", key: "legs" },
-    { name: "🫀", path: "/cardio", key: "cardio" }
+    { name: "Chest", path: "/chest", key: "chest" },
+    { name: "Arms", path: "/arms", key: "arms" },
+    { name: "Back", path: "/back", key: "back" },
+    { name: "Legs", path: "/legs", key: "legs" },
+    { name: "Cardio", path: "/cardio", key: "cardio" }
   ];
 
   // Additional pages for dropdown menu
