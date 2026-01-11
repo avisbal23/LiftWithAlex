@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { UniversalNavigation } from "@/components/UniversalNavigation";
 import { Button } from "@/components/ui/button";
@@ -7,8 +7,42 @@ import { Badge } from "@/components/ui/badge";
 import { Mic, MicOff, Loader2, Trash2, Clock, MapPin, Activity, Calendar, Flame, Gauge, RotateCcw } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, startOfWeek, startOfMonth, startOfYear, subDays, isAfter } from "date-fns";
 import type { CardioLogEntry } from "@shared/schema";
+
+function parseDistanceToMiles(distance: string | null | undefined): number {
+  if (!distance) return 0;
+  const lower = distance.toLowerCase();
+  const numMatch = lower.match(/[\d.]+/);
+  if (!numMatch) return 0;
+  const num = parseFloat(numMatch[0]);
+  if (isNaN(num)) return 0;
+  if (lower.includes("km") || lower.includes("kilometer")) {
+    return num * 0.621371;
+  }
+  if (lower.includes("meter") && !lower.includes("kilometer")) {
+    return num * 0.000621371;
+  }
+  if (lower.includes("yard")) {
+    return num * 0.000568182;
+  }
+  return num;
+}
+
+function parsePaceToSeconds(pace: string | null | undefined): number | null {
+  if (!pace) return null;
+  const match = pace.match(/(\d+):(\d+)/);
+  if (match) {
+    return parseInt(match[1]) * 60 + parseInt(match[2]);
+  }
+  return null;
+}
+
+function formatSecondsAsPace(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.round(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')} /mi`;
+}
 
 declare global {
   interface Window {
@@ -41,6 +75,58 @@ export default function Cardio() {
   const { data: entries = [], isLoading } = useQuery<CardioLogEntry[]>({
     queryKey: ["/api/cardio-log-entries"],
   });
+
+  const kpiData = useMemo(() => {
+    const now = new Date();
+    const weekStart = startOfWeek(now, { weekStartsOn: 0 });
+    const monthStart = startOfMonth(now);
+    const yearStart = startOfYear(now);
+    const rolling365Start = subDays(now, 365);
+
+    let milesThisWeek = 0;
+    let milesThisMonth = 0;
+    let milesThisYear = 0;
+    let milesRolling365 = 0;
+
+    const runEntries = entries
+      .filter(e => e.workoutType.toLowerCase().includes("run") || e.workoutType.toLowerCase().includes("jog"))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    const last7Runs = runEntries.slice(0, 7);
+    const paceSeconds = last7Runs
+      .map(e => parsePaceToSeconds(e.pace))
+      .filter((p): p is number => p !== null);
+    const avgPaceSeconds = paceSeconds.length > 0 
+      ? paceSeconds.reduce((a, b) => a + b, 0) / paceSeconds.length 
+      : null;
+
+    entries.forEach(entry => {
+      const entryDate = new Date(entry.date);
+      const miles = parseDistanceToMiles(entry.distance);
+
+      if (isAfter(entryDate, weekStart) || entryDate.getTime() === weekStart.getTime()) {
+        milesThisWeek += miles;
+      }
+      if (isAfter(entryDate, monthStart) || entryDate.getTime() === monthStart.getTime()) {
+        milesThisMonth += miles;
+      }
+      if (isAfter(entryDate, yearStart) || entryDate.getTime() === yearStart.getTime()) {
+        milesThisYear += miles;
+      }
+      if (isAfter(entryDate, rolling365Start)) {
+        milesRolling365 += miles;
+      }
+    });
+
+    return {
+      milesThisWeek,
+      milesThisMonth,
+      milesThisYear,
+      milesRolling365,
+      avgPace: avgPaceSeconds ? formatSecondsAsPace(avgPaceSeconds) : "—",
+      runCount: Math.min(last7Runs.length, 7),
+    };
+  }, [entries]);
 
   const createEntryMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -219,11 +305,51 @@ export default function Cardio() {
     <>
       <UniversalNavigation />
       <div className="container mx-auto px-4 pb-6 max-w-2xl">
-        <div className="text-center mb-8 mt-4">
+        <div className="text-center mb-6 mt-4">
           <h1 className="text-2xl font-bold mb-2">Cardio Tracker</h1>
           <p className="text-muted-foreground text-sm">
             Tap the microphone and describe your workout
           </p>
+        </div>
+
+        {/* KPI Section */}
+        <div className="mb-6">
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
+              <CardContent className="p-4 text-center">
+                <p className="text-xs text-muted-foreground mb-1">This Week</p>
+                <p className="text-2xl font-bold text-blue-500">{kpiData.milesThisWeek.toFixed(1)}</p>
+                <p className="text-xs text-muted-foreground">miles</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
+              <CardContent className="p-4 text-center">
+                <p className="text-xs text-muted-foreground mb-1">This Month</p>
+                <p className="text-2xl font-bold text-green-500">{kpiData.milesThisMonth.toFixed(1)}</p>
+                <p className="text-xs text-muted-foreground">miles</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
+              <CardContent className="p-4 text-center">
+                <p className="text-xs text-muted-foreground mb-1">Year to Date</p>
+                <p className="text-2xl font-bold text-purple-500">{kpiData.milesThisYear.toFixed(1)}</p>
+                <p className="text-xs text-muted-foreground">miles</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20">
+              <CardContent className="p-4 text-center">
+                <p className="text-xs text-muted-foreground mb-1">Last 365 Days</p>
+                <p className="text-2xl font-bold text-orange-500">{kpiData.milesRolling365.toFixed(1)}</p>
+                <p className="text-xs text-muted-foreground">miles</p>
+              </CardContent>
+            </Card>
+          </div>
+          <Card className="bg-gradient-to-r from-pink-500/10 to-rose-500/10 border-pink-500/20">
+            <CardContent className="py-2 px-4 text-center">
+              <p className="text-xs text-muted-foreground">Avg Pace (Last {kpiData.runCount} Runs)</p>
+              <p className="text-lg font-bold text-pink-500">{kpiData.avgPace}</p>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="flex flex-col items-center mb-8">
