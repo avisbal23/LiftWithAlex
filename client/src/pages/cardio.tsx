@@ -310,41 +310,41 @@ export default function Cardio() {
         </div>
 
         {/* KPI Section */}
-        <div className="mb-6">
-          <div className="grid grid-cols-2 gap-3 mb-3">
+        <div className="mb-4">
+          <div className="grid grid-cols-2 gap-2 mb-2">
             <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
-              <CardContent className="p-4 text-center">
-                <p className="text-xs text-muted-foreground mb-1">This Week</p>
-                <p className="text-2xl font-bold text-blue-500">{kpiData.milesThisWeek.toFixed(1)}</p>
-                <p className="text-xs text-muted-foreground">miles</p>
+              <CardContent className="p-2 text-center">
+                <p className="text-[10px] text-muted-foreground">This Week</p>
+                <p className="text-lg font-bold text-blue-500">{kpiData.milesThisWeek.toFixed(1)}</p>
+                <p className="text-[10px] text-muted-foreground">miles</p>
               </CardContent>
             </Card>
             <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
-              <CardContent className="p-4 text-center">
-                <p className="text-xs text-muted-foreground mb-1">This Month</p>
-                <p className="text-2xl font-bold text-green-500">{kpiData.milesThisMonth.toFixed(1)}</p>
-                <p className="text-xs text-muted-foreground">miles</p>
+              <CardContent className="p-2 text-center">
+                <p className="text-[10px] text-muted-foreground">This Month</p>
+                <p className="text-lg font-bold text-green-500">{kpiData.milesThisMonth.toFixed(1)}</p>
+                <p className="text-[10px] text-muted-foreground">miles</p>
               </CardContent>
             </Card>
             <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
-              <CardContent className="p-4 text-center">
-                <p className="text-xs text-muted-foreground mb-1">Year to Date</p>
-                <p className="text-2xl font-bold text-purple-500">{kpiData.milesThisYear.toFixed(1)}</p>
-                <p className="text-xs text-muted-foreground">miles</p>
+              <CardContent className="p-2 text-center">
+                <p className="text-[10px] text-muted-foreground">Year to Date</p>
+                <p className="text-lg font-bold text-purple-500">{kpiData.milesThisYear.toFixed(1)}</p>
+                <p className="text-[10px] text-muted-foreground">miles</p>
               </CardContent>
             </Card>
             <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20">
-              <CardContent className="p-4 text-center">
-                <p className="text-xs text-muted-foreground mb-1">Last 365 Days</p>
-                <p className="text-2xl font-bold text-orange-500">{kpiData.milesRolling365.toFixed(1)}</p>
-                <p className="text-xs text-muted-foreground">miles</p>
+              <CardContent className="p-2 text-center">
+                <p className="text-[10px] text-muted-foreground">Last 365 Days</p>
+                <p className="text-lg font-bold text-orange-500">{kpiData.milesRolling365.toFixed(1)}</p>
+                <p className="text-[10px] text-muted-foreground">miles</p>
               </CardContent>
             </Card>
           </div>
           <Card className="bg-gradient-to-r from-pink-500/10 to-rose-500/10 border-pink-500/20">
-            <CardContent className="py-2 px-4 text-center">
-              <p className="text-xs text-muted-foreground">Avg Pace (Last {kpiData.runCount} Runs)</p>
-              <p className="text-lg font-bold text-pink-500">{kpiData.avgPace}</p>
+            <CardContent className="py-1.5 px-3 text-center">
+              <p className="text-[10px] text-muted-foreground">Avg Pace (Last {kpiData.runCount} Runs)</p>
+              <p className="text-base font-bold text-pink-500">{kpiData.avgPace}</p>
             </CardContent>
           </Card>
         </div>
