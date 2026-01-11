@@ -307,9 +307,6 @@ export default function Cardio() {
       <div className="container mx-auto px-4 pb-6 max-w-2xl">
         <div className="text-center mb-6 mt-4">
           <h1 className="text-2xl font-bold mb-2">Cardio Tracker</h1>
-          <p className="text-muted-foreground text-sm">
-            Tap the microphone and describe your workout
-          </p>
         </div>
 
         {/* KPI Section */}
