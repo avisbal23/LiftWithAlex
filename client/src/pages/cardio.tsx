@@ -349,69 +349,70 @@ export default function Cardio() {
           </Card>
         </div>
 
-        <div className="flex flex-col items-center mb-8">
-          <Button
-            data-testid="button-record-voice"
-            onClick={toggleRecording}
-            disabled={isProcessing}
-            size="lg"
-            className={`w-32 h-32 rounded-full transition-all duration-300 ${
-              isRecording 
-                ? "bg-red-500 hover:bg-red-600 animate-pulse" 
-                : isProcessing 
-                  ? "bg-yellow-500" 
-                  : "bg-purple-600 hover:bg-purple-700"
-            }`}
-          >
-            {isProcessing ? (
-              <Loader2 className="w-12 h-12 animate-spin" />
-            ) : isRecording ? (
-              <MicOff className="w-12 h-12" />
-            ) : (
-              <Mic className="w-12 h-12" />
-            )}
-          </Button>
-          
-          <p className="mt-4 text-sm text-muted-foreground">
-            {isProcessing 
-              ? "Processing your workout..." 
-              : isRecording 
-                ? "Listening... Tap to stop and save" 
-                : "Tap to start recording"}
-          </p>
+        <div className="flex items-center gap-4 mb-8">
+          <div className="flex flex-col items-center">
+            <Button
+              data-testid="button-record-voice"
+              onClick={toggleRecording}
+              disabled={isProcessing}
+              size="lg"
+              className={`w-24 h-24 rounded-full transition-all duration-300 ${
+                isRecording 
+                  ? "bg-red-500 hover:bg-red-600 animate-pulse" 
+                  : isProcessing 
+                    ? "bg-yellow-500" 
+                    : "bg-purple-600 hover:bg-purple-700"
+              }`}
+            >
+              {isProcessing ? (
+                <Loader2 className="w-10 h-10 animate-spin" />
+              ) : isRecording ? (
+                <MicOff className="w-10 h-10" />
+              ) : (
+                <Mic className="w-10 h-10" />
+              )}
+            </Button>
+            <p className="mt-2 text-xs text-muted-foreground text-center max-w-[100px]">
+              {isProcessing 
+                ? "Processing..." 
+                : isRecording 
+                  ? "Tap to stop" 
+                  : "Tap to record"}
+            </p>
+          </div>
 
-          <Card className="mt-4 w-full bg-muted/50">
-            <CardContent className="pt-4 pb-3">
-              <p className="text-xs font-medium text-muted-foreground mb-2">Include these in your voice input:</p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="flex items-center gap-1.5">
+          <Card className="flex-1 bg-muted/50">
+            <CardContent className="pt-3 pb-2">
+              <p className="text-xs font-medium text-muted-foreground mb-2">Include in your voice input:</p>
+              <div className="grid grid-cols-2 gap-1.5 text-xs">
+                <div className="flex items-center gap-1">
                   <span className="text-purple-500 font-semibold">Type</span>
-                  <span className="text-muted-foreground">Running, Walking, Biking, Rowing, Stairs</span>
+                  <span className="text-muted-foreground text-[10px]">Run, Walk, Bike...</span>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1">
                   <span className="text-blue-500 font-semibold">Time</span>
-                  <span className="text-muted-foreground">hours, minutes, seconds</span>
+                  <span className="text-muted-foreground text-[10px]">hrs, mins, secs</span>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1">
                   <span className="text-green-500 font-semibold">Distance</span>
-                  <span className="text-muted-foreground">miles, km, yards</span>
+                  <span className="text-muted-foreground text-[10px]">miles, km</span>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1">
                   <span className="text-orange-500 font-semibold">Calories</span>
-                  <span className="text-muted-foreground">calories burned</span>
+                  <span className="text-muted-foreground text-[10px]">burned</span>
                 </div>
               </div>
             </CardContent>
           </Card>
-
-          {transcription && (
-            <Card className="mt-4 w-full">
-              <CardContent className="pt-4">
-                <p className="text-sm italic text-muted-foreground">"{transcription}"</p>
-              </CardContent>
-            </Card>
-          )}
         </div>
+
+        {transcription && (
+          <Card className="mb-6">
+            <CardContent className="pt-4">
+              <p className="text-sm italic text-muted-foreground">"{transcription}"</p>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="space-y-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
