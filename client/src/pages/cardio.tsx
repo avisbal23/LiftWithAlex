@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Mic, MicOff, Loader2, Trash2, Clock, MapPin, Activity, Calendar, Flame, Gauge, RotateCcw } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfWeek, startOfMonth, startOfYear, subDays, isAfter } from "date-fns";
+import { format, startOfMonth, startOfYear, subDays, isAfter } from "date-fns";
 import type { CardioLogEntry } from "@shared/schema";
 
 function parseDistanceToMiles(distance: string | null | undefined): number {
@@ -78,12 +78,12 @@ export default function Cardio() {
 
   const kpiData = useMemo(() => {
     const now = new Date();
-    const weekStart = startOfWeek(now, { weekStartsOn: 0 });
+    const rolling7Start = subDays(now, 7);
     const monthStart = startOfMonth(now);
     const yearStart = startOfYear(now);
     const rolling365Start = subDays(now, 365);
 
-    let milesThisWeek = 0;
+    let milesLast7Days = 0;
     let milesThisMonth = 0;
     let milesThisYear = 0;
     let milesRolling365 = 0;
@@ -104,8 +104,8 @@ export default function Cardio() {
       const entryDate = new Date(entry.date);
       const miles = parseDistanceToMiles(entry.distance);
 
-      if (isAfter(entryDate, weekStart) || entryDate.getTime() === weekStart.getTime()) {
-        milesThisWeek += miles;
+      if (isAfter(entryDate, rolling7Start)) {
+        milesLast7Days += miles;
       }
       if (isAfter(entryDate, monthStart) || entryDate.getTime() === monthStart.getTime()) {
         milesThisMonth += miles;
@@ -119,7 +119,7 @@ export default function Cardio() {
     });
 
     return {
-      milesThisWeek,
+      milesLast7Days,
       milesThisMonth,
       milesThisYear,
       milesRolling365,
@@ -314,8 +314,8 @@ export default function Cardio() {
           <div className="grid grid-cols-2 gap-2 mb-2">
             <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
               <CardContent className="p-2 text-center">
-                <p className="text-[10px] text-muted-foreground">This Week</p>
-                <p className="text-lg font-bold text-blue-500">{kpiData.milesThisWeek.toFixed(1)}</p>
+                <p className="text-[10px] text-muted-foreground">Last 7 Days</p>
+                <p className="text-lg font-bold text-blue-500">{kpiData.milesLast7Days.toFixed(1)}</p>
                 <p className="text-[10px] text-muted-foreground">miles</p>
               </CardContent>
             </Card>
