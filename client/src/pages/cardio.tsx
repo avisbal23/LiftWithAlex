@@ -4,7 +4,8 @@ import { UniversalNavigation } from "@/components/UniversalNavigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mic, MicOff, Loader2, Trash2, Clock, MapPin, Activity, Calendar, Flame, Gauge, RotateCcw } from "lucide-react";
+import { Mic, MicOff, Loader2, Trash2, Clock, MapPin, Activity, Calendar, Flame, Gauge, RotateCcw, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, startOfYear, subDays, isAfter } from "date-fns";
@@ -413,6 +414,33 @@ export default function Cardio() {
             </CardContent>
           </Card>
         )}
+
+        <Collapsible className="mb-6">
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="w-full flex items-center justify-between px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
+              <span>Treadmill Speed → Pace Chart</span>
+              <ChevronDown className="h-4 w-4 transition-transform duration-200 [[data-state=open]>svg]:rotate-180" />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <Card className="mt-2">
+              <CardContent className="p-3">
+                <div className="grid grid-cols-2 gap-x-4 text-sm">
+                  <div className="font-semibold text-muted-foreground border-b pb-1 mb-2">Speed (mph)</div>
+                  <div className="font-semibold text-muted-foreground border-b pb-1 mb-2">Pace /mi</div>
+                  <div>5.0</div><div>12:00</div>
+                  <div>6.0</div><div>10:00</div>
+                  <div>7.0</div><div>8:34</div>
+                  <div>7.5</div><div>8:00</div>
+                  <div>8.0</div><div>7:30</div>
+                  <div>8.2</div><div>7:19</div>
+                  <div>8.5</div><div>7:04</div>
+                  <div>9.0</div><div>6:40</div>
+                </div>
+              </CardContent>
+            </Card>
+          </CollapsibleContent>
+        </Collapsible>
 
         <div className="space-y-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
