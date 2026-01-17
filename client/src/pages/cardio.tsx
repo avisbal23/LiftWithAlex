@@ -4,7 +4,7 @@ import { UniversalNavigation } from "@/components/UniversalNavigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mic, MicOff, Loader2, Trash2, Clock, MapPin, Activity, Calendar, Flame, Gauge, RotateCcw, ChevronDown } from "lucide-react";
+import { Mic, MicOff, Loader2, Trash2, Clock, MapPin, Activity, Calendar, Flame, Gauge, RotateCcw, ChevronDown, Dumbbell } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -159,6 +159,15 @@ export default function Cardio() {
         title: "Deleted",
         description: "Workout entry removed.",
       });
+    },
+  });
+
+  const toggleVestMutation = useMutation({
+    mutationFn: async ({ id, weightedVest }: { id: string; weightedVest: boolean }) => {
+      return await apiRequest("PATCH", `/api/cardio-log-entries/${id}`, { weightedVest });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cardio-log-entries"] });
     },
   });
 
@@ -500,6 +509,16 @@ export default function Cardio() {
                           </div>
                         </div>
                         <div className="flex gap-1">
+                          <Button
+                            data-testid={`button-vest-${entry.id}`}
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => toggleVestMutation.mutate({ id: entry.id, weightedVest: !entry.weightedVest })}
+                            disabled={toggleVestMutation.isPending}
+                            title={entry.weightedVest ? "Wearing weighted vest" : "No weighted vest"}
+                          >
+                            <Dumbbell className={`w-4 h-4 transition-colors ${entry.weightedVest ? "text-amber-500 fill-amber-500" : "text-muted-foreground/40"}`} />
+                          </Button>
                           {entry.rawTranscription && (
                             <Button
                               data-testid={`button-flip-${entry.id}`}
