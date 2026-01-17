@@ -403,6 +403,7 @@ export const cardioLogEntries = pgTable("cardio_log_entries", {
   pace: text("pace"), // Average pace for running/walking (e.g. "10:00 /mi")
   notes: text("notes").default(""), // Additional notes/details
   rawTranscription: text("raw_transcription"), // Original voice input text
+  weightedVest: boolean("weighted_vest").default(false), // Whether wearing weighted vest
   createdAt: timestamp("created_at").defaultNow(),
 });
 
