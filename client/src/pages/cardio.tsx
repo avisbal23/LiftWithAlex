@@ -4,7 +4,7 @@ import { UniversalNavigation } from "@/components/UniversalNavigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mic, MicOff, Loader2, Trash2, Clock, MapPin, Activity, Calendar, Flame, Gauge, RotateCcw, ChevronDown, Dumbbell } from "lucide-react";
+import { Mic, MicOff, Loader2, Trash2, Clock, MapPin, Activity, Calendar, Flame, Gauge, RotateCcw, ChevronDown, Dumbbell, Share } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -43,6 +43,126 @@ function formatSecondsAsPace(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = Math.round(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, '0')} /mi`;
+}
+
+async function generateWorkoutPNG(workout: {
+  workoutType: string;
+  distance: string;
+  duration: string;
+  pace: string;
+  weightedVest: boolean;
+}): Promise<Blob> {
+  const canvas = document.createElement('canvas');
+  const size = 600;
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, size, size);
+
+  const gradient = ctx.createLinearGradient(0, 0, size, size);
+  gradient.addColorStop(0, '#16213e');
+  gradient.addColorStop(1, '#0f0f23');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+
+  ctx.fillStyle = '#f59e0b';
+  ctx.font = 'bold 28px system-ui, -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Lift with Alex', size / 2, 50);
+
+  ctx.strokeStyle = 'rgba(245, 158, 11, 0.3)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(100, 75);
+  ctx.lineTo(size - 100, 75);
+  ctx.stroke();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 42px system-ui, -apple-system, sans-serif';
+  ctx.fillText(workout.workoutType, size / 2, 140);
+
+  const stats = [
+    { label: 'Distance', value: workout.distance },
+    { label: 'Time', value: workout.duration },
+    { label: 'Pace', value: workout.pace },
+  ];
+
+  let yPos = 200;
+  stats.forEach((stat) => {
+    ctx.fillStyle = '#9ca3af';
+    ctx.font = '20px system-ui, -apple-system, sans-serif';
+    ctx.fillText(stat.label, size / 2, yPos);
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 36px system-ui, -apple-system, sans-serif';
+    ctx.fillText(stat.value, size / 2, yPos + 45);
+    
+    yPos += 100;
+  });
+
+  ctx.fillStyle = workout.weightedVest ? '#f59e0b' : '#6b7280';
+  ctx.font = 'bold 32px system-ui, -apple-system, sans-serif';
+  ctx.fillText('🏋️', size / 2, yPos + 20);
+  
+  ctx.fillStyle = '#9ca3af';
+  ctx.font = '18px system-ui, -apple-system, sans-serif';
+  ctx.fillText('Weighted Vest', size / 2, yPos + 55);
+  
+  ctx.fillStyle = workout.weightedVest ? '#22c55e' : '#ef4444';
+  ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
+  ctx.fillText(workout.weightedVest ? 'Yes' : 'No', size / 2, yPos + 85);
+
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => {
+      resolve(blob!);
+    }, 'image/png');
+  });
+}
+
+async function shareWorkout(entry: CardioLogEntry, toast: any) {
+  const workoutData = {
+    workoutType: entry.workoutType || 'Running',
+    distance: entry.distance || '3.1 miles',
+    duration: entry.duration || '23:56',
+    pace: entry.pace || '07:44/mile',
+    weightedVest: entry.weightedVest ?? false,
+  };
+
+  try {
+    const blob = await generateWorkoutPNG(workoutData);
+    const file = new File([blob], 'workout.png', { type: 'image/png' });
+
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: 'My Workout',
+        text: `${workoutData.workoutType} - ${workoutData.distance} in ${workoutData.duration}`,
+      });
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'workout.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({
+        title: 'Image Downloaded',
+        description: 'Share sheet not available. Image saved to downloads.',
+      });
+    }
+  } catch (error: any) {
+    if (error.name !== 'AbortError') {
+      toast({
+        title: 'Share Failed',
+        description: 'Could not share workout image.',
+        variant: 'destructive',
+      });
+    }
+  }
 }
 
 declare global {
@@ -467,6 +587,27 @@ export default function Cardio() {
                 <Activity className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p>No cardio workouts logged yet.</p>
                 <p className="text-sm mt-1">Tap the microphone to record your first workout!</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-4"
+                  onClick={() => shareWorkout({
+                    id: 'template',
+                    workoutType: 'Running',
+                    distance: '3.1 miles',
+                    duration: '23:56',
+                    pace: '07:44/mile',
+                    weightedVest: false,
+                    date: new Date(),
+                    caloriesBurned: null,
+                    notes: null,
+                    rawTranscription: null,
+                    createdAt: null,
+                  }, toast)}
+                >
+                  <Share className="w-4 h-4 mr-2" />
+                  Test Share
+                </Button>
               </CardContent>
             </Card>
           ) : (
@@ -509,6 +650,15 @@ export default function Cardio() {
                           </div>
                         </div>
                         <div className="flex gap-1">
+                          <Button
+                            data-testid={`button-share-${entry.id}`}
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => shareWorkout(entry, toast)}
+                            title="Share workout"
+                          >
+                            <Share className="w-4 h-4" />
+                          </Button>
                           <Button
                             data-testid={`button-vest-${entry.id}`}
                             variant="ghost"
