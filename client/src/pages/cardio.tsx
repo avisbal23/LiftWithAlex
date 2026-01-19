@@ -54,18 +54,19 @@ async function generateWorkoutPNG(workout: {
 }): Promise<Blob> {
   const canvas = document.createElement('canvas');
   const size = 600;
+  const borderWidth = 12;
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext('2d')!;
 
-  ctx.fillStyle = '#1a1a2e';
+  ctx.fillStyle = '#000000';
   ctx.fillRect(0, 0, size, size);
 
-  const gradient = ctx.createLinearGradient(0, 0, size, size);
+  const gradient = ctx.createLinearGradient(borderWidth, borderWidth, size - borderWidth, size - borderWidth);
   gradient.addColorStop(0, '#16213e');
   gradient.addColorStop(1, '#0f0f23');
   ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, size, size);
+  ctx.fillRect(borderWidth, borderWidth, size - borderWidth * 2, size - borderWidth * 2);
 
   ctx.fillStyle = '#f59e0b';
   ctx.font = 'bold 28px system-ui, -apple-system, sans-serif';
