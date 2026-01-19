@@ -547,13 +547,48 @@ export default function Cardio() {
         <Collapsible className="mb-6">
           <CollapsibleTrigger asChild>
             <Button variant="ghost" className="w-full flex items-center justify-between px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
-              <span>Treadmill Speed → Pace Chart</span>
+              <span>Reference & Stats</span>
               <ChevronDown className="h-4 w-4 transition-transform duration-200 [[data-state=open]>svg]:rotate-180" />
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent>
+            {(() => {
+              const runsWithPace = entries
+                .filter(e => e.pace && (e.workoutType.toLowerCase().includes("run") || e.workoutType.toLowerCase().includes("jog")))
+                .map(e => ({ ...e, paceSeconds: parsePaceToSeconds(e.pace) }))
+                .filter((e): e is typeof e & { paceSeconds: number } => e.paceSeconds !== null)
+                .sort((a, b) => a.paceSeconds - b.paceSeconds)
+                .slice(0, 3);
+              
+              return runsWithPace.length > 0 ? (
+                <Card className="mt-2 mb-3">
+                  <CardContent className="p-3">
+                    <h4 className="font-semibold text-sm mb-2 text-amber-500">🏆 Top 3 Runs by Pace</h4>
+                    <div className="grid grid-cols-3 gap-x-2 text-sm">
+                      <div className="font-semibold text-muted-foreground border-b pb-1 mb-2">Date</div>
+                      <div className="font-semibold text-muted-foreground border-b pb-1 mb-2">Distance</div>
+                      <div className="font-semibold text-muted-foreground border-b pb-1 mb-2">Pace</div>
+                      {runsWithPace.map((run, i) => (
+                        <div key={run.id} className="contents">
+                          <div className={i === 0 ? "text-amber-500 font-medium" : ""}>
+                            {format(new Date(run.date), "MMM d")}
+                          </div>
+                          <div className={i === 0 ? "text-amber-500 font-medium" : ""}>
+                            {run.distance || "—"}
+                          </div>
+                          <div className={i === 0 ? "text-amber-500 font-medium" : ""}>
+                            {run.pace}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : null;
+            })()}
             <Card className="mt-2">
               <CardContent className="p-3">
+                <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Treadmill Speed → Pace</h4>
                 <div className="grid grid-cols-2 gap-x-4 text-sm">
                   <div className="font-semibold text-muted-foreground border-b pb-1 mb-2">Speed (mph)</div>
                   <div className="font-semibold text-muted-foreground border-b pb-1 mb-2">Pace /mi</div>
