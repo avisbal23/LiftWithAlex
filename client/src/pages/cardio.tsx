@@ -249,6 +249,21 @@ export default function Cardio() {
     };
   }, [entries]);
 
+  const top3PaceRanking = useMemo(() => {
+    const runsWithPace = entries
+      .filter(e => e.pace && (e.workoutType.toLowerCase().includes("run") || e.workoutType.toLowerCase().includes("jog")))
+      .map(e => ({ id: e.id, paceSeconds: parsePaceToSeconds(e.pace) }))
+      .filter((e): e is { id: string; paceSeconds: number } => e.paceSeconds !== null)
+      .sort((a, b) => a.paceSeconds - b.paceSeconds)
+      .slice(0, 3);
+    
+    const ranking: Record<string, number> = {};
+    runsWithPace.forEach((run, i) => {
+      ranking[run.id] = i + 1;
+    });
+    return ranking;
+  }, [entries]);
+
   const createEntryMutation = useMutation({
     mutationFn: async (data: any) => {
       return await apiRequest("POST", "/api/cardio-log-entries", data);
@@ -647,7 +662,7 @@ export default function Cardio() {
             </Card>
           ) : (
             entries.map((entry) => (
-              <Card key={entry.id} data-testid={`card-cardio-entry-${entry.id}`}>
+              <Card key={entry.id} data-testid={`card-cardio-entry-${entry.id}`} className="relative">
                 {flippedCards.has(entry.id) ? (
                   <>
                     <CardHeader className="pb-2">
@@ -756,6 +771,13 @@ export default function Cardio() {
                       </div>
                       {entry.notes && (
                         <p className="text-sm text-muted-foreground">{entry.notes}</p>
+                      )}
+                      {top3PaceRanking[entry.id] && (
+                        <div className="absolute bottom-3 right-3 text-3xl">
+                          {top3PaceRanking[entry.id] === 1 && "🥇"}
+                          {top3PaceRanking[entry.id] === 2 && "🥈"}
+                          {top3PaceRanking[entry.id] === 3 && "🥉"}
+                        </div>
                       )}
                     </CardContent>
                   </>
